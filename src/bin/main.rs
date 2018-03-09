@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate uvm;
 extern crate docopt;
 
@@ -45,15 +46,9 @@ fn adjusted_path() -> String {
 }
 
 fn main() {
-  let version = format!("{}.{}.{}{}",
-                     env!("CARGO_PKG_VERSION_MAJOR"),
-                     env!("CARGO_PKG_VERSION_MINOR"),
-                     env!("CARGO_PKG_VERSION_PATCH"),
-                     option_env!("CARGO_PKG_VERSION_PRE").unwrap_or(""));
-
   let args: Arguments = Docopt::new(USAGE)
                             .and_then(|d| Ok(d.options_first(true)))
-                            .and_then(|d| Ok(d.version(Some(version))))
+                            .and_then(|d| Ok(d.version(Some(cargo_version!()))))
                             .and_then(|d| d.deserialize())
                             .unwrap_or_else(|e| e.exit());
 
