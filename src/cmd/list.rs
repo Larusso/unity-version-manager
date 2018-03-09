@@ -19,12 +19,12 @@ use regex::Regex;
 //     active: bool,
 // }
 
-const UNITY_INSTALL_LOCATION : &'static str = "/Applications";
+const UNITY_INSTALL_LOCATION: &'static str = "/Applications";
 
 pub fn list() {
     let install_location = Path::new(UNITY_INSTALL_LOCATION);
 
-    let version_pattern = Regex::new(r"(\d+\.\d+\.\d+((f|p|b)\d+)?)$").unwrap();
+    let version_pattern = Regex::new(r"((\d+)\.(\d+)\.(\d+)((f|p|b)(\d+))?)$").unwrap();
 
     if let Ok(entries) = fs::read_dir(install_location) {
         for entry in entries {
@@ -33,7 +33,17 @@ pub fn list() {
                     if file_name.starts_with("Unity-") {
                         if let Some(caps) = version_pattern.captures(file_name) {
                             let version = caps.get(1).map_or("", |m| m.as_str());
-                            println!("{:?}", version);
+
+                            let major = caps.get(2).map_or("", |m| m.as_str());
+                            let minor = caps.get(3).map_or("", |m| m.as_str());
+                            let patch = caps.get(4).map_or("", |m| m.as_str());
+                            let r_type = caps.get(6).map_or("", |m| m.as_str());
+                            let revision = caps.get(7).map_or("", |m| m.as_str());
+
+                            println!(
+                                "{:?} M:{} M:{} P:{} T:{} R:{}",
+                                version, major, minor, patch, r_type, revision
+                            );
                         }
                     }
                 }
