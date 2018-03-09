@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate serde_derive;
 extern crate docopt;
+extern crate regex;
 
 pub mod cli;
 pub mod cmd;

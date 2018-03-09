@@ -1,8 +1,8 @@
+extern crate docopt;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate uvm;
-extern crate docopt;
 
 use std::process::Command;
 use docopt::Docopt;
@@ -33,40 +33,38 @@ struct Arguments {
 }
 
 fn adjusted_path() -> String {
-  let key = "PATH";
-  match env::var(key) {
-    Ok(val) => {
-      match env::current_exe() {
-        Ok(exe_path) => format!("{}:{}", exe_path.as_path().parent().unwrap().display(), val),
-        Err(_) => val,
-      }
-    },
-    Err(_) => String::from(""),
-  }
+    let key = "PATH";
+    match env::var(key) {
+        Ok(val) => match env::current_exe() {
+            Ok(exe_path) => format!("{}:{}", exe_path.as_path().parent().unwrap().display(), val),
+            Err(_) => val,
+        },
+        Err(_) => String::from(""),
+    }
 }
 
 fn main() {
-  let args: Arguments = Docopt::new(USAGE)
-                            .and_then(|d| Ok(d.options_first(true)))
-                            .and_then(|d| Ok(d.version(Some(cargo_version!()))))
-                            .and_then(|d| d.deserialize())
-                            .unwrap_or_else(|e| e.exit());
+    let args: Arguments = Docopt::new(USAGE)
+        .and_then(|d| Ok(d.options_first(true)))
+        .and_then(|d| Ok(d.version(Some(cargo_version!()))))
+        .and_then(|d| d.deserialize())
+        .unwrap_or_else(|e| e.exit());
 
-  let mut command = Command::new(format!("uvm-{}", args.arg_command));
-  command.env("PATH", adjusted_path());
+    let mut command = Command::new(format!("uvm-{}", args.arg_command));
+    command.env("PATH", adjusted_path());
 
-  if let Some(arguments) = args.arg_args {
-    command.args(arguments);
-  }
+    if let Some(arguments) = args.arg_args {
+        command.args(arguments);
+    }
 
-  let mut process = match command.spawn() {
+    let mut process = match command.spawn() {
         Err(_) => panic!("command not found: {}", args.arg_command),
         Ok(process) => process,
-  };
+    };
 
-  let status = process.wait().unwrap();
-  match status.code() {
-    Some(code) => exit(code),
-    None       => println!("Process terminated by signal")
-  }
+    let status = process.wait().unwrap();
+    match status.code() {
+        Some(code) => exit(code),
+        None => println!("Process terminated by signal"),
+    }
 }
