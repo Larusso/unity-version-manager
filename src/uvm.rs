@@ -5,6 +5,7 @@ extern crate regex;
 
 pub mod cli;
 pub mod cmd;
+mod utils;
 
 #[macro_export]
 macro_rules! cargo_version {
