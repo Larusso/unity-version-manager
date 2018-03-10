@@ -50,21 +50,21 @@ impl fmt::Display for Version {
 }
 
 pub fn read_unity_version(version_string: &str) -> Option<Version> {
-    let version_pattern = Regex::new(r"((\d+)\.(\d+)\.(\d+)((f|p|b)(\d+))?)$").unwrap();
+    let version_pattern = Regex::new(r"(\d+)\.(\d+)\.(\d+)(f|p|b)(\d+)").unwrap();
     match version_pattern.captures(version_string) {
         Some(caps) => {
-            let major: u32 = caps.get(2).map_or("0", |m| m.as_str()).parse().unwrap();
-            let minor: u32 = caps.get(3).map_or("0", |m| m.as_str()).parse().unwrap();
-            let patch: u32 = caps.get(4).map_or("0", |m| m.as_str()).parse().unwrap();
+            let major: u32 = caps.get(1).map_or("0", |m| m.as_str()).parse().unwrap();
+            let minor: u32 = caps.get(2).map_or("0", |m| m.as_str()).parse().unwrap();
+            let patch: u32 = caps.get(3).map_or("0", |m| m.as_str()).parse().unwrap();
 
-            let release_type = match caps.get(6).map_or("", |m| m.as_str()) {
+            let release_type = match caps.get(4).map_or("", |m| m.as_str()) {
                 "f" => Some(VersionType::Final),
                 "p" => Some(VersionType::Patch),
                 "b" => Some(VersionType::Beta),
                 _ => None,
             };
 
-            let revision: u32 = caps.get(7).map_or("0", |m| m.as_str()).parse().unwrap();
+            let revision: u32 = caps.get(5).map_or("0", |m| m.as_str()).parse().unwrap();
             Some(Version {
                 major,
                 minor,
@@ -80,6 +80,27 @@ pub fn read_unity_version(version_string: &str) -> Option<Version> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    macro_rules! invalid_version_input {
+        ($($name:ident: $input:expr),*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let version_string = $input;
+                    let version = read_unity_version(version_string);
+                    assert!(version.is_none(), "invalid input returns None")
+                }
+            )*
+        };
+    }
+
+    invalid_version_input! {
+        when_version_is_empty: "dsd",
+        when_version_is_a_random_string: "sdfrersdfgsdf",
+        when_version_is_a_short_version: "1.2",
+        when_version_is_semver: "1.2.3",
+        when_version_contains_unknown_release_type: "1.2.3g2"
+    }
 
     #[test]
     fn parse_version_string_with_invalid_input() {
