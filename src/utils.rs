@@ -94,6 +94,13 @@ mod tests {
         };
     }
 
+    proptest! {
+        #[test]
+        fn doesnt_crash(ref s in "\\PC*") {
+            read_unity_version(s);
+        }
+    }
+
     invalid_version_input! {
         when_version_is_empty: "dsd",
         when_version_is_a_random_string: "sdfrersdfgsdf",

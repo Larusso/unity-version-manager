@@ -3,6 +3,10 @@ extern crate serde_derive;
 extern crate docopt;
 extern crate regex;
 
+#[cfg(test)]
+#[macro_use]
+extern crate proptest;
+
 pub mod cli;
 pub mod cmd;
 mod utils;
