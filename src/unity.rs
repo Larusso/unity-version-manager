@@ -1,5 +1,7 @@
 use regex::Regex;
 use std::fmt;
+use std::str::FromStr;
+use std::convert::From;
 
 #[derive(PartialEq,Debug)]
 pub enum VersionType {
@@ -49,6 +51,19 @@ impl fmt::Display for Version {
     }
 }
 
+pub struct ParseVersionError {}
+
+impl FromStr for Version {
+    type Err = ParseVersionError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match read_unity_version(s) {
+            Some(v) => Ok(v),
+            None => Err(ParseVersionError{})
+        }
+    }
+}
+
 pub fn read_unity_version(version_string: &str) -> Option<Version> {
     let version_pattern = Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b)([0-9]{1,4})").unwrap();
     match version_pattern.captures(version_string) {
@@ -87,8 +102,8 @@ mod tests {
                 #[test]
                 fn $name() {
                     let version_string = $input;
-                    let version = read_unity_version(version_string);
-                    assert!(version.is_none(), "invalid input returns None")
+                    let version = Version::from_str(version_string);
+                    assert!(version.is_err(), "invalid input returns None")
                 }
             )*
         };
@@ -100,8 +115,8 @@ mod tests {
                 #[test]
                 fn $name() {
                     let version_string = $input;
-                    let version = read_unity_version(version_string);
-                    assert!(version.is_some(), "valid input returns a version")
+                    let version = Version::from_str(version_string);
+                    assert!(version.is_ok(), "valid input returns a version")
                 }
             )*
         };
@@ -110,12 +125,12 @@ mod tests {
     proptest! {
         #[test]
         fn doesnt_crash(ref s in "\\PC*") {
-            read_unity_version(s);
+            Version::from_str(s);
         }
 
         #[test]
         fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
-            read_unity_version(s).unwrap();
+            Version::from_str(s).ok().unwrap();
         }
 
         #[test]
@@ -127,7 +142,7 @@ mod tests {
                 revision,
                 release_type: VersionType::Final};
 
-            let v2 = read_unity_version(&format!("{:04}.{:04}.{:04}f{:04}", major, minor, patch, revision)).unwrap();
+            let v2 = Version::from_str(&format!("{:04}.{:04}.{:04}f{:04}", major, minor, patch, revision)).ok().unwrap();
             prop_assert_eq!(v1, v2);
         }
     }
@@ -148,14 +163,14 @@ mod tests {
     #[test]
     fn parse_version_string_with_valid_input() {
         let version_string = "1.2.3f4";
-        let version = read_unity_version(version_string);
-        assert!(version.is_some(), "valid input returns a version")
+        let version = Version::from_str(version_string);
+        assert!(version.is_ok(), "valid input returns a version")
     }
 
     #[test]
     fn splits_version_string_into_components() {
         let version_string = "1.2.3f4";
-        let version = read_unity_version(version_string).unwrap();
+        let version = Version::from_str(version_string).ok().unwrap();
 
         assert!(version.major == 1, "parse correct major component");
 

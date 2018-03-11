@@ -9,7 +9,7 @@ extern crate proptest;
 
 pub mod cli;
 pub mod cmd;
-mod utils;
+pub mod unity;
 
 #[macro_export]
 macro_rules! cargo_version {
