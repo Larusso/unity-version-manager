@@ -1,15 +1,22 @@
 use regex::Regex;
 use std::fmt;
 use std::str::FromStr;
+use std::cmp::Ordering;
 
-#[derive(PartialEq,Debug)]
+#[derive(PartialEq,Eq,Ord,Debug)]
 pub enum VersionType {
     Final,
     Patch,
     Beta,
 }
 
-#[derive(PartialEq,Debug)]
+impl PartialOrd for VersionType {
+    fn partial_cmp(&self, other: &VersionType) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[derive(Eq,Debug)]
 pub struct Version {
     major: u32,
     minor: u32,
@@ -18,15 +25,29 @@ pub struct Version {
     revision: u32,
 }
 
-impl Version {
-    pub fn new() -> Version {
-        Version {
-            major: 0,
-            minor: 0,
-            patch: 0,
-            release_type: VersionType::Final,
-            revision: 0,
-        }
+impl Ord for Version {
+    fn cmp(&self, other: &Version) -> Ordering {
+        self.release_type.cmp(&other.release_type)
+        .then(self.major.cmp(&other.major))
+        .then(self.minor.cmp(&other.minor))
+        .then(self.patch.cmp(&other.patch))
+        .then(self.revision.cmp(&other.revision))
+    }
+}
+
+impl PartialOrd for Version {
+    fn partial_cmp(&self, other: &Version) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Version {
+    fn eq(&self, other: &Version) -> bool {
+        (self.release_type == other.release_type)
+        && (self.major == other.major)
+        && (self.minor == other.minor)
+        && (self.patch == other.patch)
+        && (self.revision == other.revision)
     }
 }
 
