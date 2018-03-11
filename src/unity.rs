@@ -5,9 +5,9 @@ use std::cmp::Ordering;
 
 #[derive(PartialEq,Eq,Ord,Debug)]
 pub enum VersionType {
-    Final,
-    Patch,
     Beta,
+    Patch,
+    Final,
 }
 
 impl PartialOrd for VersionType {
@@ -142,31 +142,6 @@ mod tests {
         };
     }
 
-    proptest! {
-        #[test]
-        fn doesnt_crash(ref s in "\\PC*") {
-            Version::from_str(s);
-        }
-
-        #[test]
-        fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
-            Version::from_str(s).ok().unwrap();
-        }
-
-        #[test]
-        fn parses_version_back_to_original(major in 0u32..9999, minor in 0u32..9999, patch in 0u32..9999, revision in 0u32..9999 ) {
-            let v1 = Version {
-                major,
-                minor,
-                patch,
-                revision,
-                release_type: VersionType::Final};
-
-            let v2 = Version::from_str(&format!("{:04}.{:04}.{:04}f{:04}", major, minor, patch, revision)).ok().unwrap();
-            prop_assert_eq!(v1, v2);
-        }
-    }
-
     invalid_version_input! {
         when_version_is_empty: "dsd",
         when_version_is_a_random_string: "sdfrersdfgsdf",
@@ -201,5 +176,86 @@ mod tests {
         assert_eq!(version.release_type, VersionType::Final);
 
         assert!(version.revision == 4, "parse correct revision component");
+    }
+
+    #[test]
+    fn orders_version_final_release_greater_than_patch() {
+        let version_a = Version::from_str("1.2.3f4").ok().unwrap();
+        let version_b = Version::from_str("1.2.3p4").ok().unwrap();
+        assert_eq!(Ordering::Greater, version_a.cmp(&version_b));
+    }
+
+    #[test]
+    fn orders_version_patch_release_greater_than_beta() {
+        let version_a = Version::from_str("1.2.3p4").ok().unwrap();
+        let version_b = Version::from_str("1.2.3b4").ok().unwrap();
+        assert_eq!(Ordering::Greater, version_a.cmp(&version_b));
+    }
+
+    #[test]
+    fn orders_version_final_release_greater_than_beta() {
+        let version_a = Version::from_str("1.2.3f4").ok().unwrap();
+        let version_b = Version::from_str("1.2.3b4").ok().unwrap();
+        assert_eq!(Ordering::Greater, version_a.cmp(&version_b));
+    }
+
+    #[test]
+    fn orders_version_all_equak() {
+        let version_a = Version::from_str("1.2.3f4").ok().unwrap();
+        let version_b = Version::from_str("1.2.3f4").ok().unwrap();
+        assert_eq!(Ordering::Equal, version_a.cmp(&version_b));
+    }
+
+    #[test]
+    fn orders_version_major_smaller() {
+        let version_a = Version::from_str("1.2.3f4").ok().unwrap();
+        let version_b = Version::from_str("0.2.3f4").ok().unwrap();
+        assert_eq!(Ordering::Greater, version_a.cmp(&version_b));
+    }
+
+    #[test]
+    fn orders_version_minor_smaller() {
+        let version_a = Version::from_str("1.2.3f4").ok().unwrap();
+        let version_b = Version::from_str("1.1.3f4").ok().unwrap();
+        assert_eq!(Ordering::Greater, version_a.cmp(&version_b));
+    }
+
+    #[test]
+    fn orders_version_patch_smaller() {
+        let version_a = Version::from_str("1.2.3f4").ok().unwrap();
+        let version_b = Version::from_str("1.2.2f4").ok().unwrap();
+        assert_eq!(Ordering::Greater, version_a.cmp(&version_b));
+    }
+
+    #[test]
+    fn orders_version_revision_smaller() {
+        let version_a = Version::from_str("1.2.3f4").ok().unwrap();
+        let version_b = Version::from_str("1.2.3f3").ok().unwrap();
+        assert_eq!(Ordering::Greater, version_a.cmp(&version_b));
+    }
+
+    proptest! {
+        #[test]
+        fn doesnt_crash(ref s in "\\PC*") {
+            Version::from_str(s);
+        }
+
+        #[test]
+        fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
+            Version::from_str(s).ok().unwrap();
+        }
+
+        #[test]
+        fn parses_version_back_to_original(major in 0u32..9999, minor in 0u32..9999, patch in 0u32..9999, revision in 0u32..9999 ) {
+            let v1 = Version {
+                major,
+                minor,
+                patch,
+                revision,
+                release_type: VersionType::Final};
+
+            let v2 = Version::from_str(&format!("{:04}.{:04}.{:04}f{:04}", major, minor, patch, revision)).ok().unwrap();
+            prop_assert_eq!(v1, v2);
+        }
     }
 }
