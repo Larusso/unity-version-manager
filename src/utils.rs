@@ -8,7 +8,7 @@ pub enum VersionType {
     Beta,
 }
 
-#[derive(Debug)]
+#[derive(PartialEq,Debug)]
 pub struct Version {
     major: u32,
     minor: u32,
@@ -50,7 +50,7 @@ impl fmt::Display for Version {
 }
 
 pub fn read_unity_version(version_string: &str) -> Option<Version> {
-    let version_pattern = Regex::new(r"(\d+)\.(\d+)\.(\d+)(f|p|b)(\d+)").unwrap();
+    let version_pattern = Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b)([0-9]{1,4})").unwrap();
     match version_pattern.captures(version_string) {
         Some(caps) => {
             let major: u32 = caps.get(1).map_or("0", |m| m.as_str()).parse().unwrap();
@@ -94,10 +94,41 @@ mod tests {
         };
     }
 
+    macro_rules! valid_version_input {
+        ($($name:ident: $input:expr),*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let version_string = $input;
+                    let version = read_unity_version(version_string);
+                    assert!(version.is_some(), "valid input returns a version")
+                }
+            )*
+        };
+    }
+
     proptest! {
         #[test]
         fn doesnt_crash(ref s in "\\PC*") {
             read_unity_version(s);
+        }
+
+        #[test]
+        fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
+            read_unity_version(s).unwrap();
+        }
+
+        #[test]
+        fn parses_version_back_to_original(major in 0u32..9999, minor in 0u32..9999, patch in 0u32..9999, revision in 0u32..9999 ) {
+            let v1 = Version {
+                major,
+                minor,
+                patch,
+                revision,
+                release_type: VersionType::Final};
+
+            let v2 = read_unity_version(&format!("{:04}.{:04}.{:04}f{:04}", major, minor, patch, revision)).unwrap();
+            prop_assert_eq!(v1, v2);
         }
     }
 
@@ -109,11 +140,9 @@ mod tests {
         when_version_contains_unknown_release_type: "1.2.3g2"
     }
 
-    #[test]
-    fn parse_version_string_with_invalid_input() {
-        let version_string = "";
-        let version = read_unity_version(version_string);
-        assert!(version.is_none(), "invalid input returns no version")
+    valid_version_input! {
+        when_version_has_single_digits: "1.2.3f4",
+        when_version_has_long_digits: "0.0.0f43"
     }
 
     #[test]
@@ -137,61 +166,5 @@ mod tests {
         assert_eq!(version.release_type, VersionType::Final);
 
         assert!(version.revision == 4, "parse correct revision component");
-    }
-
-    #[test]
-    fn splits_patch_version_string_into_components() {
-        let version_string = "1.2.3p4";
-        let version = read_unity_version(version_string).unwrap();
-
-        assert!(version.major == 1, "parse correct major component");
-
-        assert!(version.minor == 2, "parse correct minor component");
-
-        assert!(version.patch == 3, "parse correct patch component");
-
-        assert_eq!(version.release_type, VersionType::Patch);
-
-        assert!(version.revision == 4, "parse correct revision component");
-    }
-
-    #[test]
-    fn splits_beta_version_string_into_components() {
-        let version_string = "1.2.3b4";
-        let version = read_unity_version(version_string).unwrap();
-
-        assert!(version.major == 1, "parse correct major component");
-
-        assert!(version.minor == 2, "parse correct minor component");
-
-        assert!(version.patch == 3, "parse correct patch component");
-
-        assert_eq!(version.release_type, VersionType::Beta);
-
-        assert!(version.revision == 4, "parse correct revision component");
-    }
-
-    #[test]
-    fn splitted_version_final_can_be_converted_back_to_string() {
-        let version_string = "1.2.3f4";
-        let version = read_unity_version(version_string).unwrap();
-
-        assert_eq!(version.to_string(), version_string)
-    }
-
-    #[test]
-    fn splitted_version_patch_can_be_converted_back_to_string() {
-        let version_string = "4.6.12p5";
-        let version = read_unity_version(version_string).unwrap();
-
-        assert_eq!(version.to_string(), version_string)
-    }
-
-    #[test]
-    fn splitted_version_beta_can_be_converted_back_to_string() {
-        let version_string = "2017.2.1b1";
-        let version = read_unity_version(version_string).unwrap();
-
-        assert_eq!(version.to_string(), version_string)
     }
 }
