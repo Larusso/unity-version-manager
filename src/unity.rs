@@ -1,7 +1,6 @@
 use regex::Regex;
 use std::fmt;
 use std::str::FromStr;
-use std::convert::From;
 
 #[derive(PartialEq,Debug)]
 pub enum VersionType {
@@ -64,7 +63,7 @@ impl FromStr for Version {
     }
 }
 
-pub fn read_unity_version(version_string: &str) -> Option<Version> {
+fn read_unity_version(version_string: &str) -> Option<Version> {
     let version_pattern = Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b)([0-9]{1,4})").unwrap();
     match version_pattern.captures(version_string) {
         Some(caps) => {
