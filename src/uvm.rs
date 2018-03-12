@@ -7,10 +7,6 @@ extern crate regex;
 #[macro_use]
 extern crate proptest;
 
-pub mod cli;
-pub mod cmd;
-pub mod unity;
-
 #[macro_export]
 macro_rules! cargo_version {
     // `()` indicates that the macro takes no argument.
@@ -23,3 +19,7 @@ macro_rules! cargo_version {
           option_env!("CARGO_PKG_VERSION_PRE").unwrap_or(""));
     )
 }
+
+pub mod cli;
+pub mod cmd;
+pub mod unity;
