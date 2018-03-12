@@ -27,10 +27,10 @@ pub struct Version {
 
 impl Ord for Version {
     fn cmp(&self, other: &Version) -> Ordering {
-        self.release_type.cmp(&other.release_type)
-        .then(self.major.cmp(&other.major))
+        self.major.cmp(&other.major)
         .then(self.minor.cmp(&other.minor))
         .then(self.patch.cmp(&other.patch))
+        .then(self.release_type.cmp(&other.release_type))
         .then(self.revision.cmp(&other.revision))
     }
 }

@@ -14,5 +14,9 @@ Options:
 
 fn main() {
   uvm::cli::get_options(USAGE);
-  list();
+  if let Ok(versions) = list() {
+    for version in versions {
+        println!("{}", version);
+    }
+  }
 }
