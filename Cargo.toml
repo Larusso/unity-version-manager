@@ -27,6 +27,7 @@ serde = "1.0"
 serde_derive = "1.0"
 docopt = "0.8"
 regex = "0.2"
+console = "0.6.1"
 
 [dev-dependencies]
 proptest = "0.5.1"
