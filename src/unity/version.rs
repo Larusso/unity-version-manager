@@ -1,7 +1,7 @@
 use regex::Regex;
+use std::cmp::Ordering;
 use std::fmt;
 use std::str::FromStr;
-use std::cmp::Ordering;
 
 #[derive(PartialEq,Eq,Ord,Debug)]
 pub enum VersionType {

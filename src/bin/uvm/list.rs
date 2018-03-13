@@ -2,7 +2,7 @@ extern crate uvm;
 extern crate console;
 
 use uvm::cmd::list::list;
-use uvm::cmd::list::Installation;
+use uvm::unity::Installation;
 use console::style;
 
 const USAGE: &'static str = "
