@@ -27,20 +27,18 @@ fn main() {
     if let Ok(metadata) = path.symlink_metadata() {
         if metadata.file_type().is_symlink() {
             let linked_file = path.read_link().unwrap();
-            let name = linked_file.file_name().unwrap().to_str().expect("Error while reading filename");
-            let version = Version::from_str(name).expect("link is not a unity version");
-            let installation = Installation{version: version, path: path.read_link().unwrap()};
+            let installation = Installation::new(linked_file).expect("Can't read current version");
             let verbose = o.unwrap_or(uvm::cli::ListOptions { verbose: false }).verbose;
             let line = if verbose {
                 format!(
                     "{version} - {path}",
-                    version = style(installation.version.to_string()).cyan(),
-                    path = style(installation.path.display()).italic().green()
+                    version = style(installation.version().to_string()).cyan(),
+                    path = style(installation.path().display()).italic().green()
                 )
             } else {
                 format!(
                     "{version}",
-                    version = style(installation.version.to_string()).cyan(),
+                    version = style(installation.version().to_string()).cyan(),
                 )
             };
             outTerm.write_line(&line);

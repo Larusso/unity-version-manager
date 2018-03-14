@@ -22,7 +22,7 @@ Options:
 fn longest_version(installations: &Vec<Installation>) -> usize {
     match installations
         .iter()
-        .map(|i| i.version.to_string().len())
+        .map(|i| i.version().to_string().len())
         .max()
     {
         Some(l) => l,
@@ -40,14 +40,14 @@ fn main() {
             let line = if verbose {
                 format!(
                     "{version:>width$} - {path}",
-                    version = style(installation.version.to_string()).cyan(),
+                    version = style(installation.version().to_string()).cyan(),
                     width = longest_version,
-                    path = style(installation.path.display()).italic().green()
+                    path = style(installation.path().display()).italic().green()
                 )
             } else {
                 format!(
                     "{version:>width$}",
-                    version = style(installation.version.to_string()).cyan(),
+                    version = style(installation.version().to_string()).cyan(),
                     width = longest_version
                 )
             };

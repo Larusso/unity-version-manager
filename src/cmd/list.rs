@@ -1,8 +1,7 @@
 use std::fs;
 use std::io;
 use std::path::Path;
-use std::str::FromStr;
-use unity::{Installation, Version};
+use unity::Installation;
 
 const UNITY_INSTALL_LOCATION: &'static str = "/Applications";
 
@@ -16,8 +15,8 @@ pub fn list() -> io::Result<Vec<Installation>> {
 
         let file_name = file_name_s.to_str().expect("Error while reading filename");
         if file_name.starts_with("Unity-") {
-            if let Ok(v) = Version::from_str(file_name) {
-                versions.push(Installation{version: v, path: entry.path()})
+            if let Ok(i) = Installation::new(entry.path()) {
+                versions.push(i)
             }
         }
     }
