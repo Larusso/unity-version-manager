@@ -2,6 +2,7 @@ use regex::Regex;
 use std::cmp::Ordering;
 use std::fmt;
 use std::str::FromStr;
+use std::error::Error;
 
 #[derive(PartialEq,Eq,Ord,Debug)]
 pub enum VersionType {
@@ -71,44 +72,59 @@ impl fmt::Display for Version {
     }
 }
 
-pub struct ParseVersionError {}
+#[derive(Debug)]
+pub struct ParseVersionError {
+    message: String
+}
+
+impl ParseVersionError {
+    fn new(message: &str) -> ParseVersionError {
+        ParseVersionError { message: String::from(message) }
+    }
+}
+
+impl fmt::Display for ParseVersionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ParseVersionError")
+    }
+}
+
+impl Error for ParseVersionError {
+    fn description(&self) -> &str {
+        &self.message[..]
+    }
+}
+
 
 impl FromStr for Version {
     type Err = ParseVersionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match read_unity_version(s) {
-            Some(v) => Ok(v),
-            None => Err(ParseVersionError{})
+        let version_pattern = Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b)([0-9]{1,4})").unwrap();
+        match version_pattern.captures(s) {
+            Some(caps) => {
+                let major: u32 = caps.get(1).map_or("0", |m| m.as_str()).parse().unwrap();
+                let minor: u32 = caps.get(2).map_or("0", |m| m.as_str()).parse().unwrap();
+                let patch: u32 = caps.get(3).map_or("0", |m| m.as_str()).parse().unwrap();
+
+                let release_type = match caps.get(4).map_or("", |m| m.as_str()) {
+                    "f" => Some(VersionType::Final),
+                    "p" => Some(VersionType::Patch),
+                    "b" => Some(VersionType::Beta),
+                    _ => None,
+                };
+
+                let revision: u32 = caps.get(5).map_or("0", |m| m.as_str()).parse().unwrap();
+                Ok(Version {
+                    major,
+                    minor,
+                    patch,
+                    revision,
+                    release_type: release_type.unwrap(),
+                })
+            }
+            None => Err( ParseVersionError::new("Failed to match version pattern to input") ),
         }
-    }
-}
-
-fn read_unity_version(version_string: &str) -> Option<Version> {
-    let version_pattern = Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b)([0-9]{1,4})").unwrap();
-    match version_pattern.captures(version_string) {
-        Some(caps) => {
-            let major: u32 = caps.get(1).map_or("0", |m| m.as_str()).parse().unwrap();
-            let minor: u32 = caps.get(2).map_or("0", |m| m.as_str()).parse().unwrap();
-            let patch: u32 = caps.get(3).map_or("0", |m| m.as_str()).parse().unwrap();
-
-            let release_type = match caps.get(4).map_or("", |m| m.as_str()) {
-                "f" => Some(VersionType::Final),
-                "p" => Some(VersionType::Patch),
-                "b" => Some(VersionType::Beta),
-                _ => None,
-            };
-
-            let revision: u32 = caps.get(5).map_or("0", |m| m.as_str()).parse().unwrap();
-            Some(Version {
-                major,
-                minor,
-                patch,
-                revision,
-                release_type: release_type.unwrap(),
-            })
-        }
-        None => None,
     }
 }
 
