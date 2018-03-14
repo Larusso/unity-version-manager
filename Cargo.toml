@@ -19,6 +19,11 @@ path = "src/bin/uvm/current.rs"
 doc = false
 
 [[bin]]
+name = "uvm-use"
+path = "src/bin/uvm/use.rs"
+doc = false
+
+[[bin]]
 name = "uvm-help"
 path = "src/bin/uvm/help.rs"
 doc = false
