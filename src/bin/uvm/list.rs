@@ -2,10 +2,10 @@ extern crate uvm;
 extern crate console;
 
 use uvm::cmd::list::list;
+use uvm::cmd::current::current;
 use uvm::unity::Installation;
-use console::style;
+use console::Style;
 use console::Term;
-use console::pad_str;
 
 const USAGE: &'static str = "
 uvm-list - List installed unity versions.
@@ -33,21 +33,35 @@ fn longest_version(installations: &Vec<Installation>) -> usize {
 fn main() {
     let o = uvm::cli::get_list_options(USAGE);
     let term = Term::stdout();
+    let current_version = current().ok();
+
     if let Ok(installations) = list() {
         let verbose = o.unwrap_or(uvm::cli::ListOptions { verbose: false }).verbose;
         let longest_version = longest_version(&installations);
+        let mut out_style;
+        let mut path_style;
+
         for installation in installations {
+            out_style = Style::new().cyan();
+            path_style = Style::new().italic().green();
+            if let &Some(ref current) = &current_version {
+                if current == &installation {
+                    out_style = out_style.yellow().bold();
+                    path_style = Style::new().italic().yellow();
+                }
+            }
+
             let line = if verbose {
                 format!(
                     "{version:>width$} - {path}",
-                    version = style(installation.version().to_string()).cyan(),
+                    version = out_style.apply_to(installation.version().to_string()),
                     width = longest_version,
-                    path = style(installation.path().display()).italic().green()
+                    path = path_style.apply_to(installation.path().display())
                 )
             } else {
                 format!(
                     "{version:>width$}",
-                    version = style(installation.version().to_string()).cyan(),
+                    version = out_style.apply_to(installation.version().to_string()),
                     width = longest_version
                 )
             };
