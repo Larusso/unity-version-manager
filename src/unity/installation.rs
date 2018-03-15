@@ -45,6 +45,10 @@ impl Installation {
         &self.version
     }
 
+    pub fn version_owned(self) -> Version {
+        self.version
+    }
+
     pub fn path(&self) -> &PathBuf {
         &self.path
     }

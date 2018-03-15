@@ -3,6 +3,8 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::str::FromStr;
 use std::error::Error;
+use std::convert::From;
+use unity::Installation;
 
 #[derive(PartialEq,Eq,Ord,Debug)]
 pub enum VersionType {
@@ -125,6 +127,12 @@ impl FromStr for Version {
             }
             None => Err( ParseVersionError::new("Failed to match version pattern to input") ),
         }
+    }
+}
+
+impl From<Installation> for Version {
+    fn from(item: Installation) -> Self {
+        item.version_owned()
     }
 }
 
