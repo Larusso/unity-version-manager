@@ -53,3 +53,45 @@ impl Installation {
         &self.path
     }
 }
+
+#[cfg(test)]
+use std::env;
+#[cfg(test)]
+use std::fs::DirBuilder;
+#[cfg(test)]
+use std::path::Path;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn createTestPath(version: &str) -> PathBuf {
+        let base_dir = env::temp_dir();
+        let path = &format!("{base_dir:?}/Unity-{version}", base_dir = base_dir, version = version);
+        let mut dir_builder = DirBuilder::new();
+        dir_builder.recursive(true);
+        dir_builder.create(path).unwrap();
+        Path::new(path).to_path_buf()
+    }
+
+    #[test]
+    fn create_installtion_from_path() {
+        let path = createTestPath("2017.1.2f5");
+        let subject = Installation::new(path).unwrap();
+
+        assert_eq!(subject.version.to_string(), "2017.1.2f5");
+    }
+
+    proptest! {
+        #[test]
+        fn doesnt_crash(ref s in "\\PC*") {
+            Installation::new(Path::new(s).to_path_buf());
+        }
+
+        #[test]
+        fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
+            let path = createTestPath(s);
+            let subject = Installation::new(path).unwrap();
+        }
+    }
+}
