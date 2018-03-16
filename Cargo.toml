@@ -41,3 +41,4 @@ console = "0.6.1"
 
 [dev-dependencies]
 proptest = "0.5.1"
+rand = "0.4"

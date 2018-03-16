@@ -261,7 +261,7 @@ mod tests {
     proptest! {
         #[test]
         fn doesnt_crash(ref s in "\\PC*") {
-            Version::from_str(s);
+            Version::from_str(s).is_ok();
         }
 
         #[test]

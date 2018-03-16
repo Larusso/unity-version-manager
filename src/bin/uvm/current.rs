@@ -35,8 +35,8 @@ fn main() {
                 version = style(installation.version().to_string()).cyan(),
             )
         };
-        out_term.write_line(&line);
+        out_term.write_line(&line).is_ok();
     } else {
-        error_term.write_line("No active version");
+        error_term.write_line("No active version").is_ok();
     }
 }

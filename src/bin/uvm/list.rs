@@ -36,7 +36,7 @@ fn main() {
     let current_version = current().ok();
 
     if let Ok(installations) = list() {
-        Term::stderr().write_line("Installed Unity versions:");
+        Term::stderr().write_line("Installed Unity versions:").is_ok();
         let verbose = o.unwrap_or(uvm::cli::ListOptions { verbose: false }).verbose;
         let longest_version = longest_version(&installations);
         let mut out_style;
@@ -66,7 +66,7 @@ fn main() {
                     width = longest_version
                 )
             };
-            term.write_line(&line);
+            term.write_line(&line).is_ok();
         }
     }
 }

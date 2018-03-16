@@ -6,6 +6,8 @@ extern crate regex;
 #[cfg(test)]
 #[macro_use]
 extern crate proptest;
+#[cfg(test)]
+extern crate rand;
 
 #[macro_export]
 macro_rules! cargo_version {
