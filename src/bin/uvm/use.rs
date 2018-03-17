@@ -1,7 +1,6 @@
 extern crate console;
 extern crate uvm;
 
-use uvm::cmd::list::list;
 use uvm::cmd::current::current;
 use std::path::Path;
 const USAGE: &'static str = "
@@ -26,8 +25,8 @@ fn main() {
         }
     }
 
-    if let Ok(installations) = list() {
-        if let Some(installation) = installations.iter().find(|i| i.version() == &o.version) {
+    if let Ok(mut installations) = uvm::list_installations() {
+        if let Some(installation) = installations.find(|i| i.version() == &o.version) {
             println!("Found installation {:?}", installation);
             //cleanup / check symlink
             //set new symlink
