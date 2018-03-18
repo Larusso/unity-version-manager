@@ -12,16 +12,12 @@ const UNITY_INSTALL_LOCATION: &'static str = "/Applications";
 
 pub struct Installations(Box<Iterator<Item = Installation>>);
 
-fn check_dir_entry(entry: fs::DirEntry) -> Option<fs::DirEntry> {
-    match entry.file_name().to_str() {
-        Some(name) => {
-            if name.starts_with("Unity-") {
-                return Some(entry);
-            };
-            None
-        }
-        None => None,
-    }
+fn check_dir_entry(entry:fs::DirEntry) -> Option<fs::DirEntry> {
+    let name = entry.file_name();
+    if name.to_str().unwrap_or("").starts_with("Unity-") {
+        return Some(entry);
+    };
+    None
 }
 
 impl Installations {
