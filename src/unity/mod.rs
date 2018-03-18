@@ -6,35 +6,34 @@ pub use self::version::Version;
 
 use std::fs;
 use std::path::Path;
+use std::io;
 
 const UNITY_INSTALL_LOCATION: &'static str = "/Applications";
 
-pub struct Installations {
-    iter: Box<Iterator<Item = Installation>>,
+pub struct Installations(Box<Iterator<Item = Installation>>);
+
+fn check_dir_entry(entry: fs::DirEntry) -> Option<fs::DirEntry> {
+    match entry.file_name().to_str() {
+        Some(name) => {
+            if name.starts_with("Unity-") {
+                return Some(entry);
+            };
+            None
+        }
+        None => None,
+    }
 }
 
 impl Installations {
-    fn new(install_location: &Path) -> Result<Installations, ()> {
-        if let Ok(rd) = fs::read_dir(install_location) {
-            Ok(Installations {
-                iter: Box::new(
-                    rd.filter_map(|f| f.ok())
-                        .filter_map(|entry| match entry.file_name().to_str() {
-                            Some(name) => {
-                                if name.starts_with("Unity-") {
-                                    return Some(entry);
-                                } else {
-                                    return None;
-                                }
-                            }
-                            None => None,
-                        })
-                        .filter_map(|entry| Installation::new(entry.path()).ok()),
-                ),
-            })
-        } else {
-            Err(())
-        }
+    fn new(install_location: &Path) -> io::Result<Installations> {
+        let read_dir = fs::read_dir(install_location)?;
+        let iter = read_dir
+            .filter_map(|entry| entry.ok())
+            .filter_map(check_dir_entry)
+            .map(|entry| entry.path())
+            .map(Installation::new)
+            .filter_map(|i| i.ok());
+        Ok(Installations(Box::new(iter)))
     }
 }
 
@@ -42,11 +41,11 @@ impl Iterator for Installations {
     type Item = Installation;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        self.0.next()
     }
 }
 
-pub fn list_installations() -> Result<Installations, ()> {
+pub fn list_installations() -> io::Result<Installations> {
     let install_location = Path::new(UNITY_INSTALL_LOCATION);
     Installations::new(install_location)
 }
@@ -87,5 +86,11 @@ mod tests {
 
         assert_eq!(subject.next().unwrap().version().to_string(), "2017.1.2f3");
         assert_eq!(subject.next().unwrap().version().to_string(), "2017.2.3f4");
+    }
+
+    #[test]
+    fn list_installations_in_directory_returns_error() {
+        let test_dir = prepare_unity_installations![];
+        assert!(Installations::new(test_dir.path()).is_ok());
     }
 }
