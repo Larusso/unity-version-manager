@@ -61,17 +61,27 @@ mod tests {
     use tempdir::TempDir;
     use super::*;
 
+    macro_rules! prepare_unity_installations {
+        ($($input:expr),*) => {
+            {
+                let test_dir = TempDir::new("list_installations_in_directory").unwrap();
+                let mut dir_builder = fs::DirBuilder::new();
+                $(
+                    let dir = test_dir.path().join($input);
+                    dir_builder.create(dir).unwrap();
+                )*
+                test_dir
+            }
+        };
+    }
+
     #[test]
     fn list_installations_in_directory() {
-        let test_dir = TempDir::new("list_installations_in_directory").unwrap();
-        let test_dir_one = test_dir.path().join("Unity-2017.1.2f3");
-        let test_dir_two = test_dir.path().join("some_random_name");
-        let test_dir_three = test_dir.path().join("Unity-2017.2.3f4");
-
-        let mut dir_builder = fs::DirBuilder::new();
-        dir_builder.create(test_dir_one).unwrap();
-        dir_builder.create(test_dir_two).unwrap();
-        dir_builder.create(test_dir_three).unwrap();
+        let test_dir = prepare_unity_installations![
+            "Unity-2017.1.2f3",
+            "some_random_name",
+            "Unity-2017.2.3f4"
+        ];
 
         let mut subject = Installations::new(test_dir.path()).unwrap();
 
