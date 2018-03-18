@@ -50,3 +50,32 @@ pub fn list_installations() -> Result<Installations, ()> {
     let install_location = Path::new(UNITY_INSTALL_LOCATION);
     Installations::new(install_location)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::env;
+    use std::fs;
+    use std::path::Path;
+    use std::path::PathBuf;
+    use rand;
+    use tempdir::TempDir;
+    use super::*;
+
+    #[test]
+    fn list_installations_in_directory() {
+        let test_dir = TempDir::new("list_installations_in_directory").unwrap();
+        let test_dir_one = test_dir.path().join("Unity-2017.1.2f3");
+        let test_dir_two = test_dir.path().join("some_random_name");
+        let test_dir_three = test_dir.path().join("Unity-2017.2.3f4");
+
+        let mut dir_builder = fs::DirBuilder::new();
+        dir_builder.create(test_dir_one).unwrap();
+        dir_builder.create(test_dir_two).unwrap();
+        dir_builder.create(test_dir_three).unwrap();
+
+        let mut subject = Installations::new(test_dir.path()).unwrap();
+
+        assert_eq!(subject.next().unwrap().version().to_string(), "2017.1.2f3");
+        assert_eq!(subject.next().unwrap().version().to_string(), "2017.2.3f4");
+    }
+}

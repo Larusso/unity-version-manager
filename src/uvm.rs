@@ -8,6 +8,8 @@ extern crate regex;
 extern crate proptest;
 #[cfg(test)]
 extern crate rand;
+#[cfg(test)]
+extern crate tempdir;
 
 #[macro_export]
 macro_rules! cargo_version {
