@@ -21,7 +21,7 @@ fn main() {
     let error_term = Term::stderr();
     let out_term = Term::stdout();
 
-    if let Ok(installation) = uvm::cmd::current::current() {
+    if let Ok(installation) = uvm::current_installation() {
         let verbose = o.unwrap_or(uvm::cli::ListOptions { verbose: false }).verbose;
         let line = if verbose {
             format!(

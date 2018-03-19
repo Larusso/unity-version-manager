@@ -1,8 +1,11 @@
 mod installation;
 mod version;
+mod currentInstallation;
 
 pub use self::installation::Installation;
 pub use self::version::Version;
+pub use self::currentInstallation::CurrentInstallation;
+pub use self::currentInstallation::current_installation;
 
 use std::fs;
 use std::path::Path;

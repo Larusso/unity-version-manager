@@ -1,7 +1,6 @@
 extern crate console;
 extern crate uvm;
 
-use uvm::cmd::current::current;
 use std::path::Path;
 const USAGE: &'static str = "
 uvm-use - Use specific version of unity.
@@ -18,7 +17,7 @@ Options:
 fn main() {
     let o = uvm::cli::get_use_options(USAGE).unwrap();
 
-    if let Ok(current_installtion) = current() {
+    if let Ok(current_installtion) = uvm::current_installation() {
         if current_installtion.version() == &o.version {
             println!("Version {} already active", &o.version);
             return ();
