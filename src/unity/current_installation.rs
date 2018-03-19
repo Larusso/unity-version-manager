@@ -52,7 +52,7 @@ mod tests {
     }
 
     #[test]
-    fn current_installation_returns_active_installtion() {
+    fn current_installation_returns_active_installation() {
         let test_dir = prepare_unity_installations![
             "Unity-5.6.0p3",
             "Unity-2017.1.0p1",
