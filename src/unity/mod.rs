@@ -7,18 +7,12 @@ pub use self::version::Version;
 use std::fs;
 use std::path::Path;
 use std::io;
+use std::convert::From;
 
 const UNITY_INSTALL_LOCATION: &'static str = "/Applications";
 
 pub struct Installations(Box<Iterator<Item = Installation>>);
-
-fn check_dir_entry(entry:fs::DirEntry) -> Option<fs::DirEntry> {
-    let name = entry.file_name();
-    if name.to_str().unwrap_or("").starts_with("Unity-") {
-        return Some(entry);
-    };
-    None
-}
+pub struct Versions(Box<Iterator<Item = Version>>);
 
 impl Installations {
     fn new(install_location: &Path) -> io::Result<Installations> {
@@ -31,6 +25,10 @@ impl Installations {
             .filter_map(|i| i.ok());
         Ok(Installations(Box::new(iter)))
     }
+
+    pub fn versions(self) -> Versions {
+        self.into()
+    }
 }
 
 impl Iterator for Installations {
@@ -39,6 +37,29 @@ impl Iterator for Installations {
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
     }
+}
+
+impl Iterator for Versions {
+    type Item = Version;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+impl From<Installations> for Versions {
+    fn from(installations:Installations) -> Self {
+        let iter = installations.map(|i| i.version_owned());
+        Versions(Box::new(iter))
+    }
+}
+
+fn check_dir_entry(entry:fs::DirEntry) -> Option<fs::DirEntry> {
+    let name = entry.file_name();
+    if name.to_str().unwrap_or("").starts_with("Unity-") {
+        return Some(entry);
+    };
+    None
 }
 
 pub fn list_installations() -> io::Result<Installations> {
@@ -88,6 +109,36 @@ mod tests {
     fn list_installations_in_empty_directory_returns_no_error() {
         let test_dir = prepare_unity_installations![];
         assert!(Installations::new(test_dir.path()).is_ok());
+    }
+
+    #[test]
+    fn installations_can_be_converted_to_versions() {
+        let test_dir = prepare_unity_installations![
+            "Unity-2017.1.2f3",
+            "some_random_name",
+            "Unity-2017.2.3f4"
+        ];
+
+        let installations = Installations::new(test_dir.path()).unwrap();
+        let mut subject = installations.versions();
+
+        assert_eq!(subject.next().unwrap().to_string(), "2017.1.2f3");
+        assert_eq!(subject.next().unwrap().to_string(), "2017.2.3f4");
+    }
+
+    #[test]
+    fn versions_can_be_created_from_intallations() {
+        let test_dir = prepare_unity_installations![
+            "Unity-2017.1.2f3",
+            "some_random_name",
+            "Unity-2017.2.3f4"
+        ];
+
+        let installations = Installations::new(test_dir.path()).unwrap();
+        let mut subject = Versions::from(installations);
+
+        assert_eq!(subject.next().unwrap().to_string(), "2017.1.2f3");
+        assert_eq!(subject.next().unwrap().to_string(), "2017.2.3f4");
     }
 
     proptest! {
