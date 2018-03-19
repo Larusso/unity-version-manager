@@ -176,7 +176,8 @@ mod tests {
 
     valid_version_input! {
         when_version_has_single_digits: "1.2.3f4",
-        when_version_has_long_digits: "0.0.0f43"
+        when_version_has_long_digits: "0.0.0f43",
+        when_version_has_only_zero_digits: "0.0.0f0"
     }
 
     #[test]

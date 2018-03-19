@@ -71,7 +71,7 @@ mod tests {
     }
 
     #[test]
-    fn list_installations_in_directory() {
+    fn list_installations_in_directory_filters_unity_installations() {
         let test_dir = prepare_unity_installations![
             "Unity-2017.1.2f3",
             "some_random_name",
@@ -85,8 +85,24 @@ mod tests {
     }
 
     #[test]
-    fn list_installations_in_directory_returns_error() {
+    fn list_installations_in_empty_directory_returns_no_error() {
         let test_dir = prepare_unity_installations![];
         assert!(Installations::new(test_dir.path()).is_ok());
+    }
+
+    proptest! {
+        #[test]
+        fn doesnt_crash(ref s in "\\PC*") {
+            Installations::new(Path::new(s))
+        }
+
+        #[test]
+        fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
+            let test_dir = prepare_unity_installations![
+                format!("Unity-{}",s)
+            ];
+            let mut subject = Installations::new(test_dir.path()).unwrap();
+            assert_eq!(subject.count(), 1);
+        }
     }
 }
