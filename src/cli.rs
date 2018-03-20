@@ -2,6 +2,9 @@ use docopt::Docopt;
 use std::convert::From;
 use std::str::FromStr;
 use unity::Version;
+use std::path::PathBuf;
+use std::fmt;
+use std::fmt::{Debug, Display};
 
 #[derive(Debug, Deserialize)]
 struct Arguments {}
@@ -17,6 +20,13 @@ struct UseArguments {
     flag_verbose: bool,
 }
 
+#[derive(Debug, Deserialize)]
+struct LaunchArguments {
+    arg_project_path: Option<PathBuf>,
+    flag_platform: Option<UnityPlatform>,
+    flag_verbose: bool,
+}
+
 #[derive(Debug)]
 pub struct Options {}
 
@@ -28,6 +38,40 @@ pub struct ListOptions {
 #[derive(Debug)]
 pub struct UseOptions {
     pub version: Version,
+    pub verbose: bool,
+}
+
+#[derive(Deserialize, Debug)]
+pub enum UnityPlatform {
+    Win32,
+    Win64,
+    OSX,
+    Linux,
+    Linux64,
+    IOS,
+    Android,
+    Web,
+    WebStreamed,
+    WebGl,
+    XboxOne,
+    PS4,
+    PSP2,
+    WsaPlayer,
+    Tizen,
+    SamsungTV,
+}
+
+impl Display for UnityPlatform {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let raw = format!("{:?}", self).to_lowercase();
+        write!(f, "{}", raw)
+    }
+}
+
+#[derive(Debug)]
+pub struct LaunchOptions {
+    pub project_path: Option<PathBuf>,
+    pub platform: Option<UnityPlatform>,
     pub verbose: bool,
 }
 
@@ -49,7 +93,17 @@ impl From<UseArguments> for UseOptions {
     fn from(a: UseArguments) -> Self {
         UseOptions {
             verbose: a.flag_verbose,
-            version: Version::from_str(&a.arg_version).expect("Can't read version parameter")
+            version: Version::from_str(&a.arg_version).expect("Can't read version parameter"),
+        }
+    }
+}
+
+impl From<LaunchArguments> for LaunchOptions {
+    fn from(a: LaunchArguments) -> Self {
+        LaunchOptions {
+            verbose: a.flag_verbose,
+            platform: a.flag_platform,
+            project_path: a.arg_project_path,
         }
     }
 }
@@ -71,6 +125,15 @@ pub fn get_list_options(usage: &str) -> Option<ListOptions> {
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
 
+    Some(args.into())
+}
+
+pub fn get_launch_options(usage: &str) -> Option<LaunchOptions> {
+    let args: LaunchArguments = Docopt::new(usage)
+        .and_then(|d| Ok(d.options_first(true)))
+        .and_then(|d| Ok(d.version(Some(cargo_version!()))))
+        .and_then(|d| d.deserialize())
+        .unwrap_or_else(|e| e.exit());
     Some(args.into())
 }
 
