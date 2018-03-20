@@ -1,7 +1,7 @@
-#[macro_use]
-extern crate serde_derive;
 extern crate docopt;
 extern crate regex;
+#[macro_use]
+extern crate serde_derive;
 
 #[cfg(test)]
 #[macro_use]
@@ -29,6 +29,39 @@ pub mod unity;
 
 pub use self::unity::list_installations;
 pub use self::unity::current_installation;
+
 pub use self::unity::Installation;
 pub use self::unity::CurrentInstallation;
 pub use self::unity::Version;
+
+use std::io;
+use std::fs;
+use std::path::Path;
+use std::os::unix;
+
+pub fn is_active(version: &Version) -> bool {
+    if let Ok(current) = current_installation() {
+        current.version() == version
+    } else {
+        false
+    }
+}
+
+pub fn find_installation(version: &Version) -> io::Result<Installation> {
+    let mut installations = list_installations()?;
+    installations
+        .find(|i| i.version() == version)
+        .ok_or(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("Unable to find Unity version {}", version)
+        ))
+}
+
+pub fn activate(ref installation: Installation) -> io::Result<()> {
+    let active_path = Path::new("/Applications/Unity");
+    if active_path.exists() {
+        fs::remove_file(active_path)?;
+    }
+    unix::fs::symlink(installation.path(), active_path)?;
+    Ok(())
+}
