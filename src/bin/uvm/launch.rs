@@ -23,10 +23,9 @@ Options:
 fn main() {
     let o = uvm::cli::get_launch_options(USAGE).unwrap();
     if let Ok(installtion) = uvm::current_installation() {
-        let mut command = process::Command::new(format!(
-            "{}/Unity.app/Contents/MacOS/Unity",
-            installtion.path().canonicalize().unwrap().display()
-        ));
+        let mut command = process::Command::new(
+            installtion.exec_path().canonicalize().unwrap().to_str().unwrap()
+        );
 
         if let Some(platform) = o.platform {
             command.arg("-buildTarget").arg(platform.to_string());

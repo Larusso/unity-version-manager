@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path,PathBuf};
 use unity::Version;
 use std::cmp::Ordering;
 use std;
@@ -51,6 +51,10 @@ impl Installation {
 
     pub fn path(&self) -> &PathBuf {
         &self.path
+    }
+
+    pub fn exec_path(&self) -> PathBuf {
+        self.path.join("Unity.app/Contents/MacOS/Unity")
     }
 }
 
