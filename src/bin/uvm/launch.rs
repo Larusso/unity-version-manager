@@ -16,8 +16,8 @@ Usage:
 
 Options:
   -v, --verbose                 print more output
+  -f, --force-project-version   Will launch try to launch the project with the Unity version the project was created from.
   -p, --platform=<platform>     the build platform to open the project with
-  --use-project-version         Will launch try to launch the project with the Unity version the project was created from.
                                 possible values:
                                 win32, win64, osx, linux, linux64, ios, android, web,
                                 webstreamed, webgl, xboxone, ps4, psp2, wsaplayer, tizen, samsungtv
@@ -43,7 +43,7 @@ fn main() {
 
     let project_path = o.project_path.unwrap_or(env::current_dir().unwrap());
 
-    let installtion = get_installation(&project_path, o.use_project_version).unwrap_or_else(|err| {
+    let installtion = get_installation(&project_path, o.force_project_version).unwrap_or_else(|err| {
         eprintln!("{}", style(err).red());
         process::exit(1);
     });

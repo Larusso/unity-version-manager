@@ -24,7 +24,7 @@ struct UseArguments {
 struct LaunchArguments {
     arg_project_path: Option<PathBuf>,
     flag_platform: Option<UnityPlatform>,
-    flag_use_project_version: bool,
+    flag_force_project_version: bool,
     flag_verbose: bool,
 }
 
@@ -79,7 +79,7 @@ impl Display for UnityPlatform {
 pub struct LaunchOptions {
     pub project_path: Option<PathBuf>,
     pub platform: Option<UnityPlatform>,
-    pub use_project_version: bool,
+    pub force_project_version: bool,
     pub verbose: bool
 }
 
@@ -117,7 +117,7 @@ impl From<LaunchArguments> for LaunchOptions {
         LaunchOptions {
             verbose: a.flag_verbose,
             platform: a.flag_platform,
-            use_project_version: a.flag_use_project_version,
+            force_project_version: a.flag_force_project_version,
             project_path: a.arg_project_path,
         }
     }
