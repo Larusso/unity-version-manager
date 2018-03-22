@@ -25,6 +25,7 @@ struct LaunchArguments {
     arg_project_path: Option<PathBuf>,
     flag_platform: Option<UnityPlatform>,
     flag_force_project_version: bool,
+    flag_recursive: bool,
     flag_verbose: bool,
 }
 
@@ -81,6 +82,7 @@ pub struct LaunchOptions {
     pub project_path: Option<PathBuf>,
     pub platform: Option<UnityPlatform>,
     pub force_project_version: bool,
+    pub recursive: bool,
     pub verbose: bool
 }
 
@@ -118,6 +120,7 @@ impl From<LaunchArguments> for LaunchOptions {
     fn from(a: LaunchArguments) -> Self {
         LaunchOptions {
             verbose: a.flag_verbose,
+            recursive: a.flag_recursive,
             platform: a.flag_platform,
             force_project_version: a.flag_force_project_version,
             project_path: a.arg_project_path,

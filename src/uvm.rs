@@ -41,6 +41,7 @@ use std::fs::File;
 use std::io::Read;
 use std::os::unix;
 use std::str::FromStr;
+use std::convert::AsRef;
 
 pub fn is_active(version: &Version) -> bool {
     if let Ok(current) = current_installation() {
@@ -69,48 +70,58 @@ pub fn activate(ref installation: Installation) -> io::Result<()> {
     Ok(())
 }
 
-fn get_project_version(project_path: &Path) -> io::Result<File> {
-    let project_version = project_path
-        .join("ProjectSettings/")
+fn get_project_version<P: AsRef<Path>>(base_dir: P) -> io::Result<PathBuf> {
+    let project_version = base_dir
+        .as_ref()
+        .join("ProjectSettings")
         .join("ProjectVersion.txt");
-    File::open(project_version)
+    match project_version.exists() {
+        true => Ok(project_version),
+        false => Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!(
+                "directory {} is not a Unity project",
+                base_dir.as_ref().display()
+            ),
+        )),
+    }
 }
 
-fn get_project_version_recursive(dir: &Path, recur: bool) -> io::Result<Option<PathBuf>> {
+pub fn detect_unity_project_dir(dir: &Path, recur: bool) -> io::Result<PathBuf> {
+    let error = Err(io::Error::new(
+        io::ErrorKind::NotFound,
+        "Unable to find a Unity project",
+    ));
+
     if dir.is_dir() {
-        let project_version = dir.join("ProjectSettings/").join("ProjectVersion.txt");
-        if project_version.exists() {
-            return Ok(Some(project_version));
+        if get_project_version(dir).is_ok() {
+            return Ok(dir.to_path_buf());
         } else if !recur {
-            return Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "Unable to find Unity project",
-            ));
+            return error;
         }
 
         for entry in fs::read_dir(dir)? {
             let entry = entry?;
             let path = entry.path();
             if path.is_dir() {
-                let f = get_project_version_recursive(&path, recur)?;
-                if f.is_some() {
-                    return Ok(f);
+                let f = detect_unity_project_dir(&path, true);
+                if f.is_ok() {
+                    return f;
                 }
             }
         }
     }
-    Ok(None)
+    error
 }
 
 pub fn dectect_project_version(project_path: &Path, recur: Option<bool>) -> io::Result<Version> {
-    let project_version = get_project_version_recursive(project_path, recur.unwrap_or(false))?
-        .ok_or("Unable to find Unity project")
-        .map_err(|err| io::Error::new(io::ErrorKind::NotFound, err))?;
+    let project_version = detect_unity_project_dir(project_path, recur.unwrap_or(false))
+        .and_then(get_project_version)?;
 
     let mut file = File::open(project_version)?;
 
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
     Version::from_str(&contents)
-        .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, "Can't parse Unity version"))
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Can't parse Unity version"))
 }
