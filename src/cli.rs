@@ -27,6 +27,12 @@ struct LaunchArguments {
     flag_verbose: bool,
 }
 
+#[derive(Debug, Deserialize)]
+struct DetectArguments {
+    arg_project_path: Option<PathBuf>,
+    flag_verbose: bool,
+}
+
 #[derive(Debug)]
 pub struct Options {}
 
@@ -75,6 +81,12 @@ pub struct LaunchOptions {
     pub verbose: bool,
 }
 
+#[derive(Debug)]
+pub struct DetectOptions {
+    pub project_path: Option<PathBuf>,
+    pub verbose: bool,
+}
+
 impl From<Arguments> for Options {
     fn from(_: Arguments) -> Self {
         Options {}
@@ -108,6 +120,15 @@ impl From<LaunchArguments> for LaunchOptions {
     }
 }
 
+impl From<DetectArguments> for DetectOptions {
+    fn from(a: DetectArguments) -> Self {
+        DetectOptions {
+            verbose: a.flag_verbose,
+            project_path: a.arg_project_path,
+        }
+    }
+}
+
 pub fn get_use_options(usage: &str) -> Option<UseOptions> {
     let args: UseArguments = Docopt::new(usage)
         .and_then(|d| Ok(d.options_first(true)))
@@ -130,6 +151,15 @@ pub fn get_list_options(usage: &str) -> Option<ListOptions> {
 
 pub fn get_launch_options(usage: &str) -> Option<LaunchOptions> {
     let args: LaunchArguments = Docopt::new(usage)
+        .and_then(|d| Ok(d.options_first(true)))
+        .and_then(|d| Ok(d.version(Some(cargo_version!()))))
+        .and_then(|d| d.deserialize())
+        .unwrap_or_else(|e| e.exit());
+    Some(args.into())
+}
+
+pub fn get_detect_options(usage: &str) -> Option<DetectOptions> {
+    let args: DetectArguments = Docopt::new(usage)
         .and_then(|d| Ok(d.options_first(true)))
         .and_then(|d| Ok(d.version(Some(cargo_version!()))))
         .and_then(|d| d.deserialize())

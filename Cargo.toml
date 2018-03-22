@@ -29,6 +29,11 @@ path = "src/bin/uvm/launch.rs"
 doc = false
 
 [[bin]]
+name = "uvm-detect"
+path = "src/bin/uvm/detect.rs"
+doc = false
+
+[[bin]]
 name = "uvm-help"
 path = "src/bin/uvm/help.rs"
 doc = false

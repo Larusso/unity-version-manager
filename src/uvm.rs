@@ -37,7 +37,10 @@ pub use self::unity::Version;
 use std::io;
 use std::fs;
 use std::path::Path;
+use std::fs::File;
+use std::io::Read;
 use std::os::unix;
+use std::str::FromStr;
 
 pub fn is_active(version: &Version) -> bool {
     if let Ok(current) = current_installation() {
@@ -64,4 +67,13 @@ pub fn activate(ref installation: Installation) -> io::Result<()> {
     }
     unix::fs::symlink(installation.path(), active_path)?;
     Ok(())
+}
+
+pub fn dectect_project_version(project_path: &Path) -> io::Result<Version> {
+    let project_version = project_path.join("ProjectSettings/").join("ProjectVersion.txt");
+    let mut file = File::open(project_version)?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+
+    Version::from_str(&contents).map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, "Can't parse Unity version"))
 }

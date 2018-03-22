@@ -24,7 +24,12 @@ fn main() {
     let o = uvm::cli::get_launch_options(USAGE).unwrap();
     if let Ok(installtion) = uvm::current_installation() {
         let mut command = process::Command::new(
-            installtion.exec_path().canonicalize().unwrap().to_str().unwrap()
+            installtion
+                .exec_path()
+                .canonicalize()
+                .unwrap()
+                .to_str()
+                .unwrap(),
         );
 
         if let Some(platform) = o.platform {
@@ -32,7 +37,9 @@ fn main() {
         };
 
         if let Some(project_path) = o.project_path {
-            command.arg("-projectPath").arg(project_path.canonicalize().unwrap().to_str().unwrap());
+            command
+                .arg("-projectPath")
+                .arg(project_path.canonicalize().unwrap().to_str().unwrap());
         }
 
         command.spawn().unwrap_or_else(|err| {
