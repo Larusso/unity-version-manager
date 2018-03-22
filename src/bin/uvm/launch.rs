@@ -29,7 +29,7 @@ fn get_installation(
     use_project_version: bool,
 ) -> io::Result<uvm::Installation> {
     if use_project_version {
-        let version = uvm::dectect_project_version(&project_path)?;
+        let version = uvm::dectect_project_version(&project_path, None)?;
         eprintln!("found project version {}", version.to_string());
         return uvm::find_installation(&version);
     }

@@ -31,6 +31,7 @@ struct LaunchArguments {
 #[derive(Debug, Deserialize)]
 struct DetectArguments {
     arg_project_path: Option<PathBuf>,
+    flag_recursive: bool,
     flag_verbose: bool,
 }
 
@@ -86,6 +87,7 @@ pub struct LaunchOptions {
 #[derive(Debug)]
 pub struct DetectOptions {
     pub project_path: Option<PathBuf>,
+    pub recursive: bool,
     pub verbose: bool,
 }
 
@@ -126,6 +128,7 @@ impl From<LaunchArguments> for LaunchOptions {
 impl From<DetectArguments> for DetectOptions {
     fn from(a: DetectArguments) -> Self {
         DetectOptions {
+            recursive: a.flag_recursive,
             verbose: a.flag_verbose,
             project_path: a.arg_project_path,
         }

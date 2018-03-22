@@ -36,7 +36,7 @@ pub use self::unity::Version;
 
 use std::io;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::fs::File;
 use std::io::Read;
 use std::os::unix;
@@ -56,7 +56,7 @@ pub fn find_installation(version: &Version) -> io::Result<Installation> {
         .find(|i| i.version() == version)
         .ok_or(io::Error::new(
             io::ErrorKind::NotFound,
-            format!("Unable to find Unity version {}", version)
+            format!("Unable to find Unity version {}", version),
         ))
 }
 
@@ -69,11 +69,48 @@ pub fn activate(ref installation: Installation) -> io::Result<()> {
     Ok(())
 }
 
-pub fn dectect_project_version(project_path: &Path) -> io::Result<Version> {
-    let project_version = project_path.join("ProjectSettings/").join("ProjectVersion.txt");
+fn get_project_version(project_path: &Path) -> io::Result<File> {
+    let project_version = project_path
+        .join("ProjectSettings/")
+        .join("ProjectVersion.txt");
+    File::open(project_version)
+}
+
+fn get_project_version_recursive(dir: &Path, recur: bool) -> io::Result<Option<PathBuf>> {
+    if dir.is_dir() {
+        let project_version = dir.join("ProjectSettings/").join("ProjectVersion.txt");
+        if project_version.exists() {
+            return Ok(Some(project_version));
+        } else if !recur {
+            return Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Unable to find Unity project",
+            ));
+        }
+
+        for entry in fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                let f = get_project_version_recursive(&path, recur)?;
+                if f.is_some() {
+                    return Ok(f);
+                }
+            }
+        }
+    }
+    Ok(None)
+}
+
+pub fn dectect_project_version(project_path: &Path, recur: Option<bool>) -> io::Result<Version> {
+    let project_version = get_project_version_recursive(project_path, recur.unwrap_or(false))?
+        .ok_or("Unable to find Unity project")
+        .map_err(|err| io::Error::new(io::ErrorKind::NotFound, err))?;
+
     let mut file = File::open(project_version)?;
+
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
-
-    Version::from_str(&contents).map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, "Can't parse Unity version"))
+    Version::from_str(&contents)
+        .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, "Can't parse Unity version"))
 }

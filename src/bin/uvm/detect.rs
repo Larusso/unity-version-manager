@@ -13,19 +13,21 @@ Usage:
   uvm-detect (-h | --help)
 
 Options:
+  -r, --recursive               Detects a unity version recursivly from current working directory.
+                                With this flag set, the tool returns the first version it finds.
   -v, --verbose                 print more output
   -h, --help                    show this help message and exit
 ";
-
 
 fn main() {
     let o = uvm::cli::get_detect_options(USAGE).unwrap();
     let project_path = o.project_path.unwrap_or(env::current_dir().unwrap());
 
-    let project_version = uvm::dectect_project_version(&project_path).unwrap_or_else(|err| {
-        eprintln!("{}", style(err).red());
-        process::exit(1);
-    });
+    let project_version = uvm::dectect_project_version(&project_path, Some(o.recursive))
+        .unwrap_or_else(|err| {
+            eprintln!("{}", style(err).red());
+            process::exit(1);
+        });
 
     println!("{}", style(project_version.to_string()).green().bold());
 }
