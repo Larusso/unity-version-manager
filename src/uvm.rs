@@ -1,5 +1,6 @@
 extern crate docopt;
 extern crate regex;
+extern crate console;
 #[macro_use]
 extern crate serde_derive;
 
@@ -10,6 +11,7 @@ extern crate proptest;
 extern crate rand;
 #[cfg(test)]
 extern crate tempdir;
+
 
 #[macro_export]
 macro_rules! cargo_version {

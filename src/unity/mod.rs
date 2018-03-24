@@ -21,11 +21,11 @@ impl Installations {
     fn new(install_location: &Path) -> io::Result<Installations> {
         let read_dir = fs::read_dir(install_location)?;
         let iter = read_dir
-            .filter_map(|entry| entry.ok())
+            .filter_map(io::Result::ok)
             .filter_map(check_dir_entry)
             .map(|entry| entry.path())
             .map(Installation::new)
-            .filter_map(|i| i.ok());
+            .filter_map(io::Result::ok);
         Ok(Installations(Box::new(iter)))
     }
 

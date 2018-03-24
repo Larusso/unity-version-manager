@@ -1,3 +1,5 @@
+pub mod utils;
+
 use docopt::Docopt;
 use std::convert::From;
 use std::str::FromStr;
