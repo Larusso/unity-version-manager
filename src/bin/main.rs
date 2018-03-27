@@ -15,7 +15,7 @@ use std::fs;
 use console::style;
 use std::process;
 use std::error::Error;
-use uvm::cli::utils;
+use uvm::cli;
 
 const USAGE: &'static str = "
 uvm - Tool that just manipulates a link to the current unity version
@@ -51,12 +51,12 @@ fn main() {
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
 
-    let command = utils::sub_command_path(&args.arg_command).unwrap_or_else(utils::print_error_and_exit);
+    let command = cli::sub_command_path(&args.arg_command).unwrap_or_else(cli::print_error_and_exit);
 
     let exit_code = Command::new(command)
         .args(args.arg_args.unwrap_or(Vec::new()))
         .spawn()
-        .unwrap_or_else(utils::print_error_and_exit)
+        .unwrap_or_else(cli::print_error_and_exit)
         .wait()
         .and_then(|s| {
             s.code().ok_or(io::Error::new(
@@ -64,7 +64,7 @@ fn main() {
                 "Process terminated by signal",
             ))
         })
-        .unwrap_or_else(utils::print_error_and_exit);
+        .unwrap_or_else(cli::print_error_and_exit);
 
     process::exit(exit_code)
 }

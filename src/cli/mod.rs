@@ -1,4 +1,7 @@
-pub mod utils;
+mod utils;
+
+pub use self::utils::sub_command_path;
+pub use self::utils::print_error_and_exit;
 
 use docopt::Docopt;
 use std::convert::From;
@@ -8,6 +11,8 @@ use std::path::PathBuf;
 use std::fmt;
 use std::fmt::{Debug, Display};
 
+
+// Move this and make it smaller
 #[derive(Debug, Deserialize)]
 struct Arguments {}
 
