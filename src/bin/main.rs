@@ -43,7 +43,6 @@ Commands:
 
 fn main() {
     let mut args: UvmOptions = cli::get_options(USAGE).unwrap();
-    let foo: () = args.mut_arguments();
     let command = cli::sub_command_path(args.command()).unwrap_or_else(cli::print_error_and_exit);
 
     let exit_code = Command::new(command)
