@@ -3,6 +3,7 @@ extern crate regex;
 extern crate console;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde;
 
 #[cfg(test)]
 #[macro_use]

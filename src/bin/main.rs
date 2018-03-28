@@ -2,6 +2,8 @@ extern crate console;
 extern crate docopt;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde;
+
 #[macro_use]
 extern crate uvm;
 
@@ -16,6 +18,7 @@ use console::style;
 use std::process;
 use std::error::Error;
 use uvm::cli;
+use uvm::cli::UvmOptions;
 
 const USAGE: &'static str = "
 uvm - Tool that just manipulates a link to the current unity version
@@ -38,23 +41,13 @@ Commands:
   help              show command help and exit
 ";
 
-#[derive(Debug, Deserialize)]
-struct Arguments {
-    arg_command: String,
-    arg_args: Option<Vec<String>>,
-}
-
 fn main() {
-    let args: Arguments = Docopt::new(USAGE)
-        .and_then(|d| Ok(d.options_first(true)))
-        .and_then(|d| Ok(d.version(Some(cargo_version!()))))
-        .and_then(|d| d.deserialize())
-        .unwrap_or_else(|e| e.exit());
-
-    let command = cli::sub_command_path(&args.arg_command).unwrap_or_else(cli::print_error_and_exit);
+    let mut args: UvmOptions = cli::get_options(USAGE).unwrap();
+    let foo: () = args.mut_arguments();
+    let command = cli::sub_command_path(args.command()).unwrap_or_else(cli::print_error_and_exit);
 
     let exit_code = Command::new(command)
-        .args(args.arg_args.unwrap_or(Vec::new()))
+        .args(args.mut_arguments().take().unwrap_or(Vec::new()))
         .spawn()
         .unwrap_or_else(cli::print_error_and_exit)
         .wait()

@@ -10,7 +10,8 @@ use unity::Version;
 use std::path::PathBuf;
 use std::fmt;
 use std::fmt::{Debug, Display};
-
+use std::io;
+use serde::de::Deserialize;
 
 // Move this and make it smaller
 #[derive(Debug, Deserialize)]
@@ -183,18 +184,35 @@ pub fn get_detect_options(usage: &str) -> Option<DetectOptions> {
     Some(args.into())
 }
 
-pub fn get_options(usage: &str) -> Option<Options> {
-    let version = format!(
-        "{}.{}.{}{}",
-        env!("CARGO_PKG_VERSION_MAJOR"),
-        env!("CARGO_PKG_VERSION_MINOR"),
-        env!("CARGO_PKG_VERSION_PATCH"),
-        option_env!("CARGO_PKG_VERSION_PRE").unwrap_or("")
-    );
+#[derive(Debug, Deserialize)]
+pub struct UvmOptions {
+    pub arg_command: String,
+    pub arg_args: Option<Vec<String>>,
+}
 
-    let args: Arguments = Docopt::new(usage)
-        .and_then(|d| Ok(d.version(Some(version))))
+impl UvmOptions {
+    pub fn command(&self) -> &String {
+        &self.arg_command
+    }
+
+    pub fn take_arguments(&mut self) -> Option<Vec<String>> {
+        self.arg_args.take()
+    }
+
+    pub fn mut_arguments(&mut self) -> &mut Option<Vec<String>> {
+        &mut self.arg_args
+    }
+
+    pub fn arguments(&self) -> &Option<Vec<String>> {
+        &self.arg_args
+    }
+}
+
+pub fn get_options<'a,T>(usage: &str) -> io::Result<T> where
+    T: Deserialize<'a>
+    {
+    Docopt::new(usage)
+        .and_then(|d| Ok(d.version(Some(cargo_version!()))))
         .and_then(|d| d.deserialize())
-        .unwrap_or_else(|e| e.exit());
-    Some(args.into())
+        .map_err(|e| e.exit())
 }
