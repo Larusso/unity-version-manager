@@ -1,22 +1,23 @@
+mod launch;
 mod utils;
+mod uvm;
 
-pub use self::utils::sub_command_path;
+pub use self::launch::*;
 pub use self::utils::print_error_and_exit;
+pub use self::utils::sub_command_path;
+pub use self::uvm::*;
 
 use docopt::Docopt;
 use std::convert::From;
 use std::str::FromStr;
 use unity::Version;
-use std::path::PathBuf;
+use std::path::{PathBuf};
 use std::fmt;
 use std::fmt::{Debug, Display};
 use std::io;
 use serde::de::Deserialize;
 
 // Move this and make it smaller
-#[derive(Debug, Deserialize)]
-struct Arguments {}
-
 #[derive(Debug, Deserialize)]
 struct ListArguments {
     flag_verbose: bool,
@@ -25,15 +26,6 @@ struct ListArguments {
 #[derive(Debug, Deserialize)]
 struct UseArguments {
     arg_version: String,
-    flag_verbose: bool,
-}
-
-#[derive(Debug, Deserialize)]
-struct LaunchArguments {
-    arg_project_path: Option<PathBuf>,
-    flag_platform: Option<UnityPlatform>,
-    flag_force_project_version: bool,
-    flag_recursive: bool,
     flag_verbose: bool,
 }
 
@@ -58,53 +50,11 @@ pub struct UseOptions {
     pub verbose: bool,
 }
 
-#[derive(Deserialize, Debug)]
-pub enum UnityPlatform {
-    Win32,
-    Win64,
-    OSX,
-    Linux,
-    Linux64,
-    IOS,
-    Android,
-    Web,
-    WebStreamed,
-    WebGl,
-    XboxOne,
-    PS4,
-    PSP2,
-    WsaPlayer,
-    Tizen,
-    SamsungTV,
-}
-
-impl Display for UnityPlatform {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let raw = format!("{:?}", self).to_lowercase();
-        write!(f, "{}", raw)
-    }
-}
-
-#[derive(Debug)]
-pub struct LaunchOptions {
-    pub project_path: Option<PathBuf>,
-    pub platform: Option<UnityPlatform>,
-    pub force_project_version: bool,
-    pub recursive: bool,
-    pub verbose: bool
-}
-
 #[derive(Debug)]
 pub struct DetectOptions {
     pub project_path: Option<PathBuf>,
     pub recursive: bool,
     pub verbose: bool,
-}
-
-impl From<Arguments> for Options {
-    fn from(_: Arguments) -> Self {
-        Options {}
-    }
 }
 
 impl From<ListArguments> for ListOptions {
@@ -120,18 +70,6 @@ impl From<UseArguments> for UseOptions {
         UseOptions {
             verbose: a.flag_verbose,
             version: Version::from_str(&a.arg_version).expect("Can't read version parameter"),
-        }
-    }
-}
-
-impl From<LaunchArguments> for LaunchOptions {
-    fn from(a: LaunchArguments) -> Self {
-        LaunchOptions {
-            verbose: a.flag_verbose,
-            recursive: a.flag_recursive,
-            platform: a.flag_platform,
-            force_project_version: a.flag_force_project_version,
-            project_path: a.arg_project_path,
         }
     }
 }
@@ -166,15 +104,6 @@ pub fn get_list_options(usage: &str) -> Option<ListOptions> {
     Some(args.into())
 }
 
-pub fn get_launch_options(usage: &str) -> Option<LaunchOptions> {
-    let args: LaunchArguments = Docopt::new(usage)
-        .and_then(|d| Ok(d.options_first(true)))
-        .and_then(|d| Ok(d.version(Some(cargo_version!()))))
-        .and_then(|d| d.deserialize())
-        .unwrap_or_else(|e| e.exit());
-    Some(args.into())
-}
-
 pub fn get_detect_options(usage: &str) -> Option<DetectOptions> {
     let args: DetectArguments = Docopt::new(usage)
         .and_then(|d| Ok(d.options_first(true)))
@@ -182,30 +111,6 @@ pub fn get_detect_options(usage: &str) -> Option<DetectOptions> {
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
     Some(args.into())
-}
-
-#[derive(Debug, Deserialize)]
-pub struct UvmOptions {
-    pub arg_command: String,
-    pub arg_args: Option<Vec<String>>,
-}
-
-impl UvmOptions {
-    pub fn command(&self) -> &String {
-        &self.arg_command
-    }
-
-    pub fn take_arguments(&mut self) -> Option<Vec<String>> {
-        self.arg_args.take()
-    }
-
-    pub fn mut_arguments(&mut self) -> &mut Option<Vec<String>> {
-        &mut self.arg_args
-    }
-
-    pub fn arguments(&self) -> &Option<Vec<String>> {
-        &self.arg_args
-    }
 }
 
 pub fn get_options<'a,T>(usage: &str) -> io::Result<T> where

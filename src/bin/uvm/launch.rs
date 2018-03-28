@@ -40,17 +40,17 @@ fn get_installation(
 
 fn launch(options: LaunchOptions) -> io::Result<()> {
     let project_path = uvm::detect_unity_project_dir(
-        &options.project_path.unwrap_or(env::current_dir().unwrap()),
-        options.recursive,
+        options.project_path().unwrap_or(&env::current_dir().unwrap()),
+        options.recursive(),
     )?;
 
-    if options.verbose {
+    if options.verbose() {
         eprintln!("launch project: {}", style(&project_path.display()).cyan())
     }
 
-    let installtion = get_installation(&project_path, options.force_project_version)?;
+    let installtion = get_installation(&project_path, options.force_project_version())?;
 
-    if options.verbose {
+    if options.verbose() {
         eprintln!(
             "launch unity version: {}",
             style(installtion.version().to_string()).cyan()
@@ -66,7 +66,7 @@ fn launch(options: LaunchOptions) -> io::Result<()> {
             .unwrap(),
     );
 
-    if let Some(platform) = options.platform {
+    if let Some(ref platform) = options.platform() {
         command.arg("-buildTarget").arg(platform.to_string());
     };
 
@@ -79,7 +79,7 @@ fn launch(options: LaunchOptions) -> io::Result<()> {
 }
 
 fn main() {
-    let o = uvm::cli::get_launch_options(USAGE).unwrap();
+    let o:LaunchOptions = uvm::cli::get_options(USAGE).unwrap();
 
     launch(o).unwrap_or_else(|err| {
         let message = format!("Unable to launch unity");
