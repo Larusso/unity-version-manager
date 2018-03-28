@@ -1,7 +1,9 @@
 mod launch;
 mod utils;
 mod uvm;
+mod detect;
 
+pub use self::detect::*;
 pub use self::launch::*;
 pub use self::utils::print_error_and_exit;
 pub use self::utils::sub_command_path;
@@ -29,13 +31,6 @@ struct UseArguments {
     flag_verbose: bool,
 }
 
-#[derive(Debug, Deserialize)]
-struct DetectArguments {
-    arg_project_path: Option<PathBuf>,
-    flag_recursive: bool,
-    flag_verbose: bool,
-}
-
 #[derive(Debug)]
 pub struct Options {}
 
@@ -47,13 +42,6 @@ pub struct ListOptions {
 #[derive(Debug)]
 pub struct UseOptions {
     pub version: Version,
-    pub verbose: bool,
-}
-
-#[derive(Debug)]
-pub struct DetectOptions {
-    pub project_path: Option<PathBuf>,
-    pub recursive: bool,
     pub verbose: bool,
 }
 
@@ -70,16 +58,6 @@ impl From<UseArguments> for UseOptions {
         UseOptions {
             verbose: a.flag_verbose,
             version: Version::from_str(&a.arg_version).expect("Can't read version parameter"),
-        }
-    }
-}
-
-impl From<DetectArguments> for DetectOptions {
-    fn from(a: DetectArguments) -> Self {
-        DetectOptions {
-            recursive: a.flag_recursive,
-            verbose: a.flag_verbose,
-            project_path: a.arg_project_path,
         }
     }
 }
@@ -101,15 +79,6 @@ pub fn get_list_options(usage: &str) -> Option<ListOptions> {
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
 
-    Some(args.into())
-}
-
-pub fn get_detect_options(usage: &str) -> Option<DetectOptions> {
-    let args: DetectArguments = Docopt::new(usage)
-        .and_then(|d| Ok(d.options_first(true)))
-        .and_then(|d| Ok(d.version(Some(cargo_version!()))))
-        .and_then(|d| d.deserialize())
-        .unwrap_or_else(|e| e.exit());
     Some(args.into())
 }
 
