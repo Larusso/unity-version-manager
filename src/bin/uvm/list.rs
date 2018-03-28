@@ -4,6 +4,7 @@ extern crate console;
 use uvm::Installation;
 use console::Style;
 use console::Term;
+use uvm::cli::ListOptions;
 
 const USAGE: &'static str = "
 uvm-list - List installed unity versions.
@@ -29,13 +30,13 @@ fn longest_version(installations: &Vec<Installation>) -> usize {
 }
 
 fn main() {
-    let o = uvm::cli::get_list_options(USAGE);
+    let options:ListOptions = uvm::cli::get_options(USAGE).unwrap();
     let term = Term::stdout();
     let current_version = uvm::current_installation().ok();
 
     if let Ok(installations) = uvm::list_installations() {
         Term::stderr().write_line("Installed Unity versions:").is_ok();
-        let verbose = o.unwrap_or(uvm::cli::ListOptions { verbose: false }).verbose;
+        let verbose = options.verbose();
         let longest_version = 10;//longest_version(&installations);
         let mut out_style;
         let mut path_style;

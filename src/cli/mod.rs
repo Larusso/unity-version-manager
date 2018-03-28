@@ -2,8 +2,10 @@ mod launch;
 mod utils;
 mod uvm;
 mod detect;
+mod list;
 
 pub use self::detect::*;
+pub use self::list::*;
 pub use self::launch::*;
 pub use self::utils::print_error_and_exit;
 pub use self::utils::sub_command_path;
@@ -20,10 +22,6 @@ use std::io;
 use serde::de::Deserialize;
 
 // Move this and make it smaller
-#[derive(Debug, Deserialize)]
-struct ListArguments {
-    flag_verbose: bool,
-}
 
 #[derive(Debug, Deserialize)]
 struct UseArguments {
@@ -35,22 +33,9 @@ struct UseArguments {
 pub struct Options {}
 
 #[derive(Debug)]
-pub struct ListOptions {
-    pub verbose: bool,
-}
-
-#[derive(Debug)]
 pub struct UseOptions {
     pub version: Version,
     pub verbose: bool,
-}
-
-impl From<ListArguments> for ListOptions {
-    fn from(a: ListArguments) -> Self {
-        ListOptions {
-            verbose: a.flag_verbose,
-        }
-    }
 }
 
 impl From<UseArguments> for UseOptions {
@@ -64,16 +49,6 @@ impl From<UseArguments> for UseOptions {
 
 pub fn get_use_options(usage: &str) -> Option<UseOptions> {
     let args: UseArguments = Docopt::new(usage)
-        .and_then(|d| Ok(d.options_first(true)))
-        .and_then(|d| Ok(d.version(Some(cargo_version!()))))
-        .and_then(|d| d.deserialize())
-        .unwrap_or_else(|e| e.exit());
-
-    Some(args.into())
-}
-
-pub fn get_list_options(usage: &str) -> Option<ListOptions> {
-    let args: ListArguments = Docopt::new(usage)
         .and_then(|d| Ok(d.options_first(true)))
         .and_then(|d| Ok(d.version(Some(cargo_version!()))))
         .and_then(|d| d.deserialize())
