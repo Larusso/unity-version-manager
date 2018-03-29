@@ -3,6 +3,7 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::str::FromStr;
 use std::error::Error;
+use std::result;
 use std::convert::From;
 use unity::Installation;
 
@@ -97,11 +98,12 @@ impl Error for ParseVersionError {
     }
 }
 
+pub type Result<T> = result::Result<T, ParseVersionError>;
 
 impl FromStr for Version {
     type Err = ParseVersionError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         let version_pattern = Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b)([0-9]{1,4})").unwrap();
         match version_pattern.captures(s) {
             Some(caps) => {

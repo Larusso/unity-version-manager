@@ -20,8 +20,8 @@ Options:
 
 fn main() {
     let options:UseOptions = uvm::cli::get_options(USAGE).unwrap();
-    if uvm::is_active(&options.version()) {
-        let message = format!("Version {} already active", &options.version());
+    if uvm::is_active(options.version()) {
+        let message = format!("Version {} already active", options.version());
         eprintln!("{}", style(message).red());
         process::exit(1);
     }
