@@ -1,7 +1,4 @@
-use std::str::FromStr;
 use unity::Version;
-use serde;
-use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct UseOptions {

@@ -1,7 +1,6 @@
 extern crate uvm;
 extern crate console;
 
-use uvm::Installation;
 use console::Style;
 use console::Term;
 use uvm::cli::ListOptions;
@@ -18,17 +17,6 @@ Options:
   -h, --help        show this help message and exit
 ";
 
-fn longest_version(installations: &Vec<Installation>) -> usize {
-    match installations
-        .iter()
-        .map(|i| i.version().to_string().len())
-        .max()
-    {
-        Some(l) => l,
-        None => 0,
-    }
-}
-
 fn main() {
     let options:ListOptions = uvm::cli::get_options(USAGE).unwrap();
     let term = Term::stdout();
@@ -37,35 +25,52 @@ fn main() {
     if let Ok(installations) = uvm::list_installations() {
         Term::stderr().write_line("Installed Unity versions:").is_ok();
         let verbose = options.verbose();
-        let longest_version = 10;//longest_version(&installations);
-        let mut out_style;
-        let mut path_style;
 
-        for installation in installations {
-            out_style = Style::new().cyan();
-            path_style = Style::new().italic().green();
+        let output = installations.fold(String::new(), |out, installation| {
+            let mut out_style = Style::new().cyan();
+            let mut path_style = Style::new().italic().green();
+
             if let &Some(ref current) = &current_version {
                 if current == &installation {
                     out_style = out_style.yellow().bold();
-                    path_style = Style::new().italic().yellow();
+                    path_style = path_style.italic().yellow();
                 }
             }
+            let mut new_line = out + &format!("{}", out_style.apply_to(installation.version().to_string()));
+            if verbose {
+                new_line += &format!(" - {}", path_style.apply_to(installation.path().display()));
+            }
+            new_line += "\n";
+            new_line
+        });
 
-            let line = if verbose {
-                format!(
-                    "{version:>width$} - {path}",
-                    version = out_style.apply_to(installation.version().to_string()),
-                    width = longest_version,
-                    path = path_style.apply_to(installation.path().display())
-                )
-            } else {
-                format!(
-                    "{version:>width$}",
-                    version = out_style.apply_to(installation.version().to_string()),
-                    width = longest_version
-                )
-            };
-            term.write_line(&line).is_ok();
-        }
+        term.write_line(&output).is_ok();
+
+        // for installation in installations {
+        //     out_style = Style::new().cyan();
+        //     path_style = Style::new().italic().green();
+        //     if let &Some(ref current) = &current_version {
+        //         if current == &installation {
+        //             out_style = out_style.yellow().bold();
+        //             path_style = Style::new().italic().yellow();
+        //         }
+        //     }
+        //
+        //     let line = if verbose {
+        //         format!(
+        //             "{version:>width$} - {path}",
+        //             version = out_style.apply_to(installation.version().to_string()),
+        //             width = longest_version,
+        //             path = path_style.apply_to(installation.path().display())
+        //         )
+        //     } else {
+        //         format!(
+        //             "{version:>width$}",
+        //             version = out_style.apply_to(installation.version().to_string()),
+        //             width = longest_version
+        //         )
+        //     };
+        //     term.write_line(&line).is_ok();
+        // }
     }
 }

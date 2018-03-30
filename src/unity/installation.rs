@@ -1,4 +1,4 @@
-use std::path::{Path,PathBuf};
+use std::path::PathBuf;
 use unity::Version;
 use std::cmp::Ordering;
 use std;
