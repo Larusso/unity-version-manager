@@ -28,6 +28,7 @@ pub fn get_options<'a,T>(usage: &str) -> io::Result<T> where
     {
     Docopt::new(usage)
         .and_then(|d| Ok(d.version(Some(cargo_version!()))))
+        .and_then(|d| Ok(d.options_first(true)))
         .and_then(|d| d.deserialize())
         .map_err(|e| e.exit())
 }

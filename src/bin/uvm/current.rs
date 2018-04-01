@@ -13,6 +13,7 @@ Usage:
   uvm-current (-h | --help)
 
 Options:
+  -p, --path        print only the path to the current version
   -v, --verbose     print more output
   -h, --help        show this help message and exit
 ";
