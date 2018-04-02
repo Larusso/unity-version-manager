@@ -4,9 +4,6 @@ version = "0.1.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 
 [dependencies]
-docopt = "0.8"
-serde = "1.0"
-serde_derive = "1.0"
 console = "0.6.1"
 uvm_cli = { path = "../../uvm_cli" }
 uvm_core = { path = "../../uvm_core" }
