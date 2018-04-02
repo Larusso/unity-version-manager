@@ -1,16 +1,9 @@
 extern crate console;
 extern crate uvm_cli;
 
-use console::style;
-use std::env;
-use std::error::Error;
-use std::fs;
 use std::io;
-use std::path::{Path, PathBuf};
 use std::process;
 use std::process::Command;
-use std::process::exit;
-use uvm_cli::Options;
 use uvm_cli::UvmOptions;
 
 const USAGE: &'static str = "

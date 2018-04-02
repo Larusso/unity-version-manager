@@ -1,7 +1,6 @@
-use serde::de::Deserialize;
 use std::fmt;
-use std::fmt::{Debug, Display};
-use std::path::{PathBuf};
+use std::fmt::Display;
+use std::path::PathBuf;
 
 #[derive(Deserialize, Debug, Clone)]
 pub enum UnityPlatform {

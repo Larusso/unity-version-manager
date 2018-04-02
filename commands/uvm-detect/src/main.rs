@@ -6,7 +6,6 @@ use console::style;
 use std::env;
 use std::process;
 use uvm_cli::DetectOptions;
-use uvm_cli::Options;
 
 const USAGE: &'static str = "
 uvm-detect - Find which version of unity was used to generate a project.

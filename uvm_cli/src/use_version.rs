@@ -16,7 +16,7 @@ impl UseOptions {
 mod unity_version_format {
     use uvm_core::unity::Version;
     use std::str::FromStr;
-    use serde::{self, Deserialize, Serializer, Deserializer};
+    use serde::{self, Deserialize, Deserializer};
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Version, D::Error>
         where D: Deserializer<'de>

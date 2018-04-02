@@ -1,6 +1,4 @@
 use std::path::PathBuf;
-use serde::de::Deserialize;
-
 
 #[derive(Debug, Deserialize)]
 pub struct DetectOptions {
