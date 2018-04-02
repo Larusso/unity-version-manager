@@ -1,10 +1,8 @@
+extern crate console;
 extern crate uvm_cli;
 extern crate uvm_core;
-extern crate console;
 
-use std::io;
 use std::process;
-use std::process::Command;
 use uvm_cli::HelpOptions;
 
 const USAGE: &'static str = "
@@ -20,20 +18,10 @@ Options:
 
 fn main() {
     let args: HelpOptions = uvm_cli::get_options(USAGE).unwrap();
-    let command = uvm_cli::sub_command_path(args.command()).unwrap_or_else(uvm_cli::print_error_and_exit);
+    let command =
+        uvm_cli::sub_command_path(args.command()).unwrap_or_else(uvm_cli::print_error_and_exit);
 
-    let exit_code = Command::new(command)
-        .arg("--help")
-        .spawn()
-        .unwrap_or_else(uvm_cli::print_error_and_exit)
-        .wait()
-        .and_then(|s| {
-            s.code().ok_or(io::Error::new(
-                io::ErrorKind::Interrupted,
-                "Process terminated by signal",
-            ))
-        })
+    let exit_code = uvm_cli::exec_command(command, vec!["--help"])
         .unwrap_or_else(uvm_cli::print_error_and_exit);
-
     process::exit(exit_code)
 }

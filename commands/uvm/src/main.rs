@@ -1,9 +1,7 @@
 extern crate console;
 extern crate uvm_cli;
 
-use std::io;
 use std::process;
-use std::process::Command;
 use uvm_cli::UvmOptions;
 
 const USAGE: &'static str = "
@@ -29,20 +27,10 @@ Commands:
 
 fn main() {
     let mut args: UvmOptions = uvm_cli::get_options(USAGE).unwrap();
-    let command = uvm_cli::sub_command_path(args.command()).unwrap_or_else(uvm_cli::print_error_and_exit);
-
-    let exit_code = Command::new(command)
-        .args(args.mut_arguments().take().unwrap_or(Vec::new()))
-        .spawn()
-        .unwrap_or_else(uvm_cli::print_error_and_exit)
-        .wait()
-        .and_then(|s| {
-            s.code().ok_or(io::Error::new(
-                io::ErrorKind::Interrupted,
-                "Process terminated by signal",
-            ))
-        })
-        .unwrap_or_else(uvm_cli::print_error_and_exit);
-
+    let command =
+        uvm_cli::sub_command_path(args.command()).unwrap_or_else(uvm_cli::print_error_and_exit);
+    let exit_code =
+        uvm_cli::exec_command(command, args.mut_arguments().take().unwrap_or(Vec::new()))
+            .unwrap_or_else(uvm_cli::print_error_and_exit);
     process::exit(exit_code)
 }
