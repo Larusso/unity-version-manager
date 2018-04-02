@@ -55,8 +55,10 @@ impl LaunchOptions {
     pub fn recursive(&self) -> bool {
         self.flag_recursive
     }
+}
 
-    pub fn verbose(&self) -> bool {
+impl super::Options for LaunchOptions {
+    fn verbose(&self) -> bool {
         self.flag_verbose
     }
 }

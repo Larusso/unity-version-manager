@@ -2,12 +2,13 @@ extern crate console;
 extern crate uvm_cli;
 extern crate uvm_core;
 
-use std::process;
 use console::style;
 use std::env;
 use std::io;
 use std::path::{Path};
+use std::process;
 use uvm_cli::LaunchOptions;
+use uvm_cli::Options;
 
 const USAGE: &'static str = "
 uvm-current - Launch the current active version of unity.

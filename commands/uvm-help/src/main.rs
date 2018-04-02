@@ -2,16 +2,17 @@ extern crate uvm_cli;
 extern crate uvm_core;
 extern crate console;
 
-use uvm_cli::HelpOptions;
-use std::process::Command;
-use std::env;
-use std::process::exit;
-use std::path::{Path, PathBuf};
-use std::io;
-use std::fs;
 use console::style;
-use std::process;
+use std::env;
 use std::error::Error;
+use std::fs;
+use std::io;
+use std::path::{Path, PathBuf};
+use std::process;
+use std::process::Command;
+use std::process::exit;
+use uvm_cli::HelpOptions;
+use uvm_cli::Options;
 
 const USAGE: &'static str = "
 uvm-list - Prints help page for command.

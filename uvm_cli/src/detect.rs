@@ -16,8 +16,10 @@ impl DetectOptions {
     pub fn recursive(&self) -> bool {
         self.flag_recursive
     }
+}
 
-    pub fn verbose(&self) -> bool {
+impl super::Options for DetectOptions {
+    fn verbose(&self) -> bool {
         self.flag_verbose
     }
 }

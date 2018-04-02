@@ -1,4 +1,4 @@
-use serde::de::Deserialize;
+use super::Options;
 
 #[derive(Debug, Deserialize)]
 pub struct UvmOptions {
@@ -22,4 +22,7 @@ impl UvmOptions {
     pub fn arguments(&self) -> &Option<Vec<String>> {
         &self.arg_args
     }
+}
+
+impl Options for UvmOptions {
 }

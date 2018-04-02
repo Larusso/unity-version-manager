@@ -11,10 +11,6 @@ impl UseOptions {
     pub fn version(&self) -> &Version {
         &self.arg_version
     }
-
-    pub fn verbose(&self) -> bool {
-        self.flag_verbose
-    }
 }
 
 mod unity_version_format {
@@ -27,5 +23,11 @@ mod unity_version_format {
     {
         let s = String::deserialize(deserializer)?;
         Version::from_str(&s).map_err(serde::de::Error::custom)
+    }
+}
+
+impl super::Options for UseOptions {
+    fn verbose(&self) -> bool {
+        self.flag_verbose
     }
 }

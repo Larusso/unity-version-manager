@@ -27,8 +27,14 @@ use docopt::Docopt;
 use std::io;
 use serde::de::Deserialize;
 
+pub trait Options {
+    fn verbose(&self) -> bool {
+        false
+    }
+}
+
 pub fn get_options<'a,T>(usage: &str) -> io::Result<T> where
-    T: Deserialize<'a>
+    T: Deserialize<'a> + Options
     {
     Docopt::new(usage)
         .and_then(|d| Ok(d.version(Some(cargo_version!()))))

@@ -2,8 +2,8 @@ extern crate console;
 extern crate uvm_cli;
 extern crate uvm_core;
 
-use std::process;
 use console::style;
+use std::process;
 use uvm_cli::UseOptions;
 
 const USAGE: &'static str = "

@@ -8,3 +8,5 @@ impl HelpOptions {
         &self.arg_command
     }
 }
+
+impl super::Options for HelpOptions {}

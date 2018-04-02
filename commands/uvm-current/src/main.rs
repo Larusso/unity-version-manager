@@ -2,9 +2,10 @@ extern crate console;
 extern crate uvm_cli;
 extern crate uvm_core;
 
-use uvm_cli::ListOptions;
 use console::style;
 use console::Term;
+use uvm_cli::ListOptions;
+use uvm_cli::Options;
 
 const USAGE: &'static str = "
 uvm-current - Prints current activated version of unity.

@@ -5,6 +5,7 @@ extern crate console;
 use console::Style;
 use console::Term;
 use uvm_cli::ListOptions;
+use uvm_cli::Options;
 
 const USAGE: &'static str = "
 uvm-list - List installed unity versions.

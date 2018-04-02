@@ -2,10 +2,11 @@ extern crate console;
 extern crate uvm_cli;
 extern crate uvm_core;
 
+use console::style;
 use std::env;
 use std::process;
-use console::style;
 use uvm_cli::DetectOptions;
+use uvm_cli::Options;
 
 const USAGE: &'static str = "
 uvm-detect - Find which version of unity was used to generate a project.
