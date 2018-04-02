@@ -1,14 +1,7 @@
 extern crate console;
-extern crate docopt;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-
-#[macro_use]
-extern crate uvm;
+extern crate uvm_cli;
 
 use std::process::Command;
-use docopt::Docopt;
 use std::env;
 use std::process::exit;
 use std::path::{Path, PathBuf};
@@ -17,8 +10,7 @@ use std::fs;
 use console::style;
 use std::process;
 use std::error::Error;
-use uvm::cli;
-use uvm::cli::UvmOptions;
+use uvm_cli::UvmOptions;
 
 const USAGE: &'static str = "
 uvm - Tool that just manipulates a link to the current unity version
@@ -42,13 +34,13 @@ Commands:
 ";
 
 fn main() {
-    let mut args: UvmOptions = cli::get_options(USAGE).unwrap();
-    let command = cli::sub_command_path(args.command()).unwrap_or_else(cli::print_error_and_exit);
+    let mut args: UvmOptions = uvm_cli::get_options(USAGE).unwrap();
+    let command = uvm_cli::sub_command_path(args.command()).unwrap_or_else(uvm_cli::print_error_and_exit);
 
     let exit_code = Command::new(command)
         .args(args.mut_arguments().take().unwrap_or(Vec::new()))
         .spawn()
-        .unwrap_or_else(cli::print_error_and_exit)
+        .unwrap_or_else(uvm_cli::print_error_and_exit)
         .wait()
         .and_then(|s| {
             s.code().ok_or(io::Error::new(
@@ -56,7 +48,7 @@ fn main() {
                 "Process terminated by signal",
             ))
         })
-        .unwrap_or_else(cli::print_error_and_exit);
+        .unwrap_or_else(uvm_cli::print_error_and_exit);
 
     process::exit(exit_code)
 }

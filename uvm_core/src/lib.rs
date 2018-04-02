@@ -1,9 +1,4 @@
-extern crate docopt;
 extern crate regex;
-extern crate console;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
 
 #[cfg(test)]
 #[macro_use]
@@ -12,7 +7,6 @@ extern crate proptest;
 extern crate rand;
 #[cfg(test)]
 extern crate tempdir;
-
 
 #[macro_export]
 macro_rules! cargo_version {
@@ -27,7 +21,6 @@ macro_rules! cargo_version {
     )
 }
 
-pub mod cli;
 pub mod unity;
 
 pub use self::unity::list_installations;

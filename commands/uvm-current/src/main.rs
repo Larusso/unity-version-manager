@@ -1,7 +1,8 @@
 extern crate console;
-extern crate uvm;
+extern crate uvm_cli;
+extern crate uvm_core;
 
-use uvm::cli::ListOptions;
+use uvm_cli::ListOptions;
 use console::style;
 use console::Term;
 
@@ -19,11 +20,11 @@ Options:
 ";
 
 fn main() {
-    let options:ListOptions = uvm::cli::get_options(USAGE).unwrap();
+    let options:ListOptions = uvm_cli::get_options(USAGE).unwrap();
     let error_term = Term::stderr();
     let out_term = Term::stdout();
 
-    if let Ok(installation) = uvm::current_installation() {
+    if let Ok(installation) = uvm_core::current_installation() {
         let verbose = options.verbose();
         let line = if verbose {
             format!(

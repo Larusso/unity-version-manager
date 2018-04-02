@@ -1,3 +1,11 @@
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate docopt;
+#[macro_use]
+extern crate uvm_core;
+extern crate console;
+
 mod launch;
 mod utils;
 mod uvm;
@@ -16,7 +24,7 @@ pub use self::uvm::*;
 use docopt::Docopt;
 use std::convert::From;
 use std::str::FromStr;
-use unity::Version;
+use uvm_core::unity::Version;
 use std::path::{PathBuf};
 use std::fmt;
 use std::fmt::{Debug, Display};

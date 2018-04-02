@@ -1,4 +1,4 @@
-use unity::Version;
+use uvm_core::unity::Version;
 
 #[derive(Debug, Deserialize)]
 pub struct UseOptions {
@@ -18,7 +18,7 @@ impl UseOptions {
 }
 
 mod unity_version_format {
-    use unity::Version;
+    use uvm_core::unity::Version;
     use std::str::FromStr;
     use serde::{self, Deserialize, Serializer, Deserializer};
 

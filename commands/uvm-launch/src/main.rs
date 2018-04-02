@@ -1,12 +1,13 @@
 extern crate console;
-extern crate uvm;
+extern crate uvm_cli;
+extern crate uvm_core;
 
 use std::process;
 use console::style;
 use std::env;
 use std::io;
-use std::path::{Path, PathBuf};
-use uvm::cli::LaunchOptions;
+use std::path::{Path};
+use uvm_cli::LaunchOptions;
 
 const USAGE: &'static str = "
 uvm-current - Launch the current active version of unity.
@@ -29,17 +30,17 @@ Options:
 fn get_installation(
     project_path: &Path,
     use_project_version: bool,
-) -> io::Result<uvm::Installation> {
+) -> io::Result<uvm_core::Installation> {
     if use_project_version {
-        let version = uvm::dectect_project_version(&project_path, None)?;
-        return uvm::find_installation(&version);
+        let version = uvm_core::dectect_project_version(&project_path, None)?;
+        return uvm_core::find_installation(&version);
     }
 
-    uvm::current_installation()
+    uvm_core::current_installation()
 }
 
 fn launch(options: LaunchOptions) -> io::Result<()> {
-    let project_path = uvm::detect_unity_project_dir(
+    let project_path = uvm_core::detect_unity_project_dir(
         options.project_path().unwrap_or(&env::current_dir().unwrap()),
         options.recursive(),
     )?;
@@ -79,7 +80,7 @@ fn launch(options: LaunchOptions) -> io::Result<()> {
 }
 
 fn main() {
-    let o:LaunchOptions = uvm::cli::get_options(USAGE).unwrap();
+    let o:LaunchOptions = uvm_cli::get_options(USAGE).unwrap();
 
     launch(o).unwrap_or_else(|err| {
         let message = format!("Unable to launch unity");

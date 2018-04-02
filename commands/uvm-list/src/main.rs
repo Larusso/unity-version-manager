@@ -1,9 +1,10 @@
-extern crate uvm;
+extern crate uvm_cli;
+extern crate uvm_core;
 extern crate console;
 
 use console::Style;
 use console::Term;
-use uvm::cli::ListOptions;
+use uvm_cli::ListOptions;
 
 const USAGE: &'static str = "
 uvm-list - List installed unity versions.
@@ -19,11 +20,11 @@ Options:
 ";
 
 fn main() {
-    let options:ListOptions = uvm::cli::get_options(USAGE).unwrap();
+    let options:ListOptions = uvm_cli::get_options(USAGE).unwrap();
     let term = Term::stdout();
-    let current_version = uvm::current_installation().ok();
+    let current_version = uvm_core::current_installation().ok();
 
-    if let Ok(installations) = uvm::list_installations() {
+    if let Ok(installations) = uvm_core::list_installations() {
         Term::stderr().write_line("Installed Unity versions:").is_ok();
         let verbose = options.verbose();
         let path_only = options.path_only();
