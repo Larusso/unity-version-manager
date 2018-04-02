@@ -5,3 +5,8 @@ authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 
 [dependencies]
 regex = "0.2"
+
+[dev-dependencies]
+proptest = "0.5.1"
+rand = "0.4"
+tempdir = "0.3"
