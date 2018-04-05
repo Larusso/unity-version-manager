@@ -6,18 +6,20 @@ extern crate serde;
 extern crate uvm_core;
 extern crate console;
 
-mod launch;
-mod utils;
-mod uvm;
+mod clear;
 mod detect;
+mod help;
+mod launch;
 mod list;
 mod use_version;
-mod help;
+mod utils;
+mod uvm;
 
+pub use self::clear::*;
 pub use self::detect::*;
+pub use self::help::*;
 pub use self::launch::*;
 pub use self::list::*;
-pub use self::help::*;
 pub use self::use_version::*;
 pub use self::utils::print_error_and_exit;
 pub use self::utils::sub_command_path;
@@ -46,7 +48,7 @@ where
         .map_err(|e| e.exit())
 }
 
-pub fn exec_command<C,I,S>(command: C, args: I) -> io::Result<i32>
+pub fn exec_command<C, I, S>(command: C, args: I) -> io::Result<i32>
 where
     C: AsRef<OsStr>,
     I: IntoIterator<Item = S>,
