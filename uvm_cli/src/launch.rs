@@ -1,6 +1,7 @@
 use std::fmt;
 use std::fmt::Display;
 use std::path::PathBuf;
+use super::ColorOption;
 
 #[derive(Deserialize, Debug, Clone)]
 pub enum UnityPlatform {
@@ -35,7 +36,8 @@ pub struct LaunchOptions {
     flag_platform: Option<UnityPlatform>,
     flag_force_project_version: bool,
     flag_recursive: bool,
-    flag_verbose: bool
+    flag_verbose: bool,
+    flag_color: ColorOption
 }
 
 impl LaunchOptions {
@@ -59,5 +61,9 @@ impl LaunchOptions {
 impl super::Options for LaunchOptions {
     fn verbose(&self) -> bool {
         self.flag_verbose
+    }
+
+    fn color(&self) -> &ColorOption {
+        &self.flag_color
     }
 }

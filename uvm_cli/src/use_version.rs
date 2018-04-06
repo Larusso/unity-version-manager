@@ -1,3 +1,4 @@
+use super::ColorOption;
 use uvm_core::unity::Version;
 
 #[derive(Debug, Deserialize)]
@@ -5,6 +6,7 @@ pub struct UseOptions {
     #[serde(with = "unity_version_format")]
     arg_version: Version,
     flag_verbose: bool,
+    flag_color: ColorOption
 }
 
 impl UseOptions {
@@ -29,5 +31,9 @@ mod unity_version_format {
 impl super::Options for UseOptions {
     fn verbose(&self) -> bool {
         self.flag_verbose
+    }
+
+    fn color(&self) -> &ColorOption {
+        &self.flag_color
     }
 }

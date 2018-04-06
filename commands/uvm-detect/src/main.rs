@@ -18,6 +18,7 @@ Options:
   -r, --recursive               Detects a unity version recursivly from current working directory.
                                 With this flag set, the tool returns the first version it finds.
   -v, --verbose                 print more output
+  --color WHEN                  Coloring: auto, always, never [default: auto]
   -h, --help                    show this help message and exit
 ";
 

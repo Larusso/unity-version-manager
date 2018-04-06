@@ -1,10 +1,12 @@
 use std::path::PathBuf;
+use super::ColorOption;
 
 #[derive(Debug, Deserialize)]
 pub struct DetectOptions {
     arg_project_path: Option<PathBuf>,
     flag_recursive: bool,
     flag_verbose: bool,
+    flag_color: ColorOption
 }
 
 impl DetectOptions {
@@ -19,5 +21,9 @@ impl DetectOptions {
 impl super::Options for DetectOptions {
     fn verbose(&self) -> bool {
         self.flag_verbose
+    }
+
+    fn color(&self) -> &ColorOption {
+        &self.flag_color
     }
 }

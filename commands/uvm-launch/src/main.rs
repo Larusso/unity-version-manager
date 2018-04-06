@@ -25,6 +25,7 @@ Options:
                                 possible values:
                                 win32, win64, osx, linux, linux64, ios, android, web,
                                 webstreamed, webgl, xboxone, ps4, psp2, wsaplayer, tizen, samsungtv
+  --color WHEN      Coloring: auto, always, never [default: auto]
   -h, --help                    show this help message and exit
 ";
 
@@ -86,7 +87,7 @@ fn main() {
     launch(o).unwrap_or_else(|err| {
         let message = format!("Unable to launch unity");
         eprintln!("{}", style(message).red());
-        eprintln!("{}", err);
+        eprintln!("{}", style(err).red());
         process::exit(1);
     });
 }
