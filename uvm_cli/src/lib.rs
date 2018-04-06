@@ -31,7 +31,7 @@ use std::ffi::OsStr;
 use std::io;
 use std::process::Command;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Deserialize, Debug)]
 pub enum ColorOption {
     Auto,
     Always,

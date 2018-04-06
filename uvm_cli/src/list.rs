@@ -1,7 +1,10 @@
+use super::ColorOption;
+
 #[derive(Debug, Deserialize)]
 pub struct ListOptions {
     flag_verbose: bool,
-    flag_path: bool
+    flag_path: bool,
+    flag_color: ColorOption
 }
 
 impl ListOptions {
@@ -13,5 +16,9 @@ impl ListOptions {
 impl super::Options for ListOptions {
     fn verbose(&self) -> bool {
         self.flag_verbose
+    }
+
+    fn color(&self) -> &ColorOption {
+        &self.flag_color
     }
 }
