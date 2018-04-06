@@ -31,9 +31,20 @@ use std::ffi::OsStr;
 use std::io;
 use std::process::Command;
 
+#[derive(PartialEq)]
+pub enum ColorOption {
+    Auto,
+    Always,
+    Never,
+}
+
 pub trait Options {
     fn verbose(&self) -> bool {
         false
+    }
+
+    fn color(&self) -> &ColorOption {
+        &ColorOption::Auto
     }
 }
 
@@ -46,6 +57,21 @@ where
         .and_then(|d| Ok(d.options_first(true)))
         .and_then(|d| d.deserialize())
         .map_err(|e| e.exit())
+        .and_then(|o| {
+            set_colors_enabled(&o);
+            Ok(o)
+        })
+}
+
+fn set_colors_enabled<T>(options: &T)
+where
+    T: Options,
+{
+    match *options.color() {
+        ColorOption::Never => console::set_colors_enabled(false),
+        ColorOption::Always => console::set_colors_enabled(true),
+        ColorOption::Auto => (),
+    };
 }
 
 pub fn exec_command<C, I, S>(command: C, args: I) -> io::Result<i32>
