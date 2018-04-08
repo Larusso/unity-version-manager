@@ -1,0 +1,6 @@
+[package]
+name = "uvm-install"
+version = "0.1.0"
+authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
+
+[dependencies]
