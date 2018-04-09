@@ -1,9 +1,10 @@
 use super::ColorOption;
 use uvm_core::unity::Version;
+use uvm_core;
 
 #[derive(Debug, Deserialize)]
 pub struct UseOptions {
-    #[serde(with = "unity_version_format")]
+    #[serde(with = "uvm_core::unity::unity_version_format")]
     arg_version: Version,
     flag_verbose: bool,
     flag_color: ColorOption
@@ -12,19 +13,6 @@ pub struct UseOptions {
 impl UseOptions {
     pub fn version(&self) -> &Version {
         &self.arg_version
-    }
-}
-
-mod unity_version_format {
-    use uvm_core::unity::Version;
-    use std::str::FromStr;
-    use serde::{self, Deserialize, Deserializer};
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Version, D::Error>
-        where D: Deserializer<'de>
-    {
-        let s = String::deserialize(deserializer)?;
-        Version::from_str(&s).map_err(serde::de::Error::custom)
     }
 }
 

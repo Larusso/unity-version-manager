@@ -33,7 +33,7 @@ Options:
 
 #[derive(Debug, Deserialize)]
 struct InstallOptions {
-    #[serde(with = "unity_version_format")]
+    #[serde(with = "uvm_core::unity::unity_version_format")]
     arg_version: Version,
     flag_verbose: bool,
     flag_android: bool,
@@ -114,17 +114,4 @@ fn main() {
     let options:InstallOptions = uvm_cli::get_options(USAGE).unwrap();
 
     println!("{:?}", options.install_variants());
-}
-
-mod unity_version_format {
-    use uvm_core::unity::Version;
-    use std::str::FromStr;
-    use serde::{self, Deserialize, Deserializer};
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Version, D::Error>
-        where D: Deserializer<'de>
-    {
-        let s = String::deserialize(deserializer)?;
-        Version::from_str(&s).map_err(serde::de::Error::custom)
-    }
 }

@@ -6,6 +6,7 @@ use std::error::Error;
 use std::result;
 use std::convert::From;
 use unity::Installation;
+use serde;
 
 #[derive(PartialEq,Eq,Ord,Debug)]
 pub enum VersionType {
@@ -135,6 +136,19 @@ impl FromStr for Version {
 impl From<Installation> for Version {
     fn from(item: Installation) -> Self {
         item.version_owned()
+    }
+}
+
+pub mod unity_version_format {
+    use super::Version;
+    use std::str::FromStr;
+    use serde::{self, Deserialize, Deserializer};
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Version, D::Error>
+        where D: Deserializer<'de>
+    {
+        let s = String::deserialize(deserializer)?;
+        Version::from_str(&s).map_err(serde::de::Error::custom)
     }
 }
 
