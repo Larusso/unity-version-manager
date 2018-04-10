@@ -18,7 +18,7 @@ Usage:
   uvm-install (-h | --help)
 
 Options:
-  -a, --all         list all versions or install all support packages
+  -a, --all         install all support packages
   --android         install android support for editor
   --ios             install ios support for editor
   --webgl           install webgl support for editor
@@ -43,6 +43,7 @@ struct InstallOptions {
     flag_linux: bool,
     flag_windows: bool,
     flag_desktop: bool,
+    flag_all: bool,
     flag_color: ColorOption,
 }
 
@@ -55,34 +56,24 @@ impl InstallOptions {
     pub fn install_variants(&self) -> Option<HashSet<InstallVariant>> {
         if self.flag_android || self.flag_ios || self.flag_webgl || self.flag_linux || self.flag_windows || self.flag_mobile || self.flag_desktop {
             let mut variants:HashSet<InstallVariant> = HashSet::with_capacity(5);
-            if self.flag_mobile {
-                variants.insert(InstallVariant::Android);
-                variants.insert(InstallVariant::Ios);
-                variants.insert(InstallVariant::WebGl);
-            }
 
-            if self.flag_desktop {
-                variants.insert(InstallVariant::Linux);
-                variants.insert(InstallVariant::Windows);
-            }
-
-            if self.flag_android {
+            if self.flag_android || self.flag_mobile || self.flag_all {
                 variants.insert(InstallVariant::Android);
             }
 
-            if self.flag_ios {
+            if self.flag_ios || self.flag_mobile || self.flag_all {
                 variants.insert(InstallVariant::Ios);
             }
 
-            if self.flag_webgl {
+            if self.flag_webgl || self.flag_mobile || self.flag_all {
                 variants.insert(InstallVariant::WebGl);
             }
 
-            if self.flag_windows {
+            if self.flag_windows || self.flag_desktop || self.flag_all {
                 variants.insert(InstallVariant::Windows);
             }
 
-            if self.flag_linux {
+            if self.flag_linux || self.flag_desktop || self.flag_all {
                 variants.insert(InstallVariant::Linux);
             }
             return Some(variants)
