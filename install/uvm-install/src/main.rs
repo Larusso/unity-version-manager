@@ -1,14 +1,19 @@
 #[macro_use]
 extern crate serde_derive;
+extern crate console;
 extern crate serde;
 extern crate uvm_cli;
 extern crate uvm_core;
-extern crate console;
 
 use uvm_cli::Options;
 use uvm_cli::ColorOption;
 use std::collections::HashSet;
 use uvm_core::unity::Version;
+use uvm_core::unity::VersionType;
+
+use console::style;
+use std::process;
+use std::io;
 
 const USAGE: &'static str = "
 uvm-install - Install specified unity version.
@@ -48,14 +53,15 @@ struct InstallOptions {
 }
 
 impl InstallOptions {
-
     pub fn version(&self) -> &Version {
         &self.arg_version
     }
 
     pub fn install_variants(&self) -> Option<HashSet<InstallVariant>> {
-        if self.flag_android || self.flag_ios || self.flag_webgl || self.flag_linux || self.flag_windows || self.flag_mobile || self.flag_desktop {
-            let mut variants:HashSet<InstallVariant> = HashSet::with_capacity(5);
+        if self.flag_android || self.flag_ios || self.flag_webgl || self.flag_linux
+            || self.flag_windows || self.flag_mobile || self.flag_desktop
+        {
+            let mut variants: HashSet<InstallVariant> = HashSet::with_capacity(5);
 
             if self.flag_android || self.flag_mobile || self.flag_all {
                 variants.insert(InstallVariant::Android);
@@ -76,7 +82,7 @@ impl InstallOptions {
             if self.flag_linux || self.flag_desktop || self.flag_all {
                 variants.insert(InstallVariant::Linux);
             }
-            return Some(variants)
+            return Some(variants);
         }
         None
     }
@@ -102,7 +108,86 @@ enum InstallVariant {
 }
 
 fn main() {
-    let options:InstallOptions = uvm_cli::get_options(USAGE).unwrap();
+    install(uvm_cli::get_options(USAGE).unwrap()).unwrap_or_else(|err| {
+        let message = format!("Unable to install Unity");
+        eprintln!("{}", style(message).red());
+        eprintln!("{}", style(err).red());
+        process::exit(1);
+    });
+}
 
-    println!("{:?}", options.install_variants());
+fn install(options: InstallOptions) -> io::Result<()> {
+    ensure_tap_for_version(&options.version())?;
+    // def install version: :latest, **support_package_options
+    //   ensure_tap_for_version version
+    //
+    //   installed = cask.list.select {|cask| cask.include? "@#{version}"}
+    //
+    //   to_install = []
+    //   to_install << cask_name_for_type_version(:unity, version)
+    //   to_install += check_support_packages version, **support_package_options
+    //   to_install = to_install - installed
+    //
+    //   cask.install(*to_install) unless to_install.empty?
+    // end
+    Ok(())
+}
+
+fn ensure_tap_for_version(version: &Version) -> io::Result<()> {
+    match *version.release_type() {
+        VersionType::Final => brew::tap::ensure("wooga/unityversions"),
+        VersionType::Beta => brew::tap::ensure("wooga/unityversions-beta"),
+        VersionType::Patch => brew::tap::ensure("wooga/unityversions-patch"),
+    }
+}
+
+mod brew {
+    use std::io;
+
+    pub mod cask {
+        use std::io;
+
+        pub fn list() -> io::Result<()> {
+            Ok(())
+        }
+
+        pub fn install(cask: &str) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    pub mod tap {
+        use std::io;
+        use std::process::Command;
+
+        pub fn contains(tap_name: &str) -> bool {
+            if let Ok(output) = Command::new("brew").arg("tap").output() {
+                let str_err = String::from_utf8_lossy(&output.stderr);
+                return str_err.contains(tap_name)
+            }
+            false
+        }
+
+        pub fn add(tap_name: &str) -> io::Result<()> {
+            let output = Command::new("brew").args(&["tap", tap_name]).output()?;
+            if output.status.success() {
+                return Ok(());
+            }
+            Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!(
+                    "failed to add tap:/n{}",
+                    String::from_utf8_lossy(&output.stderr)
+                ),
+            ))
+        }
+
+        pub fn ensure(tap_name: &str) -> io::Result<()> {
+            if !contains(tap_name) {
+                return add(tap_name)
+            }
+            Ok(())
+        }
+    }
+
 }

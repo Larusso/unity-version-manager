@@ -56,6 +56,12 @@ impl PartialEq for Version {
     }
 }
 
+impl Version {
+    pub fn release_type(&self) -> &VersionType {
+        &self.release_type
+    }
+}
+
 impl fmt::Display for VersionType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
