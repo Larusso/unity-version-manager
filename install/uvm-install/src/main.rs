@@ -146,9 +146,18 @@ mod brew {
 
     pub mod cask {
         use std::io;
+        use std::process::Command;
+        use std::str;
 
-        pub fn list() -> io::Result<()> {
-            Ok(())
+        pub type Cask = String;
+        pub type Casks = Vec<Cask>;
+
+        pub fn list<'a>() -> io::Result<Casks> {
+            let output = Command::new("brew").arg("tap").output()?;
+            let stdout = output.stdout;
+            let str_out = str::from_utf8(&stdout).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+            let vec = str_out.lines().map(|line| String::from(line)).collect();
+            Ok(vec)
         }
 
         pub fn install(cask: &str) -> io::Result<()> {
@@ -163,7 +172,7 @@ mod brew {
         pub fn contains(tap_name: &str) -> bool {
             if let Ok(output) = Command::new("brew").arg("tap").output() {
                 let str_err = String::from_utf8_lossy(&output.stderr);
-                return str_err.contains(tap_name)
+                return str_err.contains(tap_name);
             }
             false
         }
@@ -184,7 +193,7 @@ mod brew {
 
         pub fn ensure(tap_name: &str) -> io::Result<()> {
             if !contains(tap_name) {
-                return add(tap_name)
+                return add(tap_name);
             }
             Ok(())
         }
