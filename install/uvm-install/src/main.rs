@@ -117,7 +117,7 @@ impl fmt::Display for InstallVariant {
             &InstallVariant::WebGl => write!(f, "webgl"),
             &InstallVariant::Linux => write!(f, "linux"),
             &InstallVariant::Windows => write!(f, "windows"),
-            _ => write!(f, "editor")
+            _ => write!(f, "editor"),
         }
     }
 }
@@ -129,6 +129,8 @@ fn main() {
         eprintln!("{}", style(err).red());
         process::exit(1);
     });
+
+    eprintln!("Finish");
 }
 
 fn cask_name_for_type_version(variant: InstallVariant, version: &Version) -> brew::cask::Cask {
@@ -150,17 +152,38 @@ fn install(options: InstallOptions) -> io::Result<()> {
         .collect();
 
     let mut to_install = HashSet::new();
-    to_install.insert(cask_name_for_type_version(InstallVariant::Editor, &options.version()));
+    to_install.insert(cask_name_for_type_version(
+        InstallVariant::Editor,
+        &options.version(),
+    ));
+
     if let Some(variants) = options.install_variants() {
         for variant in variants {
             to_install.insert(cask_name_for_type_version(variant, &options.version()));
         }
     }
 
-    for cask in to_install.difference(&installed) {
-        brew::cask::install(cask)?;
+    if options.verbose() {
+        eprintln!("Choosen casks to install:");
+        for c in &to_install {
+            eprintln!("{}", c);
+        }
     }
 
+    let args = to_install
+        .difference(&installed)
+        .fold(String::new(), |acc, ref cask| acc + " " + cask);
+    if options.verbose() {
+        println!("Install with args {}",args);
+    }
+
+    let mut child = brew::cask::install(&args)?;
+    let status = child.wait()?;
+    if status.success() {
+        println!("'projects/' directory created");
+    } else {
+        println!("failed to create 'projects/' directory");
+    }
     Ok(())
 }
 
@@ -173,11 +196,10 @@ fn ensure_tap_for_version(version: &Version) -> io::Result<()> {
 }
 
 mod brew {
-    use std::io;
-
     pub mod cask {
         use std::io;
         use std::process::Command;
+        use std::process::Child;
         use std::str;
 
         pub type Cask = String;
@@ -195,8 +217,12 @@ mod brew {
                 })
         }
 
-        pub fn install(cask: &str) -> io::Result<()> {
-            Ok(())
+        pub fn install(cask: &str) -> io::Result<Child> {
+            Command::new("brew")
+                .arg("cask")
+                .arg("install")
+                .arg(cask.trim())
+                .spawn()
         }
     }
 
