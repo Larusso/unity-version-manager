@@ -146,6 +146,12 @@ fn cask_name_for_type_version(variant: InstallVariant, version: &Version) -> bre
 fn install(options: InstallOptions) -> io::Result<()> {
     ensure_tap_for_version(&options.version())?;
     let casks = brew::cask::list()?;
+    let taps = brew::tap::list()?;
+
+    for tap in taps {
+        println!("{}", tap);
+    }
+
     let installed: HashSet<brew::cask::Cask> = casks
         .into_iter()
         .filter(|cask| cask.contains(&format!("@{}", &options.version().to_string())))
@@ -174,7 +180,7 @@ fn install(options: InstallOptions) -> io::Result<()> {
         .difference(&installed)
         .fold(String::new(), |acc, ref cask| acc + " " + cask);
     if options.verbose() {
-        println!("Install with args {}",args);
+        println!("Install with args {}", args);
     }
 
     let mut child = brew::cask::install(&args)?;
@@ -229,11 +235,56 @@ mod brew {
     pub mod tap {
         use std::io;
         use std::process::Command;
+        use std::path::Path;
+        use std::fs;
+
+        const BREW_TAPS_LOCATION: &'static str = "/usr/local/Homebrew/Library/Taps";
+
+        pub struct Taps(Box<Iterator<Item = String>>);
+
+        impl Taps {
+            fn new() -> io::Result<Taps> {
+                let read_dir = fs::read_dir(BREW_TAPS_LOCATION)?;
+                let iter = read_dir
+                    .filter_map(io::Result::ok)
+                    .flat_map(|d| {
+                        let inner_read = fs::read_dir(d.path()).expect("read dir");
+                        inner_read.filter_map(io::Result::ok)
+                    })
+                    .map(|d| {
+                        let path = d.path();
+                        let parent = path.parent()
+                            .unwrap()
+                            .file_name()
+                            .unwrap()
+                            .to_str()
+                            .unwrap();
+                        let tap_name = path.file_name()
+                            .unwrap()
+                            .to_str()
+                            .unwrap()
+                            .replace("homebrew-","");
+                        format!("{}/{}", parent, tap_name)
+                    });
+                Ok(Taps(Box::new(iter)))
+            }
+        }
+
+        impl Iterator for Taps {
+            type Item = String;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                self.0.next()
+            }
+        }
+
+        pub fn list() -> io::Result<Taps> {
+            Taps::new()
+        }
 
         pub fn contains(tap_name: &str) -> bool {
-            if let Ok(output) = Command::new("brew").arg("tap").output() {
-                let str_err = String::from_utf8_lossy(&output.stderr);
-                return str_err.contains(tap_name);
+            if let Ok(l) = list() {
+                return l.collect::<Vec<String>>().contains(&String::from(tap_name))
             }
             false
         }
