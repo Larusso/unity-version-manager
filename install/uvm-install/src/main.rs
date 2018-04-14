@@ -14,6 +14,7 @@ use uvm_core::unity::VersionType;
 use console::style;
 use std::process;
 use std::io;
+use std::fmt;
 
 const USAGE: &'static str = "
 uvm-install - Install specified unity version.
@@ -105,6 +106,20 @@ enum InstallVariant {
     WebGl,
     Linux,
     Windows,
+    Editor,
+}
+
+impl fmt::Display for InstallVariant {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &InstallVariant::Android => write!(f, "android"),
+            &InstallVariant::Ios => write!(f, "ios"),
+            &InstallVariant::WebGl => write!(f, "webgl"),
+            &InstallVariant::Linux => write!(f, "linux"),
+            &InstallVariant::Windows => write!(f, "windows"),
+            _ => write!(f, "editor")
+        }
+    }
 }
 
 fn main() {
@@ -116,20 +131,36 @@ fn main() {
     });
 }
 
+fn cask_name_for_type_version(variant: InstallVariant, version: &Version) -> brew::cask::Cask {
+    let base_name = if variant == InstallVariant::Editor {
+        String::from("unity")
+    } else {
+        format!("unity-{}-support-for-editor", variant)
+    };
+
+    String::from(format!("{}@{}", base_name, version.to_string()))
+}
+
 fn install(options: InstallOptions) -> io::Result<()> {
     ensure_tap_for_version(&options.version())?;
-    // def install version: :latest, **support_package_options
-    //   ensure_tap_for_version version
-    //
-    //   installed = cask.list.select {|cask| cask.include? "@#{version}"}
-    //
-    //   to_install = []
-    //   to_install << cask_name_for_type_version(:unity, version)
-    //   to_install += check_support_packages version, **support_package_options
-    //   to_install = to_install - installed
-    //
-    //   cask.install(*to_install) unless to_install.empty?
-    // end
+    let casks = brew::cask::list()?;
+    let installed: HashSet<brew::cask::Cask> = casks
+        .into_iter()
+        .filter(|cask| cask.contains(&format!("@{}", &options.version().to_string())))
+        .collect();
+
+    let mut to_install = HashSet::new();
+    to_install.insert(cask_name_for_type_version(InstallVariant::Editor, &options.version()));
+    if let Some(variants) = options.install_variants() {
+        for variant in variants {
+            to_install.insert(cask_name_for_type_version(variant, &options.version()));
+        }
+    }
+
+    for cask in to_install.difference(&installed) {
+        brew::cask::install(cask)?;
+    }
+
     Ok(())
 }
 
@@ -152,12 +183,16 @@ mod brew {
         pub type Cask = String;
         pub type Casks = Vec<Cask>;
 
-        pub fn list<'a>() -> io::Result<Casks> {
-            let output = Command::new("brew").arg("tap").output()?;
-            let stdout = output.stdout;
-            let str_out = str::from_utf8(&stdout).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-            let vec = str_out.lines().map(|line| String::from(line)).collect();
-            Ok(vec)
+        pub fn list() -> io::Result<Casks> {
+            Command::new("brew")
+                .arg("tap")
+                .output()
+                .map(|o| o.stdout)
+                .and_then(|stdout| {
+                    let out = str::from_utf8(&stdout)
+                        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+                    Ok(out.lines().map(|line| Cask::from(line)).collect())
+                })
         }
 
         pub fn install(cask: &str) -> io::Result<()> {
