@@ -3,6 +3,7 @@ use std::process::Command;
 use std::process::Child;
 use std::str;
 use std::fs;
+use std::ffi::OsStr;
 
 pub type Cask = String;
 pub struct Casks(Box<Iterator<Item = Cask>>);
@@ -36,10 +37,13 @@ pub fn list() -> io::Result<Casks> {
     Casks::new()
 }
 
-pub fn install(cask: &str) -> io::Result<Child> {
+pub fn install<I, S>(casks: I) -> io::Result<Child> where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>
+{
     Command::new("brew")
         .arg("cask")
         .arg("install")
-        .arg(cask.trim())
+        .args(casks)
         .spawn()
 }

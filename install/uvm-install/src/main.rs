@@ -61,7 +61,7 @@ impl InstallOptions {
 
     pub fn install_variants(&self) -> Option<HashSet<InstallVariant>> {
         if self.flag_android || self.flag_ios || self.flag_webgl || self.flag_linux
-            || self.flag_windows || self.flag_mobile || self.flag_desktop
+            || self.flag_windows || self.flag_mobile || self.flag_desktop || self.flag_all
         {
             let mut variants: HashSet<InstallVariant> = HashSet::with_capacity(5);
 
@@ -146,13 +146,8 @@ fn cask_name_for_type_version(variant: InstallVariant, version: &Version) -> bre
 
 fn install(options: InstallOptions) -> io::Result<()> {
     ensure_tap_for_version(&options.version())?;
+
     let casks = brew::cask::list()?;
-    let taps = brew::tap::list()?;
-
-    for tap in taps {
-        println!("tap: {}", tap);
-    }
-
     let installed: HashSet<brew::cask::Cask> = casks
         .filter(|cask| cask.contains(&format!("@{}", &options.version().to_string())))
         .collect();
@@ -174,22 +169,27 @@ fn install(options: InstallOptions) -> io::Result<()> {
         for c in &to_install {
             eprintln!("{}", c);
         }
+
+        let diff:HashSet<_> = to_install.union(&installed).collect();
+        eprintln!("Casks already installed:");
+        for c in &diff {
+            eprintln!("{}", c);
+        }
     }
 
-    let args = to_install
-        .difference(&installed)
-        .fold(String::new(), |acc, ref cask| acc + " " + cask);
-    if options.verbose() {
-        println!("Install with args {}", args);
+    let mut diff = to_install.difference(&installed).peekable();
+    if let Some(_) = diff.peek() {
+        let mut child = brew::cask::install(diff)?;
+        let status = child.wait()?;
+
+        if !status.success() {
+            return Err(io::Error::new(io::ErrorKind::Other, "Failed to install casks"));
+        }
+    }
+    else {
+        return Err(io::Error::new(io::ErrorKind::Other, "Nothing to install"));
     }
 
-    let mut child = brew::cask::install(&args)?;
-    let status = child.wait()?;
-    if status.success() {
-        println!("'projects/' directory created");
-    } else {
-        println!("failed to create 'projects/' directory");
-    }
     Ok(())
 }
 
