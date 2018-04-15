@@ -8,7 +8,7 @@ pub type Casks = Vec<Cask>;
 
 pub fn list() -> io::Result<Casks> {
     Command::new("brew")
-        .arg("tap")
+        .args(&["cask", "list"])
         .output()
         .map(|o| o.stdout)
         .and_then(|stdout| {

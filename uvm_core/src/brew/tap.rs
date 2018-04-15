@@ -1,7 +1,6 @@
+use std::fs;
 use std::io;
 use std::process::Command;
-use std::path::Path;
-use std::fs;
 
 const BREW_TAPS_LOCATION: &'static str = "/usr/local/Homebrew/Library/Taps";
 
@@ -21,6 +20,7 @@ impl Taps {
                 let parent = path.parent()
                     .and_then(|d| d.file_name())
                     .and_then(|d| d.to_str());
+
                 let tap_name = path.file_name()
                     .and_then(|d| d.to_str())
                     .and_then(|f| Some(f.replace("homebrew-","")));
