@@ -19,18 +19,17 @@ impl Taps {
             .map(|d| {
                 let path = d.path();
                 let parent = path.parent()
-                    .unwrap()
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap();
+                    .and_then(|d| d.file_name())
+                    .and_then(|d| d.to_str());
                 let tap_name = path.file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .replace("homebrew-","");
-                format!("{}/{}", parent, tap_name)
-            });
+                    .and_then(|d| d.to_str())
+                    .and_then(|f| Some(f.replace("homebrew-","")));
+
+                match (parent, tap_name) {
+                    (Some(p), Some(t)) => Some(format!("{}/{}", p, t)),
+                    _ => None
+                }
+            }).filter_map(|d| d );
         Ok(Taps(Box::new(iter)))
     }
 }
