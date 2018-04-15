@@ -1,6 +1,6 @@
-use std::fs;
 use std::io;
 use std::process::Command;
+use std::fs;
 
 const BREW_TAPS_LOCATION: &'static str = "/usr/local/Homebrew/Library/Taps";
 

@@ -150,11 +150,10 @@ fn install(options: InstallOptions) -> io::Result<()> {
     let taps = brew::tap::list()?;
 
     for tap in taps {
-        println!("{}", tap);
+        println!("tap: {}", tap);
     }
 
     let installed: HashSet<brew::cask::Cask> = casks
-        .into_iter()
         .filter(|cask| cask.contains(&format!("@{}", &options.version().to_string())))
         .collect();
 
