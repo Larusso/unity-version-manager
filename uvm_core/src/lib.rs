@@ -25,6 +25,7 @@ macro_rules! cargo_version {
 }
 
 pub mod unity;
+pub mod brew;
 
 pub use self::unity::list_installations;
 pub use self::unity::current_installation;

@@ -15,6 +15,7 @@ use console::style;
 use std::process;
 use std::io;
 use std::fmt;
+use uvm_core::brew;
 
 const USAGE: &'static str = "
 uvm-install - Install specified unity version.
@@ -199,116 +200,4 @@ fn ensure_tap_for_version(version: &Version) -> io::Result<()> {
         VersionType::Beta => brew::tap::ensure("wooga/unityversions-beta"),
         VersionType::Patch => brew::tap::ensure("wooga/unityversions-patch"),
     }
-}
-
-mod brew {
-    pub mod cask {
-        use std::io;
-        use std::process::Command;
-        use std::process::Child;
-        use std::str;
-
-        pub type Cask = String;
-        pub type Casks = Vec<Cask>;
-
-        pub fn list() -> io::Result<Casks> {
-            Command::new("brew")
-                .arg("tap")
-                .output()
-                .map(|o| o.stdout)
-                .and_then(|stdout| {
-                    let out = str::from_utf8(&stdout)
-                        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-                    Ok(out.lines().map(|line| Cask::from(line)).collect())
-                })
-        }
-
-        pub fn install(cask: &str) -> io::Result<Child> {
-            Command::new("brew")
-                .arg("cask")
-                .arg("install")
-                .arg(cask.trim())
-                .spawn()
-        }
-    }
-
-    pub mod tap {
-        use std::io;
-        use std::process::Command;
-        use std::path::Path;
-        use std::fs;
-
-        const BREW_TAPS_LOCATION: &'static str = "/usr/local/Homebrew/Library/Taps";
-
-        pub struct Taps(Box<Iterator<Item = String>>);
-
-        impl Taps {
-            fn new() -> io::Result<Taps> {
-                let read_dir = fs::read_dir(BREW_TAPS_LOCATION)?;
-                let iter = read_dir
-                    .filter_map(io::Result::ok)
-                    .flat_map(|d| {
-                        let inner_read = fs::read_dir(d.path()).expect("read dir");
-                        inner_read.filter_map(io::Result::ok)
-                    })
-                    .map(|d| {
-                        let path = d.path();
-                        let parent = path.parent()
-                            .unwrap()
-                            .file_name()
-                            .unwrap()
-                            .to_str()
-                            .unwrap();
-                        let tap_name = path.file_name()
-                            .unwrap()
-                            .to_str()
-                            .unwrap()
-                            .replace("homebrew-","");
-                        format!("{}/{}", parent, tap_name)
-                    });
-                Ok(Taps(Box::new(iter)))
-            }
-        }
-
-        impl Iterator for Taps {
-            type Item = String;
-
-            fn next(&mut self) -> Option<Self::Item> {
-                self.0.next()
-            }
-        }
-
-        pub fn list() -> io::Result<Taps> {
-            Taps::new()
-        }
-
-        pub fn contains(tap_name: &str) -> bool {
-            if let Ok(l) = list() {
-                return l.collect::<Vec<String>>().contains(&String::from(tap_name))
-            }
-            false
-        }
-
-        pub fn add(tap_name: &str) -> io::Result<()> {
-            let output = Command::new("brew").args(&["tap", tap_name]).output()?;
-            if output.status.success() {
-                return Ok(());
-            }
-            Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!(
-                    "failed to add tap:/n{}",
-                    String::from_utf8_lossy(&output.stderr)
-                ),
-            ))
-        }
-
-        pub fn ensure(tap_name: &str) -> io::Result<()> {
-            if !contains(tap_name) {
-                return add(tap_name);
-            }
-            Ok(())
-        }
-    }
-
 }
