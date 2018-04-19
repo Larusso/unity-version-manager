@@ -5,6 +5,9 @@ extern crate serde;
 extern crate uvm_cli;
 extern crate uvm_core;
 
+use console::Style;
+use std::io::Write;
+use console::Term;
 use uvm_cli::Options;
 use uvm_cli::ColorOption;
 use std::collections::HashSet;
@@ -124,14 +127,15 @@ impl fmt::Display for InstallVariant {
 }
 
 fn main() {
+    let mut stdout = Term::stderr();
     install(uvm_cli::get_options(USAGE).unwrap()).unwrap_or_else(|err| {
-        let message = format!("Unable to install Unity");
-        eprintln!("{}", style(message).red());
-        eprintln!("{}", style(err).red());
+        let message = format!("Unable to install");
+        write!(stdout, "{}\n", style(message).red()).ok();
+        write!(stdout, "{}\n", style(err).red()).ok();
         process::exit(1);
     });
 
-    eprintln!("Finish");
+    stdout.write_line("Finish").ok();
 }
 
 fn cask_name_for_type_version(variant: InstallVariant, version: &Version) -> brew::cask::Cask {
@@ -145,6 +149,10 @@ fn cask_name_for_type_version(variant: InstallVariant, version: &Version) -> bre
 }
 
 fn install(options: InstallOptions) -> io::Result<()> {
+    let mut stderr = Term::stderr();
+    write!(stderr, "{}: {}\n", style("install unity version").green(), options.version().to_string()).ok();
+
+
     ensure_tap_for_version(&options.version())?;
 
     let casks = brew::cask::list()?;
@@ -165,15 +173,18 @@ fn install(options: InstallOptions) -> io::Result<()> {
     }
 
     if options.verbose() {
-        eprintln!("Choosen casks to install:");
+        write!(stderr, "{}\n", style("Casks to install:").green()).ok();
         for c in &to_install {
-            eprintln!("{}", c);
+            write!(stderr, "{}\n", style(c).cyan()).ok();
         }
 
-        let diff:HashSet<_> = to_install.union(&installed).collect();
-        eprintln!("Casks already installed:");
-        for c in &diff {
-            eprintln!("{}", c);
+        let mut diff = to_install.union(&installed).peekable();
+        if let Some(_) = diff.peek() {
+            stderr.write_line("").ok();
+            write!(stderr, "{}\n", style("Skip variants already installed:").yellow()).ok();
+            for c in diff {
+                write!(stderr, "{}\n", style(c).yellow().bold()).ok();
+            }
         }
     }
 
@@ -187,16 +198,17 @@ fn install(options: InstallOptions) -> io::Result<()> {
         }
     }
     else {
-        return Err(io::Error::new(io::ErrorKind::Other, "Nothing to install"));
+        return Err(io::Error::new(io::ErrorKind::Other, "Version and all support packages already installed"));
     }
 
     Ok(())
 }
 
 fn ensure_tap_for_version(version: &Version) -> io::Result<()> {
-    match *version.release_type() {
-        VersionType::Final => brew::tap::ensure("wooga/unityversions"),
-        VersionType::Beta => brew::tap::ensure("wooga/unityversions-beta"),
-        VersionType::Patch => brew::tap::ensure("wooga/unityversions-patch"),
-    }
+    let tap = match *version.release_type() {
+        VersionType::Final => "wooga/unityversions",
+        VersionType::Beta => "wooga/unityversions-beta",
+        VersionType::Patch => "wooga/unityversions-patch",
+    };
+    brew::tap::ensure(tap)
 }
