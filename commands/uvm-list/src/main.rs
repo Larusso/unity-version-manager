@@ -1,10 +1,12 @@
+#[macro_use]
+extern crate serde_derive;
 extern crate uvm_cli;
 extern crate uvm_core;
 extern crate console;
 
 use console::Style;
 use console::Term;
-use uvm_cli::ListOptions;
+use uvm_cli::ColorOption;
 use uvm_cli::Options;
 
 const USAGE: &'static str = "
@@ -20,6 +22,30 @@ Options:
   --color WHEN      Coloring: auto, always, never [default: auto]
   -h, --help        show this help message and exit
 ";
+
+#[derive(Debug, Deserialize)]
+pub struct ListOptions {
+    flag_verbose: bool,
+    flag_path: bool,
+    flag_color: ColorOption
+}
+
+impl ListOptions {
+    pub fn path_only(&self) -> bool {
+        self.flag_path
+    }
+}
+
+impl uvm_cli::Options for ListOptions {
+    fn verbose(&self) -> bool {
+        self.flag_verbose
+    }
+
+    fn color(&self) -> &ColorOption {
+        &self.flag_color
+    }
+}
+
 
 fn main() {
     let options:ListOptions = uvm_cli::get_options(USAGE).unwrap();
