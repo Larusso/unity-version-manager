@@ -5,7 +5,6 @@ extern crate serde;
 extern crate uvm_cli;
 extern crate uvm_core;
 
-use console::Style;
 use std::io::Write;
 use console::Term;
 use uvm_cli::Options;
