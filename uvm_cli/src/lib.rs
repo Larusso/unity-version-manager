@@ -6,7 +6,6 @@ extern crate serde;
 extern crate uvm_core;
 extern crate console;
 
-mod clear;
 mod detect;
 mod help;
 mod launch;
@@ -14,7 +13,6 @@ mod use_version;
 mod utils;
 mod uvm;
 
-pub use self::clear::*;
 pub use self::detect::*;
 pub use self::help::*;
 pub use self::launch::*;
