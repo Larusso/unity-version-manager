@@ -1,0 +1,7 @@
+[package]
+name = "uvm_install_core"
+version = "0.1.0"
+authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
+
+[dependencies]
+uvm_core = { path = "../../uvm_core" }

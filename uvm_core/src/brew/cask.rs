@@ -1,5 +1,5 @@
 use std::io;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::process::Child;
 use std::str;
 use std::fs;
@@ -45,5 +45,15 @@ pub fn install<I, S>(casks: I) -> io::Result<Child> where
         .arg("cask")
         .arg("install")
         .args(casks)
+        .stdout(Stdio::piped())
+        .spawn()
+}
+
+pub fn search(pattern: &str) -> io::Result<Child> {
+    Command::new("brew")
+        .arg("search")
+        .arg("--casks")
+        .arg(pattern)
+        .stdout(Stdio::piped())
         .spawn()
 }

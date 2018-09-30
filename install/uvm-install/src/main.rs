@@ -4,6 +4,7 @@ extern crate console;
 extern crate serde;
 extern crate uvm_cli;
 extern crate uvm_core;
+extern crate uvm_install_core;
 
 use std::io::Write;
 use console::Term;
@@ -12,6 +13,7 @@ use uvm_cli::ColorOption;
 use std::collections::HashSet;
 use uvm_core::unity::Version;
 use uvm_core::unity::VersionType;
+use uvm_install_core::InstallVariant;
 
 use console::style;
 use std::process;
@@ -102,29 +104,6 @@ impl Options for InstallOptions {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Debug)]
-enum InstallVariant {
-    Android,
-    Ios,
-    WebGl,
-    Linux,
-    Windows,
-    Editor,
-}
-
-impl fmt::Display for InstallVariant {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &InstallVariant::Android => write!(f, "android"),
-            &InstallVariant::Ios => write!(f, "ios"),
-            &InstallVariant::WebGl => write!(f, "webgl"),
-            &InstallVariant::Linux => write!(f, "linux"),
-            &InstallVariant::Windows => write!(f, "windows"),
-            _ => write!(f, "editor"),
-        }
-    }
-}
-
 fn main() {
     let mut stdout = Term::stderr();
     install(uvm_cli::get_options(USAGE).unwrap()).unwrap_or_else(|err| {
@@ -137,22 +116,12 @@ fn main() {
     stdout.write_line("Finish").ok();
 }
 
-fn cask_name_for_type_version(variant: InstallVariant, version: &Version) -> brew::cask::Cask {
-    let base_name = if variant == InstallVariant::Editor {
-        String::from("unity")
-    } else {
-        format!("unity-{}-support-for-editor", variant)
-    };
-
-    String::from(format!("{}@{}", base_name, version.to_string()))
-}
-
 fn install(options: InstallOptions) -> io::Result<()> {
     let mut stderr = Term::stderr();
     write!(stderr, "{}: {}\n", style("install unity version").green(), options.version().to_string()).ok();
 
 
-    ensure_tap_for_version(&options.version())?;
+    uvm_install_core::ensure_tap_for_version(&options.version())?;
 
     let casks = brew::cask::list()?;
     let installed: HashSet<brew::cask::Cask> = casks
@@ -160,14 +129,14 @@ fn install(options: InstallOptions) -> io::Result<()> {
         .collect();
 
     let mut to_install = HashSet::new();
-    to_install.insert(cask_name_for_type_version(
+    to_install.insert(uvm_install_core::cask_name_for_type_version(
         InstallVariant::Editor,
         &options.version(),
     ));
 
     if let Some(variants) = options.install_variants() {
         for variant in variants {
-            to_install.insert(cask_name_for_type_version(variant, &options.version()));
+            to_install.insert(uvm_install_core::cask_name_for_type_version(variant, &options.version()));
         }
     }
 
@@ -201,13 +170,4 @@ fn install(options: InstallOptions) -> io::Result<()> {
     }
 
     Ok(())
-}
-
-fn ensure_tap_for_version(version: &Version) -> io::Result<()> {
-    let tap = match *version.release_type() {
-        VersionType::Final => "wooga/unityversions",
-        VersionType::Beta => "wooga/unityversions-beta",
-        VersionType::Patch => "wooga/unityversions-patch",
-    };
-    brew::tap::ensure(tap)
 }

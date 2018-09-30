@@ -8,7 +8,7 @@ use std::convert::From;
 use unity::Installation;
 use serde;
 
-#[derive(PartialEq,Eq,Ord,Debug)]
+#[derive(PartialEq,Eq,Ord,Hash,Debug)]
 pub enum VersionType {
     Beta,
     Patch,
