@@ -20,7 +20,7 @@ Options:
   -h, --help        show this help message and exit
 ";
 
-fn main() {
-    let options:VersionsOptions = uvm_cli::get_options(USAGE).unwrap();
-    uvm_versions::UvmCommand::new().exec(options).unwrap();
+fn main() -> std::io::Result<()> {
+    let options:VersionsOptions = uvm_cli::get_options(USAGE)?;
+    uvm_versions::UvmCommand::new().exec(options)
 }
