@@ -6,11 +6,11 @@ use std::process;
 use uvm_cli::HelpOptions;
 
 const USAGE: &'static str = "
-uvm-list - Prints help page for command.
+uvm-help - Prints help page for command.
 
 Usage:
   uvm-help <command>
-  uvm-list (-h | --help)
+  uvm-help (-h | --help)
 
 Options:
   -h, --help        show this help message and exit

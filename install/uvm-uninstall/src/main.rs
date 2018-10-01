@@ -4,7 +4,7 @@ extern crate uvm_uninstall;
 use uvm_uninstall::UninstallOptions;
 
 const USAGE: &'static str = "
-uvm-install - Uninstall specified unity version.
+uvm-uninstall - Uninstall specified unity version.
 
 Usage:
   uvm-uninstall [options] <version>

@@ -11,7 +11,7 @@ use uvm_cli::LaunchOptions;
 use uvm_cli::Options;
 
 const USAGE: &'static str = "
-uvm-current - Launch the current active version of unity.
+uvm-launch - Launch the current active version of unity.
 
 Usage:
   uvm-launch [options] [<project-path>]
