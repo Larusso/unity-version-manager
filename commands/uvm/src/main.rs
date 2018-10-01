@@ -17,11 +17,15 @@ Options:
   -h, --help        show this help message and exit
 
 Commands:
-  current           prints current activated version of unity
-  detect            find which version of unity was used to generate a project
-  launch            launch the current active version of unity
-  list              list unity versions available
-  use               use specific version of unity
+  clear             Clear active unity version
+  current           Prints current activated version of unity
+  detect            Find which version of unity was used to generate a project
+  launch            Launch the current active version of unity
+  list              List unity versions available
+  use               Use specific version of unity
+  install           Install specified unity version
+  uninstall         Uninstall specified unity version
+  versions          List available Unity versions to install
   help              show command help and exit
 ";
 
