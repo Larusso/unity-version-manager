@@ -29,7 +29,7 @@ pub fn sub_command_path(command_name: &str) -> io::Result<PathBuf> {
 
     //first check exe directory
     let comparator = |entry: &fs::DirEntry| {
-        entry.file_type().unwrap().is_file() && entry.file_name() == command_name[..]
+        !entry.file_type().unwrap().is_dir() && entry.file_name() == command_name[..]
     };
 
     let command_path = find_in_path(base_search_dir, &comparator);
