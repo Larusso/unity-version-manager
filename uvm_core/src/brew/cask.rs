@@ -46,6 +46,21 @@ pub fn install<I, S>(casks: I) -> io::Result<Child> where
         .arg("install")
         .args(casks)
         .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+}
+
+pub fn uninstall<I, S>(casks: I) -> io::Result<Child> where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>
+{
+    Command::new("brew")
+        .arg("cask")
+        .arg("uninstall")
+        .arg("--force")
+        .args(casks)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
 }
 
@@ -55,5 +70,6 @@ pub fn search(pattern: &str) -> io::Result<Child> {
         .arg("--casks")
         .arg(pattern)
         .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
 }
