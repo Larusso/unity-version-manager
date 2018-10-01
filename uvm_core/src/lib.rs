@@ -1,5 +1,4 @@
 extern crate regex;
-extern crate serde_derive;
 extern crate serde;
 
 #[cfg(test)]

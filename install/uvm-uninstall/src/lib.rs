@@ -85,16 +85,11 @@ impl Options for UninstallOptions {
 }
 
 pub struct UvmCommand {
-    stdout: Term,
-    stderr: Term
 }
 
 impl UvmCommand {
     pub fn new() -> UvmCommand {
-        UvmCommand {
-            stdout: Term::stdout(),
-            stderr: Term::stderr(),
-        }
+        UvmCommand {}
     }
 
     pub fn exec(&self, options:UninstallOptions) -> io::Result<()> {
