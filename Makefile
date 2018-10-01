@@ -1,16 +1,15 @@
 DESTDIR =
 PREFIX  = /usr/local
 
-all: target/release/grlm
-build: target/release/grlm
+all: target/release/uvm
+build: target/release/uvm
 
-target/release/uvm*:
+target/release/uvm:
 	cargo build --release --all
 
 install: install-uvm
 
 install-uvm: target/release/uvm
-	install -m755 -- target/release/uvm "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm-clear "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm-current "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm-detect "$(DESTDIR)$(PREFIX)/bin/"
@@ -21,6 +20,7 @@ install-uvm: target/release/uvm
 	install -m755 -- target/release/uvm-install "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm-uninstall "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm-versions "$(DESTDIR)$(PREFIX)/bin/"
+	install -m755 -- target/release/uvm "$(DESTDIR)$(PREFIX)/bin/"
 
 test: target/release/uvm
 	cargo test --release $(CARGO_OPTS)
