@@ -11,9 +11,7 @@ use console::Term;
 use std::io;
 use std::collections::HashSet;
 use uvm_cli::ColorOption;
-use uvm_cli::Options;
 use uvm_core::unity::VersionType;
-use itertools::Itertools;
 
 #[derive(Debug, Deserialize)]
 pub struct VersionsOptions {
@@ -67,7 +65,7 @@ impl UvmCommand {
         }
     }
 
-    fn readCasksFromStdOut(&self, stdout:&Vec<u8>) -> String {
+    fn read_casks_from_std_out(&self, stdout:&Vec<u8>) -> String {
         return String::from_utf8_lossy(stdout).into_owned()
     }
 
@@ -82,7 +80,7 @@ impl UvmCommand {
 
         let output = uvm_core::brew::cask::search(&format!("/unity@.*?({}).*/", itertools::join(&variants, "|")))
             .and_then(std::process::Child::wait_with_output)
-            .map(|out| self.readCasksFromStdOut(&out.stdout))?;
+            .map(|out| self.read_casks_from_std_out(&out.stdout))?;
 
         self.stderr.write_line("Available Unity versions to install:")?;
         for cask in output.lines().filter(|line| line.starts_with("unity@")) {

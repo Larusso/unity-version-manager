@@ -6,7 +6,6 @@ use std::error::Error;
 use std::result;
 use std::convert::From;
 use unity::Installation;
-use serde;
 
 #[derive(PartialEq,Eq,Ord,Hash,Debug)]
 pub enum VersionType {

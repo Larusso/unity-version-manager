@@ -12,13 +12,11 @@ use uvm_cli::Options;
 use uvm_cli::ColorOption;
 use std::collections::HashSet;
 use uvm_core::unity::Version;
-use uvm_core::unity::VersionType;
 use uvm_install_core::InstallVariant;
 
 use console::style;
 use std::process;
 use std::io;
-use std::fmt;
 use uvm_core::brew;
 
 const USAGE: &'static str = "

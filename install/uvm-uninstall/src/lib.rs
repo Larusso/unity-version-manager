@@ -7,7 +7,6 @@ extern crate uvm_core;
 extern crate uvm_install_core;
 
 use console::style;
-use console::Style;
 use console::Term;
 use std::collections::HashSet;
 use std::io;

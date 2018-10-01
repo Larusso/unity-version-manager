@@ -61,7 +61,7 @@ impl UvmCommand {
 
         fs::remove_file(active_path)
             .map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to clear active version"))?;
-        self.stderr.write_line(&format!("{}", style("success").green()))?;
+        self.stdout.write_line(&format!("{}", style("success").green()))?;
         Ok(())
     }
 }
