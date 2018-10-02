@@ -5,13 +5,16 @@ extern crate uvm_core;
 extern crate console;
 extern crate uvm_install_core;
 extern crate itertools;
+extern crate indicatif;
 
 use console::Style;
 use console::Term;
 use std::io;
+use itertools::Itertools;
 use std::collections::HashSet;
 use uvm_cli::ColorOption;
 use uvm_core::unity::VersionType;
+use indicatif::{ProgressBar,ProgressStyle};
 
 #[derive(Debug, Deserialize)]
 pub struct VersionsOptions {
@@ -78,9 +81,20 @@ impl UvmCommand {
             uvm_install_core::ensure_tap_for_version_type(&variant).unwrap();
         }
 
-        let output = uvm_core::brew::cask::search(&format!("/unity@.*?({}).*/", itertools::join(&variants, "|")))
+        let bar = ProgressBar::new_spinner();
+        let spinner_style = ProgressStyle::default_spinner()
+            .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ ")
+            .template("{prefix:.bold.dim} {spinner} {wide_msg}");
+        bar.set_style(spinner_style);
+        bar.set_prefix(&format!("search unity versions: {}",format!("{:#}", &variants.iter().format(", "))));
+        bar.enable_steady_tick(100);
+        bar.tick();
+
+        let output = uvm_core::brew::cask::search(&format!("/unity@.*?({}).*/", &variants.iter().join("|")))
             .and_then(std::process::Child::wait_with_output)
             .map(|out| self.read_casks_from_std_out(&out.stdout))?;
+
+        bar.finish_and_clear();
 
         self.stderr.write_line("Available Unity versions to install:")?;
         for cask in output.lines().filter(|line| line.starts_with("unity@")) {

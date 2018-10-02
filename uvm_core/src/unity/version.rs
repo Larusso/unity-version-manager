@@ -63,10 +63,18 @@ impl Version {
 
 impl fmt::Display for VersionType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &VersionType::Final => write!(f, "f"),
-            &VersionType::Patch => write!(f, "p"),
-            &VersionType::Beta => write!(f, "b"),
+        if f.alternate() {
+            match self {
+                &VersionType::Final => write!(f, "final"),
+                &VersionType::Patch => write!(f, "patch"),
+                &VersionType::Beta => write!(f, "beta"),
+            }
+        } else {
+            match self {
+                &VersionType::Final => write!(f, "f"),
+                &VersionType::Patch => write!(f, "p"),
+                &VersionType::Beta => write!(f, "b"),
+            }
         }
     }
 }
