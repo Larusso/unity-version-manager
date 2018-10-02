@@ -1,6 +1,6 @@
 [package]
 name = "uvm-help"
-version = "2.0.0"
+version = "2.0.1"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 
 [dependencies]
