@@ -5,6 +5,9 @@ use std::env;
 use std::process;
 use console::style;
 use std::error::Error;
+use std;
+use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::MetadataExt;
 
 fn find_in_path<F>(dir: &Path, predicate: &F) -> io::Result<PathBuf>
 where
@@ -20,6 +23,34 @@ where
             )
         })
         .map(|entry| entry.path())
+}
+
+pub fn find_commands_in_path(dir: &Path) -> io::Result<Box<Iterator<Item = PathBuf>>>
+{
+    let result = dir.read_dir()?
+        .filter_map(io::Result::ok)
+        .filter(|entry| {
+            let file_type = entry.file_type().unwrap();
+            if !file_type.is_dir() && entry.file_name().to_string_lossy().starts_with("uvm-") {
+                let metadata = entry.path().metadata().unwrap();
+                let process = env::current_exe().unwrap();
+                let p_metadata = process.metadata().unwrap();
+                let p_uid = p_metadata.uid();
+                let p_gid = p_metadata.gid();
+
+                let isUser = metadata.uid() == p_uid;
+                let isGroup = metadata.gid() == p_gid;
+
+                let permissions = metadata.permissions();
+                let mode = permissions.mode();
+                return (mode & 0o0001) != 0
+                    || ((mode & 0o0010) != 0 && isGroup)
+                    || ((mode & 0o0100) != 0 && isUser)
+            }
+            false
+        })
+        .map(|entry| entry.path());
+    Ok(Box::new(result))
 }
 
 pub fn sub_command_path(command_name: &str) -> io::Result<PathBuf> {
@@ -52,6 +83,65 @@ pub fn sub_command_path(command_name: &str) -> io::Result<PathBuf> {
         io::ErrorKind::NotFound,
         format!("command not found: {}", command_name),
     ))
+}
+
+pub struct UvmSubCommands(Box<Iterator<Item = UvmSubCommand>>);
+
+impl UvmSubCommands {
+    fn new() -> io::Result<UvmSubCommands> {
+        let p = env::current_exe()?;
+        let base_search_dir = p.parent().unwrap();
+        let mut iter = find_commands_in_path(base_search_dir).ok();
+
+        if let Ok(path) = env::var("PATH") {
+            let paths = path.split(":").map(|s| Path::new(s));
+            for path in paths {
+                if let Ok(sub_commands) = find_commands_in_path(path) {
+                    iter = match iter {
+                        Some(i) => Some(Box::new(i.chain(sub_commands))),
+                        None    => Some(sub_commands)
+                    };
+                }
+            }
+        }
+
+        if let Some(i) = iter {
+            let m = i.map(|path| UvmSubCommand(path));
+            Ok(UvmSubCommands(Box::new(m)))
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "not Found",
+            ))
+        }
+    }
+}
+
+impl Iterator for UvmSubCommands {
+    type Item = UvmSubCommand;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+pub struct UvmSubCommand(PathBuf);
+
+impl UvmSubCommand {
+    pub fn path(&self) -> PathBuf {
+        self.0.clone()
+    }
+    pub fn command_name(&self) -> String {
+        String::from(self.0.file_name().unwrap().to_string_lossy().split("uvm-").last().unwrap())
+    }
+
+    pub fn description(&self) -> String {
+        String::from("")
+    }
+}
+
+pub fn find_sub_commands() -> io::Result<UvmSubCommands> {
+    UvmSubCommands::new()
 }
 
 pub fn print_error_and_exit<E, T>(err: E) -> T

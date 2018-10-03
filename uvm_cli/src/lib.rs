@@ -19,6 +19,7 @@ pub use self::launch::*;
 pub use self::use_version::*;
 pub use self::utils::print_error_and_exit;
 pub use self::utils::sub_command_path;
+pub use self::utils::find_sub_commands;
 pub use self::uvm::*;
 
 use docopt::Docopt;
