@@ -6,6 +6,8 @@ use uvm_core::brew;
 use uvm_core::unity::Version;
 use uvm_core::unity::VersionType;
 
+pub mod installer;
+
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub enum InstallVariant {
     Android,
