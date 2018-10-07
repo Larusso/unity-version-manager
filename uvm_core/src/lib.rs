@@ -1,5 +1,6 @@
 extern crate regex;
 extern crate serde;
+extern crate itertools;
 
 #[cfg(test)]
 #[macro_use]

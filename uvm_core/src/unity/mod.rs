@@ -13,6 +13,7 @@ use std::fs;
 use std::path::Path;
 use std::io;
 use std::convert::From;
+use itertools::Itertools;
 
 const UNITY_INSTALL_LOCATION: &'static str = "/Applications";
 
@@ -27,7 +28,9 @@ impl Installations {
             .filter_map(check_dir_entry)
             .map(|entry| entry.path())
             .map(Installation::new)
-            .filter_map(io::Result::ok);
+            .filter_map(io::Result::ok)
+            .sorted()
+            .into_iter();
         Ok(Installations(Box::new(iter)))
     }
 
