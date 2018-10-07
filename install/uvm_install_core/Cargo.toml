@@ -5,3 +5,4 @@ authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 
 [dependencies]
 uvm_core = { path = "../../uvm_core" }
+log = "0.4.5"

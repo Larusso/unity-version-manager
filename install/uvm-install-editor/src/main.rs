@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate uvm_cli;
 extern crate uvm_install_editor;
+extern crate flexi_logger;
+extern crate console;
 
 const USAGE: &'static str = "
 uvm-install-editor - Install a unity editor from given installer.

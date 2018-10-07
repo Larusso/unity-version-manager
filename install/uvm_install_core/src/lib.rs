@@ -1,4 +1,6 @@
 extern crate uvm_core;
+#[macro_use]
+extern crate log;
 
 use std::fmt;
 use std::io;

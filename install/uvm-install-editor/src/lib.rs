@@ -54,9 +54,7 @@ impl UvmCommand {
     }
 
     pub fn exec(&self, options:Options) -> io::Result<()> {
-        self.stderr.write_line(&format!("extract content of {} to {}",
-            options.installer().display(), options.destination().display()))
-        .and_then(|_| installer::install_editor(options.installer(), options.destination()))
-        .and_then(|_| self.stderr.write_line(&format!("{}", style("success").green())))
+        installer::install_editor(options.installer(), options.destination())?;
+        self.stderr.write_line(&format!("{}", style("success").green().bold()))
     }
 }
