@@ -80,6 +80,7 @@ mod tests {
     use std::path::PathBuf;
     use rand;
     use tempdir::TempDir;
+    use std::str::FromStr;
     use super::*;
 
     macro_rules! prepare_unity_installations {
@@ -106,8 +107,12 @@ mod tests {
 
         let mut subject = Installations::new(test_dir.path()).unwrap();
 
-        assert_eq!(subject.next().unwrap().version().to_string(), "2017.1.2f3");
-        assert_eq!(subject.next().unwrap().version().to_string(), "2017.2.3f4");
+        let r1 = Version::from_str("2017.1.2f3").unwrap();
+        let r2 = Version::from_str("2017.2.3f4").unwrap();
+        for installation in subject {
+            let version = installation.version_owned();
+            assert!(version == r1 || version == r2);
+        }
     }
 
     #[test]
@@ -127,8 +132,11 @@ mod tests {
         let installations = Installations::new(test_dir.path()).unwrap();
         let mut subject = installations.versions();
 
-        assert_eq!(subject.next().unwrap().to_string(), "2017.1.2f3");
-        assert_eq!(subject.next().unwrap().to_string(), "2017.2.3f4");
+        let r1 = Version::from_str("2017.1.2f3").unwrap();
+        let r2 = Version::from_str("2017.2.3f4").unwrap();
+        for version in subject {
+            assert!(version == r1 || version == r2);
+        }
     }
 
     #[test]
@@ -142,8 +150,11 @@ mod tests {
         let installations = Installations::new(test_dir.path()).unwrap();
         let mut subject = Versions::from(installations);
 
-        assert_eq!(subject.next().unwrap().to_string(), "2017.1.2f3");
-        assert_eq!(subject.next().unwrap().to_string(), "2017.2.3f4");
+        let r1 = Version::from_str("2017.1.2f3").unwrap();
+        let r2 = Version::from_str("2017.2.3f4").unwrap();
+        for version in subject {
+            assert!(version == r1 || version == r2);
+        }
     }
 
     proptest! {

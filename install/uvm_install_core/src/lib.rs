@@ -1,10 +1,14 @@
 extern crate uvm_core;
+#[macro_use]
+extern crate log;
 
 use std::fmt;
 use std::io;
 use uvm_core::brew;
 use uvm_core::unity::Version;
 use uvm_core::unity::VersionType;
+
+pub mod installer;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub enum InstallVariant {

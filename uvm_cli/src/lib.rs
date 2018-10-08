@@ -5,6 +5,9 @@ extern crate serde;
 #[macro_use]
 extern crate uvm_core;
 extern crate console;
+#[macro_use]
+extern crate log;
+extern crate flexi_logger;
 
 mod detect;
 mod help;
@@ -22,11 +25,14 @@ pub use self::utils::sub_command_path;
 pub use self::utils::find_sub_commands;
 pub use self::uvm::*;
 
+use flexi_logger::{Logger, LogSpecification, Record, LevelFilter, Level};
+use console::Style;
 use docopt::Docopt;
 use serde::de::Deserialize;
 use std::ffi::OsStr;
 use std::io;
 use std::process::Command;
+
 
 #[derive(PartialEq, Deserialize, Debug)]
 pub enum ColorOption {
@@ -56,6 +62,7 @@ where
         .map_err(|e| e.exit())
         .and_then(|o| {
             set_colors_enabled(&o);
+            set_loglevel(&o);
             Ok(o)
         })
 }
@@ -71,6 +78,24 @@ where
     };
 }
 
+fn set_loglevel<T>(options: &T)
+where
+    T: Options,
+{
+    let log_spec_builder = if options.verbose() {
+        LogSpecification::default(LevelFilter::max())
+    }
+    else {
+        LogSpecification::default(LevelFilter::Warn)
+    };
+
+    let log_spec = log_spec_builder.build();
+
+    Logger::with(log_spec)
+        .format(format_logs)
+        .start()
+        .unwrap();
+}
 pub fn exec_command<C, I, S>(command: C, args: I) -> io::Result<i32>
 where
     C: AsRef<OsStr>,
@@ -87,4 +112,17 @@ where
                 "Process terminated by signal",
             ))
         })
+}
+
+fn format_logs(writer: &mut io::Write, record: &Record) -> Result<(), io::Error> {
+    let style = match record.level() {
+        Level::Trace => Style::new().white().dim().italic(),
+        Level::Debug => Style::new().white().dim(),
+        Level::Info => Style::new().white(),
+        Level::Warn => Style::new().yellow(),
+        Level::Error => Style::new().red()
+    };
+
+    writer.write(&format!("{}", style.apply_to(record.args())).into_bytes())
+        .map(|_| ())
 }
