@@ -5,7 +5,7 @@ use std;
 use std::str::FromStr;
 use std::io::{Error, ErrorKind};
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Installation {
     version: Version,
     path: PathBuf,
@@ -45,8 +45,8 @@ impl Installation {
         &self.version
     }
 
-    pub fn version_owned(self) -> Version {
-        self.version
+    pub fn version_owned(&self) -> Version {
+        self.version.to_owned()
     }
 
     pub fn path(&self) -> &PathBuf {

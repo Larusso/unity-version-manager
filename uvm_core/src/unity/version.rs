@@ -7,7 +7,7 @@ use std::result;
 use std::convert::From;
 use unity::Installation;
 
-#[derive(PartialEq,Eq,Ord,Hash,Debug)]
+#[derive(PartialEq,Eq,Ord,Hash,Debug,Clone)]
 pub enum VersionType {
     Beta,
     Patch,
@@ -20,7 +20,7 @@ impl PartialOrd for VersionType {
     }
 }
 
-#[derive(Eq,Debug)]
+#[derive(Eq,Debug,Clone)]
 pub struct Version {
     major: u32,
     minor: u32,
