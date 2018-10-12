@@ -25,6 +25,7 @@ Options:
   --windows         install windows support for editor
   --desktop         install desktop support (linux, windows)
   -v, --verbose     print more output
+  -d, --debug       print debug output
   --color WHEN      Coloring: auto, always, never [default: auto]
   -h, --help        show this help message and exit
 ";

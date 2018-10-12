@@ -45,16 +45,20 @@ pub fn ensure_tap_for_version_type(version_type: &VersionType) -> io::Result<()>
         VersionType::Beta => "wooga/unityversions-beta",
         VersionType::Patch => "wooga/unityversions-patch",
     };
+    debug!("ensure brew tap {}", tap);
     brew::tap::ensure(tap)
 }
 
 
 pub fn cask_name_for_type_version(variant: InstallVariant, version: &Version) -> brew::cask::Cask {
+    debug!("fetch cask name for variant {} and version {}", variant, version.to_string());
     let base_name = if variant == InstallVariant::Editor {
         String::from("unity")
     } else {
         format!("unity-{}-support-for-editor", variant)
     };
 
-    String::from(format!("{}@{}", base_name, version.to_string()))
+    let result = String::from(format!("{}@{}", base_name, version.to_string()));
+    debug!("{}", result);
+    result
 }

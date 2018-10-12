@@ -27,6 +27,7 @@ pub struct Options {
     #[serde(with = "uvm_core::unity::unity_version_format")]
     arg_version: Version,
     flag_verbose: bool,
+    flag_debug: bool,
     flag_android: bool,
     flag_ios: bool,
     flag_webgl: bool,
@@ -82,6 +83,10 @@ impl Options {
 impl uvm_cli::Options for Options {
     fn verbose(&self) -> bool {
         self.flag_verbose
+    }
+
+    fn debug(&self) -> bool {
+        self.flag_debug
     }
 
     fn color(&self) -> &ColorOption {
