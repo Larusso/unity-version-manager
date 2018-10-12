@@ -6,6 +6,9 @@ extern crate uvm_cli;
 extern crate uvm_core;
 extern crate uvm_install_core;
 
+#[macro_use]
+extern crate log;
+
 use std::io::Write;
 use console::Term;
 use uvm_cli::ColorOption;
@@ -100,7 +103,7 @@ impl UvmCommand {
     }
 
     pub fn exec(&self, options:Options) -> io::Result<()> {
-        write!(Term::stderr(), "{}: {}\n", style("install unity version").green(), options.version().to_string()).ok();
+        self.stderr.write_line(&format!("{}: {}", style("install unity version").green(), options.version().to_string())).ok();
 
         uvm_install_core::ensure_tap_for_version(&options.version())?;
 
@@ -121,18 +124,18 @@ impl UvmCommand {
             }
         }
 
-        if options.flag_verbose {
-            write!(Term::stderr(), "{}\n", style("Casks to install:").green()).ok();
+        if log_enabled!(log::Level::Info) {
+            info!("{}", style("Casks to install:").green());
             for c in &to_install {
-                write!(Term::stderr(), "{}\n", style(c).cyan()).ok();
+                info!("{}", style(c).cyan());
             }
 
             let mut diff = to_install.union(&installed).peekable();
             if let Some(_) = diff.peek() {
-                self.stderr.write_line("").ok();
-                write!(Term::stderr(), "{}\n", style("Skip variants already installed:").yellow()).ok();
+                info!("");
+                info!("{}", style("Skip variants already installed:").yellow());
                 for c in diff {
-                    write!(Term::stderr(), "{}\n", style(c).yellow().bold()).ok();
+                    info!("{}", style(c).yellow().bold());
                 }
             }
         }

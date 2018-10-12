@@ -7,7 +7,6 @@ extern crate console;
 use console::style;
 use std::process;
 use console::Term;
-use std::io::Write;
 
 const USAGE: &'static str = "
 uvm-install - Install specified unity version.
@@ -31,13 +30,13 @@ Options:
 ";
 
 fn main() -> std::io::Result<()> {
-    let mut stdout = Term::stderr();
+    let stdout = Term::stderr();
     let options:uvm_install::Options = uvm_cli::get_options(USAGE)?;
     uvm_install::UvmCommand::new().exec(options)
         .unwrap_or_else(|err| {
             let message = format!("Unable to install");
-            write!(stdout, "{}\n", style(message).red()).ok();
-            write!(stdout, "{}\n", style(err).red()).ok();
+            stdout.write_line(&format!("{}",style(message).red())).ok();
+            stdout.write_line(&format!("{}",style(err).red())).ok();
             process::exit(1);
         });
 
