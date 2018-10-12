@@ -13,6 +13,7 @@ use uvm_cli::ColorOption;
 use std::collections::HashSet;
 use uvm_core::unity::Version;
 use uvm_install_core::InstallVariant;
+use std::str::FromStr;
 
 use console::style;
 use std::process;
@@ -79,7 +80,12 @@ impl InstallOptions {
                 variants.insert(InstallVariant::WebGl);
             }
 
-            if self.flag_windows || self.flag_desktop || self.flag_all {
+            let check_version = Version::from_str("2018.0.0b0").unwrap();
+            if (self.flag_windows || self.flag_desktop || self.flag_all) && self.version() >= &check_version {
+                variants.insert(InstallVariant::WindowsMono);
+            }
+
+            if (self.flag_windows || self.flag_desktop || self.flag_all) && self.version() < &check_version {
                 variants.insert(InstallVariant::Windows);
             }
 
@@ -144,7 +150,7 @@ fn install(options: InstallOptions) -> io::Result<()> {
             write!(stderr, "{}\n", style(c).cyan()).ok();
         }
 
-        let mut diff = to_install.union(&installed).peekable();
+        let mut diff = to_install.intersection(&installed).peekable();
         if let Some(_) = diff.peek() {
             stderr.write_line("").ok();
             write!(stderr, "{}\n", style("Skip variants already installed:").yellow()).ok();

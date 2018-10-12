@@ -17,6 +17,7 @@ pub enum InstallVariant {
     WebGl,
     Linux,
     Windows,
+    WindowsMono,
     Editor,
 }
 
@@ -28,6 +29,7 @@ impl fmt::Display for InstallVariant {
             &InstallVariant::WebGl => write!(f, "webgl"),
             &InstallVariant::Linux => write!(f, "linux"),
             &InstallVariant::Windows => write!(f, "windows"),
+            &InstallVariant::WindowsMono => write!(f, "windows-mono"),
             _ => write!(f, "editor"),
         }
     }
