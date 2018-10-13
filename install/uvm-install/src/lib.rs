@@ -5,22 +5,26 @@ extern crate serde;
 extern crate uvm_cli;
 extern crate uvm_core;
 extern crate uvm_install_core;
+extern crate indicatif;
 
 #[macro_use]
 extern crate log;
 
 use std::io::Write;
 use console::Term;
+use std::path::PathBuf;
 use uvm_cli::ColorOption;
 use std::collections::HashSet;
 use uvm_core::unity::Version;
 use uvm_install_core::InstallVariant;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::str::FromStr;
 
 use console::style;
 use std::process;
 use std::io;
 use uvm_core::brew;
+use std::thread;
 
 #[derive(Debug, Deserialize)]
 pub struct Options {
@@ -111,52 +115,102 @@ impl UvmCommand {
         self.stderr.write_line(&format!("{}: {}", style("install unity version").green(), options.version().to_string())).ok();
 
         uvm_install_core::ensure_tap_for_version(&options.version())?;
-
-        let casks = brew::cask::list()?;
-        let installed: HashSet<brew::cask::Cask> = casks
-            .filter(|cask| cask.contains(&format!("@{}", &options.version().to_string())))
-            .collect();
+        //let casks = brew::cask::list()?;
+        // let installed: HashSet<brew::cask::Cask> = casks
+        //     .filter(|cask| cask.contains(&format!("@{}", &options.version().to_string())))
+        //     .collect();
 
         let mut to_install = HashSet::new();
-        to_install.insert(uvm_install_core::cask_name_for_type_version(
-            InstallVariant::Editor,
-            &options.version(),
-        ));
+        to_install.insert((InstallVariant::Editor,options.version().to_owned()));
 
         if let Some(variants) = options.install_variants() {
             for variant in variants {
-                to_install.insert(uvm_install_core::cask_name_for_type_version(variant, &options.version()));
+                to_install.insert((variant, options.version().to_owned()));
             }
         }
 
         if log_enabled!(log::Level::Info) {
-            info!("{}", style("Casks to install:").green());
+            info!("{}", style("Components to install:").green());
             for c in &to_install {
-                info!("{}", style(c).cyan());
+                info!("{}", style(&c.0).cyan());
             }
 
-            let mut diff = to_install.union(&installed).peekable();
-            if let Some(_) = diff.peek() {
-                info!("");
-                info!("{}", style("Skip variants already installed:").yellow());
-                for c in diff {
-                    info!("{}", style(c).yellow().bold());
+            // let mut diff = to_install.union(&installed).peekable();
+            // if let Some(_) = diff.peek() {
+            //     info!("");
+            //     info!("{}", style("Skip variants already installed:").yellow());
+            //     for c in diff {
+            //         info!("{}", style(c).yellow().bold());
+            //     }
+            // }
+        }
+
+        let m = MultiProgress::new();
+        let sty = ProgressStyle::default_bar()
+            .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
+            .template("{prefix:.bold.dim} {spinner} {wide_msg}");
+        self.stderr.write_line("download installer");
+
+        let mut threads:Vec<thread::JoinHandle<io::Result<PathBuf>>> = Vec::new();
+        for varient_combination in to_install {
+            let pb = m.add(ProgressBar::new(1));
+            pb.set_style(sty.clone());
+            pb.enable_steady_tick(100);
+            pb.tick();
+            let t:thread::JoinHandle<io::Result<PathBuf>> = thread::spawn(move || {
+                pb.set_prefix(&format!("{:>15}", varient_combination.0));
+                let installer = uvm_install_core::download_installer(varient_combination.0, &varient_combination.1);
+                if installer.is_err() {
+                    pb.finish_with_message(&format!("{}", style("error").red().bold()));
+                    //Err(installer.unwrap_err());
+                    panic!("error");
                 }
-            }
+                else {
+                    let i = installer.unwrap();
+                    debug!("installer location: {}", i.display());
+                    pb.finish_with_message("done");
+                    Ok(i)
+                }
+            });
+
+            threads.push(t);
         }
 
-        let mut diff = to_install.difference(&installed).peekable();
-        if let Some(_) = diff.peek() {
-            let mut child = brew::cask::install(diff)?;
-            let status = child.wait()?;
+        m.join();
+        let installer:Vec<thread::Result<io::Result<std::path::PathBuf>>> = threads.into_iter().map(thread::JoinHandle::join).collect();
+        if installer.into_iter().any(|tr| (tr.is_err() || tr.unwrap().is_err())) {
+            return Err(io::Error::new(io::ErrorKind::Other, "Failed to download all installer"));
+        }
 
-            if !status.success() {
-                return Err(io::Error::new(io::ErrorKind::Other, "Failed to install casks"));
-            }
-        }
-        else {
-            return Err(io::Error::new(io::ErrorKind::Other, "Version and all support packages already installed"));
-        }
+        // let installer:Vec<thread::Result<std::path::PathBuf>> = to_install.into_iter()
+        // .map(|varient_combination| {
+        //
+        // })
+        // .map(|t| {
+        //     m.join();
+        //     t
+        // })
+        // .map(thread::JoinHandle::join)
+        // .collect();
+
+        //debug!("installer {:?}", &installer);
+
+        // debug!("download installer");
+        // let installer = uvm_install_core::download_installer(InstallVariant::Editor, &options.version())?;
+        // debug!("installer location: {}", installer.display());
+
+        //let mut diff = to_install.difference(&installed).peekable();
+        // if let Some(_) = diff.peek() {
+        //     let mut child = brew::cask::install(diff)?;
+        //     let status = child.wait()?;
+        //
+        //     if !status.success() {
+        //         return Err(io::Error::new(io::ErrorKind::Other, "Failed to install casks"));
+        //     }
+        // }
+        // else {
+        //     return Err(io::Error::new(io::ErrorKind::Other, "Version and all support packages already installed"));
+        // }
 
         Ok(())
     }
