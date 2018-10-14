@@ -17,7 +17,7 @@ use uvm_cli::ColorOption;
 use std::collections::HashSet;
 use uvm_core::unity::Version;
 use uvm_install_core::InstallVariant;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle, ProgressDrawTarget};
 use std::str::FromStr;
 
 use console::style;
@@ -111,6 +111,17 @@ impl UvmCommand {
         }
     }
 
+    fn progress_draw_target<T>(options:&T) -> ProgressDrawTarget
+    where
+        T: uvm_cli::Options,
+    {
+        if( options.debug()) {
+            ProgressDrawTarget::hidden()
+        } else {
+            ProgressDrawTarget::stderr()
+        }
+    }
+
     pub fn exec(&self, options:Options) -> io::Result<()> {
         self.stderr.write_line(&format!("{}: {}", style("install unity version").green(), options.version().to_string())).ok();
 
@@ -145,53 +156,48 @@ impl UvmCommand {
             // }
         }
 
-        let m = MultiProgress::new();
+        let multiProgress = MultiProgress::new();
+        multiProgress.set_draw_target(UvmCommand::progress_draw_target(&options));
         let sty = ProgressStyle::default_bar()
             .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
-            .template("{prefix:.bold.dim} {spinner} {wide_msg}");
+            .template("{prefix:.bold.dim>15} {spinner} {wide_msg}");
         self.stderr.write_line("download installer");
 
-        let mut threads:Vec<thread::JoinHandle<io::Result<PathBuf>>> = Vec::new();
+        let mut threads:Vec<thread::JoinHandle<io::Result<(InstallVariant, PathBuf)>>> = Vec::new();
         for varient_combination in to_install {
-            let pb = m.add(ProgressBar::new(1));
+            let pb = multiProgress.add(ProgressBar::new(1));
             pb.set_style(sty.clone());
             pb.enable_steady_tick(100);
             pb.tick();
-            let t:thread::JoinHandle<io::Result<PathBuf>> = thread::spawn(move || {
-                pb.set_prefix(&format!("{:>15}", varient_combination.0));
-                let installer = uvm_install_core::download_installer(varient_combination.0, &varient_combination.1);
-                if installer.is_err() {
+            pb.set_prefix(&format!("{}", varient_combination.0));
+
+            let t:thread::JoinHandle<io::Result<(InstallVariant, PathBuf)>> = thread::spawn(move || {
+
+                uvm_install_core::download_installer(varient_combination.0.clone(), &varient_combination.1)
+                .map_err(|error| {
+                    debug!("error loading installer: {}", style(&error).red());
                     pb.finish_with_message(&format!("{}", style("error").red().bold()));
-                    //Err(installer.unwrap_err());
-                    panic!("error");
-                }
-                else {
-                    let i = installer.unwrap();
-                    debug!("installer location: {}", i.display());
+                    error
+                })
+                .map(|installer_path| {
+                    debug!("installer location: {}", installer_path.display());
                     pb.finish_with_message("done");
-                    Ok(i)
-                }
+                    (varient_combination.0, installer_path)
+                })
             });
 
             threads.push(t);
         }
 
-        m.join();
-        let installer:Vec<thread::Result<io::Result<std::path::PathBuf>>> = threads.into_iter().map(thread::JoinHandle::join).collect();
+        //wait for all progress bars to finish
+        multiProgress.join();
+
+        //collect installer paths
+        let installer:Vec<thread::Result<io::Result<(InstallVariant, PathBuf)>>> = threads.into_iter().map(thread::JoinHandle::join).collect();
+
         if installer.into_iter().any(|tr| (tr.is_err() || tr.unwrap().is_err())) {
             return Err(io::Error::new(io::ErrorKind::Other, "Failed to download all installer"));
         }
-
-        // let installer:Vec<thread::Result<std::path::PathBuf>> = to_install.into_iter()
-        // .map(|varient_combination| {
-        //
-        // })
-        // .map(|t| {
-        //     m.join();
-        //     t
-        // })
-        // .map(thread::JoinHandle::join)
-        // .collect();
 
         //debug!("installer {:?}", &installer);
 

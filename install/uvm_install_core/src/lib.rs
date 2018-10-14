@@ -14,7 +14,7 @@ use regex::Regex;
 
 pub mod installer;
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum InstallVariant {
     Android,
     Ios,
