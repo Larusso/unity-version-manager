@@ -126,6 +126,9 @@ impl UvmCommand {
         self.stderr.write_line(&format!("{}: {}", style("install unity version").green(), options.version().to_string())).ok();
 
         uvm_install_core::ensure_tap_for_version(&options.version())?;
+        let installation  = uvm_core::find_installation(&options.version())?;
+
+
         //let casks = brew::cask::list()?;
         // let installed: HashSet<brew::cask::Cask> = casks
         //     .filter(|cask| cask.contains(&format!("@{}", &options.version().to_string())))
