@@ -37,6 +37,8 @@ impl Component {
             TvOs => Some("PlaybackEngines/AppleTVSupport"),
             Linux => Some("PlaybackEngines/LinuxStandaloneSupport"),
             Windows => Some("PlaybackEngines/WindowsStandaloneSupport"),
+            WindowsMono => Some("PlaybackEngines/WindowsStandaloneSupport"),
+            WebGl => Some("PlaybackEngines/WebGLSupport"),
             _ => None
         };
 

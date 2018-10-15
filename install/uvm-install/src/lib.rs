@@ -67,7 +67,7 @@ impl Options {
                 variants.insert(InstallVariant::WebGl);
             }
 
-            let check_version = Version::from_str("2018.variant.variantb0").unwrap();
+            let check_version = Version::from_str("2018.0.0b0").unwrap();
             if (self.flag_windows || self.flag_desktop || self.flag_all) && self.version() >= &check_version {
                 variants.insert(InstallVariant::WindowsMono);
             }
@@ -231,7 +231,7 @@ impl UvmCommand {
 
         self.stderr.write_line("download installer");
 
-        let mut threads:Vec<thread::JoinHandle<io::Result<(InstallVariant, PathBuf)>>> = Vec::new();
+        let mut threads:Vec<thread::JoinHandle<io::Result<()>>> = Vec::new();
         let editor_installed_lock = Arc::new((Mutex::new(false), Condvar::new()));
         let mut editor_installing = false;
         for varient_combination in diff {
@@ -252,15 +252,24 @@ impl UvmCommand {
                             debug!("error loading installer: {}", style(&error).red());
                             pb.finish_with_message(&format!("{}", style("error").red().bold()));
                             error
-                        })
-                        .map(|installer_path| {
-                            debug!("installer location: {}", installer_path.display());
-                            (varient_combination.variant, installer_path)
                         });
 
-                        pb.set_message("installing");
-                        thread::sleep(Duration::from_millis(10000));
+                        if installer.is_err() {
+                            pb.finish_with_message("error downloading installer");
+                            return Err(installer.unwrap_err())
+                        }
+                        let installer = installer.unwrap();
+                        debug!("installer location: {}", &installer.display());
 
+                        pb.set_message("installing");
+                        let destination = varient_combination.destination.unwrap();
+                        debug!("install unity editor to {}", &destination.display());
+                        let result = uvm_install_core::installer::install_editor(&installer, &destination);
+
+                        if result.is_err() {
+                            pb.finish_with_message("failed to install editor");
+                            return Err(result.unwrap_err())
+                        }
 
                         let &(ref lock, ref cvar) = &*editor_installed_lock_c;
                         let mut is_installed = lock.lock().unwrap();
@@ -268,7 +277,7 @@ impl UvmCommand {
                         // We notify the condvar that the value has changed.
                         cvar.notify_all();
                         pb.finish_with_message("done");
-                        return installer
+                        Ok(())
                     })
                 },
                 _ => {
@@ -279,11 +288,15 @@ impl UvmCommand {
                             debug!("error loading installer: {}", style(&error).red());
                             pb.finish_with_message(&format!("{}", style("error").red().bold()));
                             error
-                        })
-                        .map(|installer_path| {
-                            debug!("installer location: {}", installer_path.display());
-                            (varient_combination.variant, installer_path)
                         });
+
+                        if installer.is_err() {
+                            pb.finish_with_message("error downloading installer");
+                            return Err(installer.unwrap_err())
+                        }
+
+                        let installer = installer.unwrap();
+                        debug!("installer location: {}", &installer.display());
 
                         {
                             let &(ref lock, ref cvar) = &*editor_installed_lock_c;
@@ -295,10 +308,23 @@ impl UvmCommand {
                             }
                         }
 
-                        pb.set_message("installing");
-                        thread::sleep(Duration::from_millis(10000));
-                        pb.finish_with_message("done");
-                        return installer
+                        if let Some(destination) = varient_combination.destination {
+                            pb.set_message("installing");
+                            debug!("install unity component {} to {}", &varient_combination.variant, &destination.display());
+                            let result = uvm_install_core::installer::install_module(&installer, &destination);
+                            if result.is_err() {
+                                pb.finish_with_message("failed to install component");
+                                let error = result.unwrap_err();
+                                error!("{}", error);
+                                return Err(error)
+                            }
+
+                            pb.finish_with_message("done");
+                            return Ok(())
+                        } else {
+                            pb.finish_with_message("failed to install: missing destination");
+                            return Err(io::Error::new(io::ErrorKind::Other, "Missing install destination"))
+                        }
                     })
                 }
             });
@@ -315,12 +341,12 @@ impl UvmCommand {
         //wait for all progress bars to finish
         multiProgress.join();
 
-        //collect installer paths
-        let installer:Vec<thread::Result<io::Result<(InstallVariant, PathBuf)>>> = threads.into_iter().map(thread::JoinHandle::join).collect();
-
-        if installer.into_iter().any(|tr| (tr.is_err() || tr.unwrap().is_err())) {
-            return Err(io::Error::new(io::ErrorKind::Other, "Failed to download all installer"));
-        }
+        // //collect installer paths
+        // let installer:Vec<thread::Result<io::Result<(InstallVariant, PathBuf)>>> = threads.into_iter().map(thread::JoinHandle::join).collect();
+        //
+        // if installer.into_iter().any(|tr| (tr.is_err() || tr.unwrap().is_err())) {
+        //     return Err(io::Error::new(io::ErrorKind::Other, "Failed to download all installer"));
+        // }
 
         //debug!("installer {:?}", &installer);
 
