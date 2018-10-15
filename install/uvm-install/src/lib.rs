@@ -198,14 +198,18 @@ impl UvmCommand {
         }
 
         if log_enabled!(log::Level::Info) {
-            info!("{}", style("Components to install:").green().bold());
-            for c in &to_install {
-                info!("{}", style(&c.variant).yellow());
+            if !to_install.is_empty() {
+                info!("{}", style("Components to install:").green().bold());
+                for c in &to_install {
+                    info!("{}", style(&c.variant).yellow());
+                }
             }
 
-            info!("{}", style("Components already installed:").green().bold());
-            for c in &installed {
-                info!("{}", style(&c.variant).yellow());
+            if !installed.is_empty() {
+                info!("{}", style("Components already installed:").green().bold());
+                for c in &installed {
+                    info!("{}", style(&c.variant).yellow());
+                }
             }
 
             let mut intersection = to_install.intersection(&installed).peekable();
