@@ -130,6 +130,87 @@ impl UvmCommand {
         }
     }
 
+    fn install_editor(install_object:InstallObject, pb:ProgressBar, editor_installed_lock:Arc<(Mutex<bool>,Condvar)>) -> io::Result<()> {
+        pb.set_message("download");
+        let installer = uvm_install_core::download_installer(install_object.variant.clone(), &install_object.version)
+        .map_err(|error| {
+            debug!("error loading installer: {}", style(&error).red());
+            pb.finish_with_message(&format!("{}", style("error").red().bold()));
+            error
+        });
+
+        if installer.is_err() {
+            pb.finish_with_message("error downloading installer");
+            return Err(installer.unwrap_err())
+        }
+        let installer = installer.unwrap();
+        debug!("installer location: {}", &installer.display());
+
+        pb.set_message("installing");
+        let destination = install_object.destination.unwrap();
+        debug!("install unity editor to {}", &destination.display());
+        let result = uvm_install_core::installer::install_editor(&installer, &destination);
+
+        if result.is_err() {
+            pb.finish_with_message("failed to install editor");
+            return Err(result.unwrap_err())
+        }
+
+        let &(ref lock, ref cvar) = &*editor_installed_lock;
+        let mut is_installed = lock.lock().unwrap();
+        *is_installed = true;
+        // We notify the condvar that the value has changed.
+        cvar.notify_all();
+        pb.finish_with_message("done");
+        Ok(())
+    }
+
+    fn install_component(install_object:InstallObject, pb:ProgressBar, editor_installed_lock:Arc<(Mutex<bool>,Condvar)>) -> io::Result<()> {
+        pb.set_message("download");
+        let installer = uvm_install_core::download_installer(install_object.variant.clone(), &install_object.version)
+        .map_err(|error| {
+            debug!("error loading installer: {}", style(&error).red());
+            pb.finish_with_message(&format!("{}", style("error").red().bold()));
+            error
+        });
+
+        if installer.is_err() {
+            pb.finish_with_message("error downloading installer");
+            return Err(installer.unwrap_err())
+        }
+
+        let installer = installer.unwrap();
+        debug!("installer location: {}", &installer.display());
+
+        {
+            let &(ref lock, ref cvar) = &*editor_installed_lock;
+            let mut is_installed = lock.lock().unwrap();
+            // As long as the value inside the `Mutex` is false, we wait.
+            while !*is_installed {
+                pb.set_message("waiting to install");
+                is_installed = cvar.wait(is_installed).unwrap();
+            }
+        }
+
+        if let Some(destination) = install_object.destination {
+            pb.set_message("installing");
+            debug!("install unity component {} to {}", &install_object.variant, &destination.display());
+            let result = uvm_install_core::installer::install_module(&installer, &destination);
+            if result.is_err() {
+                pb.finish_with_message("failed to install component");
+                let error = result.unwrap_err();
+                error!("{}", error);
+                return Err(error)
+            }
+
+            pb.finish_with_message("done");
+            return Ok(())
+        } else {
+            pb.finish_with_message("failed to install: missing destination");
+            return Err(io::Error::new(io::ErrorKind::Other, "Missing install destination"))
+        }
+    }
+
     pub fn exec(&self, options:Options) -> io::Result<()> {
         self.stderr.write_line(&format!("{}: {}", style("install unity version").green(), options.version().to_string())).ok();
 
@@ -250,85 +331,12 @@ impl UvmCommand {
                 InstallVariant::Editor => {
                     editor_installing = true;
                     thread::spawn(move || {
-                        pb.set_message("download");
-                        let installer = uvm_install_core::download_installer(varient_combination.variant.clone(), &varient_combination.version)
-                        .map_err(|error| {
-                            debug!("error loading installer: {}", style(&error).red());
-                            pb.finish_with_message(&format!("{}", style("error").red().bold()));
-                            error
-                        });
-
-                        if installer.is_err() {
-                            pb.finish_with_message("error downloading installer");
-                            return Err(installer.unwrap_err())
-                        }
-                        let installer = installer.unwrap();
-                        debug!("installer location: {}", &installer.display());
-
-                        pb.set_message("installing");
-                        let destination = varient_combination.destination.unwrap();
-                        debug!("install unity editor to {}", &destination.display());
-                        let result = uvm_install_core::installer::install_editor(&installer, &destination);
-
-                        if result.is_err() {
-                            pb.finish_with_message("failed to install editor");
-                            return Err(result.unwrap_err())
-                        }
-
-                        let &(ref lock, ref cvar) = &*editor_installed_lock_c;
-                        let mut is_installed = lock.lock().unwrap();
-                        *is_installed = true;
-                        // We notify the condvar that the value has changed.
-                        cvar.notify_all();
-                        pb.finish_with_message("done");
-                        Ok(())
+                        UvmCommand::install_editor(varient_combination, pb, editor_installed_lock_c)
                     })
                 },
                 _ => {
                     thread::spawn(move || {
-                        pb.set_message("download");
-                        let installer = uvm_install_core::download_installer(varient_combination.variant.clone(), &varient_combination.version)
-                        .map_err(|error| {
-                            debug!("error loading installer: {}", style(&error).red());
-                            pb.finish_with_message(&format!("{}", style("error").red().bold()));
-                            error
-                        });
-
-                        if installer.is_err() {
-                            pb.finish_with_message("error downloading installer");
-                            return Err(installer.unwrap_err())
-                        }
-
-                        let installer = installer.unwrap();
-                        debug!("installer location: {}", &installer.display());
-
-                        {
-                            let &(ref lock, ref cvar) = &*editor_installed_lock_c;
-                            let mut is_installed = lock.lock().unwrap();
-                            // As long as the value inside the `Mutex` is false, we wait.
-                            while !*is_installed {
-                                pb.set_message("waiting to install");
-                                is_installed = cvar.wait(is_installed).unwrap();
-                            }
-                        }
-
-                        if let Some(destination) = varient_combination.destination {
-                            pb.set_message("installing");
-                            debug!("install unity component {} to {}", &varient_combination.variant, &destination.display());
-                            let result = uvm_install_core::installer::install_module(&installer, &destination);
-                            if result.is_err() {
-                                pb.finish_with_message("failed to install component");
-                                let error = result.unwrap_err();
-                                error!("{}", error);
-                                return Err(error)
-                            }
-
-                            pb.finish_with_message("done");
-                            return Ok(())
-                        } else {
-                            pb.finish_with_message("failed to install: missing destination");
-                            return Err(io::Error::new(io::ErrorKind::Other, "Missing install destination"))
-                        }
+                        UvmCommand::install_component(varient_combination, pb, editor_installed_lock_c)
                     })
                 }
             });
