@@ -10,22 +10,23 @@ extern crate indicatif;
 #[macro_use]
 extern crate log;
 
-use std::io::Write;
+use console::style;
 use console::Term;
-use std::path::PathBuf;
-use uvm_cli::ColorOption;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle, ProgressDrawTarget};
 use std::collections::HashSet;
+use std::io;
+use std::io::Write;
+use std::path::PathBuf;
+use std::process;
+use std::str::FromStr;
+use std::thread;
+use std::time::Duration;
+use std::sync::{Arc, Mutex, Condvar};
+use uvm_cli::ColorOption;
+use uvm_core::brew;
+use uvm_core::unity::Installation;
 use uvm_core::unity::Version;
 use uvm_install_core::InstallVariant;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle, ProgressDrawTarget};
-use std::str::FromStr;
-
-use console::style;
-use std::process;
-use std::io;
-use uvm_core::brew;
-use std::thread;
-use uvm_core::unity::Installation;
 
 #[derive(Debug, Deserialize)]
 pub struct Options {
@@ -131,23 +132,26 @@ impl UvmCommand {
 
         let mut to_install:HashSet<(InstallVariant,Version)> = HashSet::new();
         let mut installed:HashSet<(InstallVariant,Version)> = HashSet::new();
+
+        if let Some(variants) = options.install_variants() {
+            for variant in variants {
+                to_install.insert((variant, options.version().to_owned()));
+            }
+        } else {
+           info!("No components requested to install");
+        }
+
         if installation.is_err() {
             to_install.insert((InstallVariant::Editor, options.version().to_owned()));
+
         } else {
             let installation = installation.unwrap();
             info!("Editor already installed at {}", &installation.path().display());
-            if let Some(variants) = options.install_variants() {
-                for variant in variants {
-                    to_install.insert((variant, options.version().to_owned()));
-                }
-            }
 
             if !to_install.is_empty() {
                 for component in installation.installed_components() {
                     installed.insert((component.into(), options.version().to_owned()));
                 }
-            } else {
-                info!("No components requested to install");
             }
         }
 
@@ -182,49 +186,93 @@ impl UvmCommand {
             return Ok(())
         }
 
-        // if let Some(_) = diff.peek() {
-        //     let mut child = brew::cask::install(diff)?;
-        //     let status = child.wait()?;
-        //
-        //     if !status.success() {
-        //         return Err(io::Error::new(io::ErrorKind::Other, "Failed to install casks"));
-        //     }
-        // }
-        // else {
-        //     return Err(io::Error::new(io::ErrorKind::Other, "Version and all support packages already installed"));
-        // }
-
         let multiProgress = MultiProgress::new();
         multiProgress.set_draw_target(UvmCommand::progress_draw_target(&options));
         let sty = ProgressStyle::default_bar()
             .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
             .template("{prefix:.bold.dim>15} {spinner} {wide_msg}");
+
         self.stderr.write_line("download installer");
 
         let mut threads:Vec<thread::JoinHandle<io::Result<(InstallVariant, PathBuf)>>> = Vec::new();
+        let editor_installed_lock = Arc::new((Mutex::new(false), Condvar::new()));
+        let mut editor_installing = false;
         for varient_combination in diff {
             let pb = multiProgress.add(ProgressBar::new(1));
             pb.set_style(sty.clone());
             pb.enable_steady_tick(100);
             pb.tick();
             pb.set_prefix(&format!("{}", varient_combination.0));
+            let editor_installed_lock_c = editor_installed_lock.clone();
 
-            let t:thread::JoinHandle<io::Result<(InstallVariant, PathBuf)>> = thread::spawn(move || {
+            threads.push(match &varient_combination.0 {
+                InstallVariant::Editor => {
+                    editor_installing = true;
+                    thread::spawn(move || {
+                        pb.set_message("download");
+                        let installer = uvm_install_core::download_installer(varient_combination.0.clone(), &varient_combination.1)
+                        .map_err(|error| {
+                            debug!("error loading installer: {}", style(&error).red());
+                            pb.finish_with_message(&format!("{}", style("error").red().bold()));
+                            error
+                        })
+                        .map(|installer_path| {
+                            debug!("installer location: {}", installer_path.display());
+                            (varient_combination.0, installer_path)
+                        });
 
-                uvm_install_core::download_installer(varient_combination.0.clone(), &varient_combination.1)
-                .map_err(|error| {
-                    debug!("error loading installer: {}", style(&error).red());
-                    pb.finish_with_message(&format!("{}", style("error").red().bold()));
-                    error
-                })
-                .map(|installer_path| {
-                    debug!("installer location: {}", installer_path.display());
-                    pb.finish_with_message("done");
-                    (varient_combination.0, installer_path)
-                })
+                        pb.set_message("installing");
+                        thread::sleep(Duration::from_millis(10000));
+                        
+
+                        let &(ref lock, ref cvar) = &*editor_installed_lock_c;
+                        let mut is_installed = lock.lock().unwrap();
+                        *is_installed = true;
+                        // We notify the condvar that the value has changed.
+                        cvar.notify_all();
+                        pb.finish_with_message("done");
+                        return installer
+                    })
+                },
+                _ => {
+                    thread::spawn(move || {
+                        pb.set_message("download");
+                        let installer = uvm_install_core::download_installer(varient_combination.0.clone(), &varient_combination.1)
+                        .map_err(|error| {
+                            debug!("error loading installer: {}", style(&error).red());
+                            pb.finish_with_message(&format!("{}", style("error").red().bold()));
+                            error
+                        })
+                        .map(|installer_path| {
+                            debug!("installer location: {}", installer_path.display());
+                            (varient_combination.0, installer_path)
+                        });
+
+                        {
+                            let &(ref lock, ref cvar) = &*editor_installed_lock_c;
+                            let mut is_installed = lock.lock().unwrap();
+                            // As long as the value inside the `Mutex` is false, we wait.
+                            while !*is_installed {
+                                pb.set_message("waiting to install");
+                                is_installed = cvar.wait(is_installed).unwrap();
+                            }
+                        }
+
+                        pb.set_message("installing");
+                        thread::sleep(Duration::from_millis(10000));
+                        pb.finish_with_message("done");
+                        return installer
+                    })
+                }
             });
+        }
 
-            threads.push(t);
+        if !editor_installing {
+            let &(ref lock, ref cvar) = &*editor_installed_lock;
+            let mut is_installed = lock.lock().unwrap();
+            *is_installed = true;
+            // We notify the condvar that the value has changed.
+            cvar.notify_all();
         }
 
         //wait for all progress bars to finish
