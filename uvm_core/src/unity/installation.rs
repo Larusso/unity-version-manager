@@ -3,6 +3,8 @@ use unity::Version;
 use std::cmp::Ordering;
 use std;
 use std::str::FromStr;
+use unity::Component;
+use unity::InstalledComponents;
 use std::io;
 use result;
 use UvmError;
@@ -54,6 +56,10 @@ impl Installation {
         } else {
             Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Provided Path is not a Unity installtion.")))
         }
+    }
+
+    pub fn installed_components(&self) -> InstalledComponents {
+        InstalledComponents::new(self.clone())
     }
 
     pub fn version(&self) -> &Version {

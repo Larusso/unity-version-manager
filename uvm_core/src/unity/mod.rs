@@ -1,8 +1,10 @@
 mod installation;
 mod version;
+mod component;
 mod current_installation;
 
 pub use self::installation::Installation;
+pub use self::component::Component;
 pub use self::version::Version;
 pub use self::version::ParseVersionError;
 pub use self::version::VersionType;
@@ -14,12 +16,18 @@ use std::fs;
 use std::path::Path;
 use std::io;
 use std::convert::From;
+use std::slice::Iter;
 use result::Result;
 
 const UNITY_INSTALL_LOCATION: &'static str = "/Applications";
 
 pub struct Installations(Box<Iterator<Item = Installation>>);
 pub struct Versions(Box<Iterator<Item = Version>>);
+
+pub struct InstalledComponents {
+    installation: Installation,
+    components: Iter<'static, Component>
+}
 
 impl Installations {
     fn new(install_location: &Path) -> Result<Installations> {
@@ -51,6 +59,26 @@ impl Iterator for Versions {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
+    }
+}
+
+impl InstalledComponents {
+    pub fn new(installation: Installation) -> InstalledComponents {
+        InstalledComponents { installation: installation, components: Component::iterator() }
+    }
+}
+
+impl Iterator for InstalledComponents {
+    type Item = Component;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        for c in &mut self.components {
+            if c.is_installed(&self.installation.path()) {
+                trace!("found component {:?} installed at {}", &c, &self.installation.path().display());
+                return Some(c.clone())
+            }
+        }
+        None
     }
 }
 

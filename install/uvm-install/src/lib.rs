@@ -25,6 +25,7 @@ use std::process;
 use std::io;
 use uvm_core::brew;
 use std::thread;
+use uvm_core::unity::Installation;
 
 #[derive(Debug, Deserialize)]
 pub struct Options {
@@ -126,38 +127,67 @@ impl UvmCommand {
         self.stderr.write_line(&format!("{}: {}", style("install unity version").green(), options.version().to_string())).ok();
 
         uvm_install_core::ensure_tap_for_version(&options.version())?;
-        let installation  = uvm_core::find_installation(&options.version())?;
+        let installation = uvm_core::find_installation(&options.version());
 
-
-        //let casks = brew::cask::list()?;
-        // let installed: HashSet<brew::cask::Cask> = casks
-        //     .filter(|cask| cask.contains(&format!("@{}", &options.version().to_string())))
-        //     .collect();
-
-        let mut to_install = HashSet::new();
-        to_install.insert((InstallVariant::Editor,options.version().to_owned()));
-
-        if let Some(variants) = options.install_variants() {
-            for variant in variants {
-                to_install.insert((variant, options.version().to_owned()));
+        let mut to_install:HashSet<(InstallVariant,Version)> = HashSet::new();
+        let mut installed:HashSet<(InstallVariant,Version)> = HashSet::new();
+        if installation.is_err() {
+            to_install.insert((InstallVariant::Editor, options.version().to_owned()));
+        } else {
+            let installation = installation.unwrap();
+            info!("Editor already installed at {}", &installation.path().display());
+            if let Some(variants) = options.install_variants() {
+                for variant in variants {
+                    to_install.insert((variant, options.version().to_owned()));
+                }
             }
+
+            if !to_install.is_empty() {
+                for component in installation.installed_components() {
+                    installed.insert((component.into(), options.version().to_owned()));
+                }
+            } else {
+                info!("No components requested to install");
+            }
+        }
+
+        if to_install.is_empty() {
+            self.stderr.write_line(&format!("{}", style("Nothing to install").green())).ok();
+            return Ok(())
         }
 
         if log_enabled!(log::Level::Info) {
-            info!("{}", style("Components to install:").green());
+            info!("{}", style("Components to install:").green().bold());
             for c in &to_install {
-                info!("{}", style(&c.0).cyan());
+                info!("{}", style(&c.0).yellow());
             }
 
-            // let mut diff = to_install.union(&installed).peekable();
-            // if let Some(_) = diff.peek() {
-            //     info!("");
-            //     info!("{}", style("Skip variants already installed:").yellow());
-            //     for c in diff {
-            //         info!("{}", style(c).yellow().bold());
-            //     }
-            // }
+            info!("{}", style("Components already installed:").green().bold());
+            for c in &installed {
+                info!("{}", style(&c.0).yellow());
+            }
+
+            let mut intersection = to_install.intersection(&installed).peekable();
+            if let Some(_) = intersection.peek() {
+                info!("{}", style("Skip variants already installed:").green().bold());
+                for c in intersection {
+                    info!("{}", style(&c.0).yellow());
+                }
+            }
         }
+
+        let mut diff = to_install.difference(&installed).cloned();//.peekable();
+        // if let Some(_) = diff.peek() {
+        //     let mut child = brew::cask::install(diff)?;
+        //     let status = child.wait()?;
+        //
+        //     if !status.success() {
+        //         return Err(io::Error::new(io::ErrorKind::Other, "Failed to install casks"));
+        //     }
+        // }
+        // else {
+        //     return Err(io::Error::new(io::ErrorKind::Other, "Version and all support packages already installed"));
+        // }
 
         let multiProgress = MultiProgress::new();
         multiProgress.set_draw_target(UvmCommand::progress_draw_target(&options));
@@ -167,7 +197,7 @@ impl UvmCommand {
         self.stderr.write_line("download installer");
 
         let mut threads:Vec<thread::JoinHandle<io::Result<(InstallVariant, PathBuf)>>> = Vec::new();
-        for varient_combination in to_install {
+        for varient_combination in diff {
             let pb = multiProgress.add(ProgressBar::new(1));
             pb.set_style(sty.clone());
             pb.enable_steady_tick(100);

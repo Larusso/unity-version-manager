@@ -11,7 +11,7 @@ use uvm_core::unity::VersionType;
 use std::path::PathBuf;
 use std::path::Path;
 use regex::Regex;
-
+use uvm_core::unity::Component;
 pub mod installer;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
@@ -35,6 +35,20 @@ impl fmt::Display for InstallVariant {
             &InstallVariant::Windows => write!(f, "windows"),
             &InstallVariant::WindowsMono => write!(f, "windows-mono"),
             _ => write!(f, "editor"),
+        }
+    }
+}
+
+impl From<Component> for InstallVariant {
+    fn from(component: Component) -> Self {
+        match component {
+            Component::Android => InstallVariant::Android,
+            Component::Ios => InstallVariant::Ios,
+            Component::WebGl => InstallVariant::WebGl,
+            Component::Linux => InstallVariant::Linux,
+            Component::Windows => InstallVariant::Windows,
+            Component::WindowsMono => InstallVariant::WindowsMono,
+            _ => InstallVariant::Editor
         }
     }
 }
