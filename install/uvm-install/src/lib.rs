@@ -130,85 +130,58 @@ impl UvmCommand {
         }
     }
 
-    fn install_editor(install_object:InstallObject, pb:ProgressBar, editor_installed_lock:Arc<(Mutex<bool>,Condvar)>) -> io::Result<()> {
-        pb.set_message("download");
+    fn install(install_object:InstallObject, pb:ProgressBar, editor_installed_lock:Arc<(Mutex<bool>,Condvar)>) -> io::Result<()> {
+        pb.set_message("download installer");
         let installer = uvm_install_core::download_installer(install_object.variant.clone(), &install_object.version)
         .map_err(|error| {
             debug!("error loading installer: {}", style(&error).red());
             pb.finish_with_message(&format!("{}", style("error").red().bold()));
             error
-        });
+        })?;
 
-        if installer.is_err() {
-            pb.finish_with_message("error downloading installer");
-            return Err(installer.unwrap_err())
-        }
-        let installer = installer.unwrap();
         debug!("installer location: {}", &installer.display());
 
-        pb.set_message("installing");
-        let destination = install_object.destination.unwrap();
-        debug!("install unity editor to {}", &destination.display());
-        let result = uvm_install_core::installer::install_editor(&installer, &destination);
-
-        if result.is_err() {
-            pb.finish_with_message("failed to install editor");
-            return Err(result.unwrap_err())
-        }
-
-        let &(ref lock, ref cvar) = &*editor_installed_lock;
-        let mut is_installed = lock.lock().unwrap();
-        *is_installed = true;
-        // We notify the condvar that the value has changed.
-        cvar.notify_all();
-        pb.finish_with_message("done");
-        Ok(())
-    }
-
-    fn install_component(install_object:InstallObject, pb:ProgressBar, editor_installed_lock:Arc<(Mutex<bool>,Condvar)>) -> io::Result<()> {
-        pb.set_message("download");
-        let installer = uvm_install_core::download_installer(install_object.variant.clone(), &install_object.version)
-        .map_err(|error| {
-            debug!("error loading installer: {}", style(&error).red());
-            pb.finish_with_message(&format!("{}", style("error").red().bold()));
-            error
-        });
-
-        if installer.is_err() {
-            pb.finish_with_message("error downloading installer");
-            return Err(installer.unwrap_err())
-        }
-
-        let installer = installer.unwrap();
-        debug!("installer location: {}", &installer.display());
-
-        {
+        if install_object.variant != InstallVariant::Editor {
+            debug!("aquire editor install lock for {}", &install_object.variant);
             let &(ref lock, ref cvar) = &*editor_installed_lock;
             let mut is_installed = lock.lock().unwrap();
             // As long as the value inside the `Mutex` is false, we wait.
+            debug!("editor is installed: {}", *is_installed);
             while !*is_installed {
-                pb.set_message("waiting to install");
+                pb.set_message("waiting for editor to finish installation");
+                debug!("waiting for editor to finish installation {}", &install_object.variant);
                 is_installed = cvar.wait(is_installed).unwrap();
             }
+            debug!("editor installation finish {}", &install_object.variant);
         }
 
-        if let Some(destination) = install_object.destination {
-            pb.set_message("installing");
-            debug!("install unity component {} to {}", &install_object.variant, &destination.display());
-            let result = uvm_install_core::installer::install_module(&installer, &destination);
-            if result.is_err() {
-                pb.finish_with_message("failed to install component");
-                let error = result.unwrap_err();
-                error!("{}", error);
-                return Err(error)
-            }
+        let destination = install_object.clone().destination.ok_or_else(|| {
+            io::Error::new(io::ErrorKind::Other, "Missing installtion destination")
+        })?;
 
-            pb.finish_with_message("done");
-            return Ok(())
-        } else {
-            pb.finish_with_message("failed to install: missing destination");
-            return Err(io::Error::new(io::ErrorKind::Other, "Missing install destination"))
+        pb.set_message("installing");
+        debug!("install {} to {}",&install_object.variant, &destination.display());
+        let install_f = match &install_object.variant {
+            InstallVariant::Editor => uvm_install_core::installer::install_editor,
+                                 _ => uvm_install_core::installer::install_module,
+        };
+
+        install_f(&installer, &destination)
+        .map_err(|error| {
+            debug!("failed to install {}. Error: {}", &install_object.variant, style(&error).red());
+            pb.finish_with_message(&format!("{}", style("failed to install").red().bold()));
+            error
+        })?;
+
+        if install_object.variant == InstallVariant::Editor {
+            let &(ref lock, ref cvar) = &*editor_installed_lock;
+            let mut is_installed = lock.lock().unwrap();
+            *is_installed = true;
+            // We notify the condvar that the value has changed.
+            cvar.notify_all();
         }
+        pb.finish_with_message("done");
+        Ok(())
     }
 
     pub fn exec(&self, options:Options) -> io::Result<()> {
@@ -319,27 +292,19 @@ impl UvmCommand {
         let mut threads:Vec<thread::JoinHandle<io::Result<()>>> = Vec::new();
         let editor_installed_lock = Arc::new((Mutex::new(false), Condvar::new()));
         let mut editor_installing = false;
-        for varient_combination in diff {
+        for install_object in diff {
             let pb = multiProgress.add(ProgressBar::new(1));
             pb.set_style(sty.clone());
             pb.enable_steady_tick(100);
             pb.tick();
-            pb.set_prefix(&format!("{}", varient_combination.variant));
+            pb.set_prefix(&format!("{}", install_object.variant));
             let editor_installed_lock_c = editor_installed_lock.clone();
-
-            threads.push(match &varient_combination.variant {
-                InstallVariant::Editor => {
-                    editor_installing = true;
-                    thread::spawn(move || {
-                        UvmCommand::install_editor(varient_combination, pb, editor_installed_lock_c)
-                    })
-                },
-                _ => {
-                    thread::spawn(move || {
-                        UvmCommand::install_component(varient_combination, pb, editor_installed_lock_c)
-                    })
-                }
-            });
+            editor_installing |= install_object.variant == InstallVariant::Editor;
+            threads.push(
+                thread::spawn(move || {
+                    UvmCommand::install(install_object, pb, editor_installed_lock_c)
+                })
+            );
         }
 
         if !editor_installing {
