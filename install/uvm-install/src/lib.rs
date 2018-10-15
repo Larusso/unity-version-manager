@@ -176,7 +176,12 @@ impl UvmCommand {
             }
         }
 
-        let mut diff = to_install.difference(&installed).cloned();//.peekable();
+        let mut diff = to_install.difference(&installed).cloned().peekable();
+        if let None = diff.peek() {
+            self.stderr.write_line(&format!("{}", style("Nothing to install").green())).ok();
+            return Ok(())
+        }
+
         // if let Some(_) = diff.peek() {
         //     let mut child = brew::cask::install(diff)?;
         //     let status = child.wait()?;
