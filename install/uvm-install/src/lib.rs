@@ -16,7 +16,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle, ProgressDrawTarget};
 use std::collections::HashSet;
 use std::io;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{PathBuf,Path};
 use std::process;
 use std::str::FromStr;
 use std::thread;
@@ -24,8 +24,7 @@ use std::time::Duration;
 use std::sync::{Arc, Mutex, Condvar};
 use uvm_cli::ColorOption;
 use uvm_core::brew;
-use uvm_core::unity::Installation;
-use uvm_core::unity::Version;
+use uvm_core::unity::{Installation,Version,Component};
 use uvm_install_core::InstallVariant;
 
 #[derive(Debug, Deserialize)]
@@ -68,7 +67,7 @@ impl Options {
                 variants.insert(InstallVariant::WebGl);
             }
 
-            let check_version = Version::from_str("2018.0.0b0").unwrap();
+            let check_version = Version::from_str("2018.variant.variantb0").unwrap();
             if (self.flag_windows || self.flag_desktop || self.flag_all) && self.version() >= &check_version {
                 variants.insert(InstallVariant::WindowsMono);
             }
@@ -98,6 +97,13 @@ impl uvm_cli::Options for Options {
     fn color(&self) -> &ColorOption {
         &self.flag_color
     }
+}
+
+#[derive(PartialEq, Eq, Hash, Debug, Clone)]
+struct InstallObject {
+    version: Version,
+    variant: InstallVariant,
+    destination: Option<PathBuf>
 }
 
 pub struct UvmCommand {
@@ -130,27 +136,58 @@ impl UvmCommand {
         uvm_install_core::ensure_tap_for_version(&options.version())?;
         let installation = uvm_core::find_installation(&options.version());
 
-        let mut to_install:HashSet<(InstallVariant,Version)> = HashSet::new();
-        let mut installed:HashSet<(InstallVariant,Version)> = HashSet::new();
-
-        if let Some(variants) = options.install_variants() {
-            for variant in variants {
-                to_install.insert((variant, options.version().to_owned()));
-            }
-        } else {
-           info!("No components requested to install");
-        }
+        let mut to_install:HashSet<InstallObject> = HashSet::new();
+        let mut installed:HashSet<InstallObject> = HashSet::new();
 
         if installation.is_err() {
-            to_install.insert((InstallVariant::Editor, options.version().to_owned()));
+            let base_dir = Path::new(&format!("/Applications/Unity-{}", options.version())).to_path_buf();
+            let installation_data = InstallObject {
+                            version: options.version().to_owned(),
+                            variant: InstallVariant::Editor,
+                            destination: Some(base_dir.to_path_buf()),
+                        };
+            to_install.insert(installation_data);
 
+            if let Some(variants) = options.install_variants() {
+                for variant in variants {
+                    let component:Component = variant.into();
+                    let variant_destination = component.installpath();
+                    let installation_data = InstallObject {
+                                    version: options.version().to_owned(),
+                                    variant: component.into(),
+                                    destination: variant_destination.map(|d| base_dir.join(d)),
+                                };
+                    to_install.insert(installation_data);
+                }
+            } else {
+               info!("No components requested to install");
+            }
         } else {
             let installation = installation.unwrap();
             info!("Editor already installed at {}", &installation.path().display());
+            let base_dir = installation.path();
+            if let Some(variants) = options.install_variants() {
+                for variant in variants {
+                    let component:Component = variant.into();
+                    let variant_destination = component.installpath();
+                    let installation_data = InstallObject {
+                                    version: options.version().to_owned(),
+                                    variant: component.into(),
+                                    destination: variant_destination.map(|d| base_dir.join(d))
+                                };
+                    to_install.insert(installation_data);
+                }
+            }
 
             if !to_install.is_empty() {
                 for component in installation.installed_components() {
-                    installed.insert((component.into(), options.version().to_owned()));
+                    let variant_destination = component.installpath();
+                    let installation_data = InstallObject {
+                                    version: options.version().to_owned(),
+                                    variant: component.into(),
+                                    destination: variant_destination.map(|d| base_dir.join(d))
+                                };
+                    installed.insert(installation_data);
                 }
             }
         }
@@ -163,19 +200,19 @@ impl UvmCommand {
         if log_enabled!(log::Level::Info) {
             info!("{}", style("Components to install:").green().bold());
             for c in &to_install {
-                info!("{}", style(&c.0).yellow());
+                info!("{}", style(&c.variant).yellow());
             }
 
             info!("{}", style("Components already installed:").green().bold());
             for c in &installed {
-                info!("{}", style(&c.0).yellow());
+                info!("{}", style(&c.variant).yellow());
             }
 
             let mut intersection = to_install.intersection(&installed).peekable();
             if let Some(_) = intersection.peek() {
                 info!("{}", style("Skip variants already installed:").green().bold());
                 for c in intersection {
-                    info!("{}", style(&c.0).yellow());
+                    info!("{}", style(&c.variant).yellow());
                 }
             }
         }
@@ -202,15 +239,15 @@ impl UvmCommand {
             pb.set_style(sty.clone());
             pb.enable_steady_tick(100);
             pb.tick();
-            pb.set_prefix(&format!("{}", varient_combination.0));
+            pb.set_prefix(&format!("{}", varient_combination.variant));
             let editor_installed_lock_c = editor_installed_lock.clone();
 
-            threads.push(match &varient_combination.0 {
+            threads.push(match &varient_combination.variant {
                 InstallVariant::Editor => {
                     editor_installing = true;
                     thread::spawn(move || {
                         pb.set_message("download");
-                        let installer = uvm_install_core::download_installer(varient_combination.0.clone(), &varient_combination.1)
+                        let installer = uvm_install_core::download_installer(varient_combination.variant.clone(), &varient_combination.version)
                         .map_err(|error| {
                             debug!("error loading installer: {}", style(&error).red());
                             pb.finish_with_message(&format!("{}", style("error").red().bold()));
@@ -218,12 +255,12 @@ impl UvmCommand {
                         })
                         .map(|installer_path| {
                             debug!("installer location: {}", installer_path.display());
-                            (varient_combination.0, installer_path)
+                            (varient_combination.variant, installer_path)
                         });
 
                         pb.set_message("installing");
                         thread::sleep(Duration::from_millis(10000));
-                        
+
 
                         let &(ref lock, ref cvar) = &*editor_installed_lock_c;
                         let mut is_installed = lock.lock().unwrap();
@@ -237,7 +274,7 @@ impl UvmCommand {
                 _ => {
                     thread::spawn(move || {
                         pb.set_message("download");
-                        let installer = uvm_install_core::download_installer(varient_combination.0.clone(), &varient_combination.1)
+                        let installer = uvm_install_core::download_installer(varient_combination.variant.clone(), &varient_combination.version)
                         .map_err(|error| {
                             debug!("error loading installer: {}", style(&error).red());
                             pb.finish_with_message(&format!("{}", style("error").red().bold()));
@@ -245,7 +282,7 @@ impl UvmCommand {
                         })
                         .map(|installer_path| {
                             debug!("installer location: {}", installer_path.display());
-                            (varient_combination.0, installer_path)
+                            (varient_combination.variant, installer_path)
                         });
 
                         {

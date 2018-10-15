@@ -7,6 +7,7 @@ use self::Component::*;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
 pub enum Component {
+    Editor,
     Mono,
     VisualStudio,
     MonoDevelop,

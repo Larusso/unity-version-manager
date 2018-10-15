@@ -53,6 +53,20 @@ impl From<Component> for InstallVariant {
     }
 }
 
+impl From<InstallVariant> for Component {
+    fn from(component: InstallVariant) -> Self {
+        match component {
+            InstallVariant::Android => Component::Android,
+            InstallVariant::Ios => Component::Ios,
+            InstallVariant::WebGl => Component::WebGl,
+            InstallVariant::Linux => Component::Linux,
+            InstallVariant::Windows => Component::Windows,
+            InstallVariant::WindowsMono => Component::WindowsMono,
+            InstallVariant::Editor => Component::Editor
+        }
+    }
+}
+
 fn fetch_download_path_from_output(output: &Vec<u8>) -> Option<PathBuf> {
     let url_pattern = Regex::new(r"^==> Success! Downloaded to -> (.*)$").unwrap();
     String::from_utf8_lossy(output).lines().find(|line| {
