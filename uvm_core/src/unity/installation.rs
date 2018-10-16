@@ -4,8 +4,17 @@ use std::cmp::Ordering;
 use std;
 use std::str::FromStr;
 use std::io;
-use error::UvmError;
 use result;
+use UvmError;
+use plist::serde::{deserialize, serialize_to_xml};
+use std::fs::File;
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct AppInfo {
+    pub c_f_bundle_version: String,
+    pub unity_build_number: String,
+}
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Installation {
@@ -27,20 +36,23 @@ impl PartialOrd for Installation {
 
 impl Installation {
     pub fn new(path: PathBuf) -> result::Result<Installation> {
+        //on macOS the unity installation is a directory
+        if !path.exists() {
+            return Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, format!("Provided Path does not exist. {}", path.display()))))
+        }
         if path.is_dir() {
-            let name = path.file_name().ok_or_else(|| UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Can't read directory name.")))?;
-            let name = name.to_str().ok_or_else(|| UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Unable to convert directory name.")))?;
-            match Version::from_str(name) {
-                Ok(v) => {
-                    return Ok(Installation {
-                        version: v,
-                        path: path.clone()
-                    })
-                }
-                Err(e) => Err(UvmError::ParseVersionError(e))
-            }
+            //check for the `Unity.app` package
+            let info_plist_path = path.join("Unity.app/Contents/Info.plist");
+            let file = File::open(info_plist_path)?;
+            let info:AppInfo = deserialize(file)?;
+            let version = Version::from_str(&info.c_f_bundle_version)?;
+
+            Ok(Installation {
+                version: version,
+                path: path.clone()
+            })
         } else {
-            Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Provided Path is not a directory.")))
+            Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Provided Path is not a Unity installtion.")))
         }
     }
 
@@ -63,23 +75,50 @@ impl Installation {
 
 #[cfg(test)]
 mod tests {
-    use std::env;
     use std::fs;
+    use std::fs::OpenOptions;
     use std::path::Path;
+    use tempfile::Builder;
+
     use super::*;
 
-    fn create_test_path(version: &str) -> PathBuf {
-        let base_dir = env::temp_dir();
-        let path = &format!("{base_dir:?}/Unity-{version}", base_dir = base_dir, version = version);
+    fn create_unity_installation(base_dir:&PathBuf, version: &str) -> PathBuf {
+        let path = base_dir.join("Unity");
         let mut dir_builder = fs::DirBuilder::new();
         dir_builder.recursive(true);
-        dir_builder.create(path).unwrap();
-        Path::new(path).to_path_buf()
+        dir_builder.create(&path).unwrap();
+
+        let info_plist_path = path.join("Unity.app/Contents/Info.plist");
+        dir_builder.create(info_plist_path.parent().unwrap()).unwrap();
+
+        let info = AppInfo {
+            c_f_bundle_version: String::from_str(version).unwrap(),
+            unity_build_number: String::from_str("ssdsdsdd").unwrap()
+        };
+
+        let file = File::create(info_plist_path).unwrap();
+        serialize_to_xml(file, &info).unwrap();
+
+        path
+    }
+
+    macro_rules! prepare_unity_installation {
+        ($version:expr) => {
+            {
+                let test_dir = Builder::new()
+                                .prefix("installation")
+                                .rand_bytes(5)
+                                .tempdir()
+                                .unwrap();
+                let unity_path = create_unity_installation(&test_dir.path().to_path_buf(), $version);
+                (test_dir, unity_path)
+            }
+        };
     }
 
     #[test]
     fn create_installtion_from_path() {
-        let path = create_test_path("2017.1.2f5");
+        let (t , path) = prepare_unity_installation!("2017.1.2f5");
         let subject = Installation::new(path).unwrap();
 
         assert_eq!(subject.version.to_string(), "2017.1.2f5");
@@ -88,12 +127,13 @@ mod tests {
     proptest! {
         #[test]
         fn doesnt_crash(ref s in "\\PC*") {
+
             Installation::new(Path::new(s).to_path_buf()).is_ok();
         }
 
         #[test]
         fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
-            let path = create_test_path(s);
+            let (t , path) = prepare_unity_installation!(s);
             Installation::new(path).unwrap();
         }
     }
