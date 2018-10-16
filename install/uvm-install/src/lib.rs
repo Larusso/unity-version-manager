@@ -130,7 +130,14 @@ impl UvmCommand {
         }
     }
 
-    fn install(install_object:InstallObject, pb:ProgressBar, editor_installed_lock:Arc<(Mutex<bool>,Condvar)>) -> io::Result<()> {
+    fn set_editor_install_lock(editor_installed_lock:&Arc<(Mutex<Option<bool>>,Condvar)>, value:Option<bool>) {
+        let &(ref lock, ref cvar) = &**editor_installed_lock;
+        let mut is_installed = lock.lock().unwrap();
+        *is_installed = value;
+        cvar.notify_all();
+    }
+
+    fn install(install_object:InstallObject, pb:ProgressBar, editor_installed_lock:Arc<(Mutex<Option<bool>>,Condvar)>) -> io::Result<()> {
         pb.set_message("download installer");
         let installer = uvm_install_core::download_installer(install_object.variant.clone(), &install_object.version)
         .map_err(|error| {
@@ -146,13 +153,20 @@ impl UvmCommand {
             let &(ref lock, ref cvar) = &*editor_installed_lock;
             let mut is_installed = lock.lock().unwrap();
             // As long as the value inside the `Mutex` is false, we wait.
-            debug!("editor is installed: {}", *is_installed);
-            while !*is_installed {
+            while (*is_installed).is_none() {
                 pb.set_message("waiting for editor to finish installation");
                 debug!("waiting for editor to finish installation {}", &install_object.variant);
                 is_installed = cvar.wait(is_installed).unwrap();
             }
-            debug!("editor installation finish {}", &install_object.variant);
+
+            if let Some(is_installed ) = *is_installed {
+                if !is_installed {
+                    debug!("editor installation error {}", &install_object.variant);
+                    pb.finish_with_message(&format!("{}", style("failed because editor failed").red().bold()));
+                    return Err(io::Error::new(io::ErrorKind::Other, format!("{} failed because of {}", &install_object.variant, InstallVariant::Editor)));
+                }
+                debug!("editor installation finish {}", &install_object.variant);
+            }
         }
 
         let destination = install_object.clone().destination.ok_or_else(|| {
@@ -167,21 +181,22 @@ impl UvmCommand {
         };
 
         install_f(&installer, &destination)
+        .map(|result| {
+            debug!("finishinstall {}.", &install_object.variant);
+            pb.finish_with_message("done");
+            if install_object.variant == InstallVariant::Editor {
+                UvmCommand::set_editor_install_lock(&editor_installed_lock, Some(true));
+            }
+            result
+        })
         .map_err(|error| {
             debug!("failed to install {}. Error: {}", &install_object.variant, style(&error).red());
             pb.finish_with_message(&format!("{}", style("failed to install").red().bold()));
+            if install_object.variant == InstallVariant::Editor {
+                UvmCommand::set_editor_install_lock(&editor_installed_lock, Some(false));
+            }
             error
-        })?;
-
-        if install_object.variant == InstallVariant::Editor {
-            let &(ref lock, ref cvar) = &*editor_installed_lock;
-            let mut is_installed = lock.lock().unwrap();
-            *is_installed = true;
-            // We notify the condvar that the value has changed.
-            cvar.notify_all();
-        }
-        pb.finish_with_message("done");
-        Ok(())
+        })
     }
 
     pub fn exec(&self, options:Options) -> io::Result<()> {
@@ -288,7 +303,7 @@ impl UvmCommand {
             .template("{prefix:.bold.dim>15} {spinner} {wide_msg}");
 
         let mut threads:Vec<thread::JoinHandle<io::Result<()>>> = Vec::new();
-        let editor_installed_lock = Arc::new((Mutex::new(false), Condvar::new()));
+        let editor_installed_lock = Arc::new((Mutex::new(None), Condvar::new()));
         let mut editor_installing = false;
         for install_object in diff {
             let pb = multiProgress.add(ProgressBar::new(1));
@@ -306,11 +321,7 @@ impl UvmCommand {
         }
 
         if !editor_installing {
-            let &(ref lock, ref cvar) = &*editor_installed_lock;
-            let mut is_installed = lock.lock().unwrap();
-            *is_installed = true;
-            // We notify the condvar that the value has changed.
-            cvar.notify_all();
+            UvmCommand::set_editor_install_lock(&editor_installed_lock, Some(true));
         }
 
         //wait for all progress bars to finish
