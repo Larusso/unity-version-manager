@@ -111,6 +111,8 @@ pub struct UvmCommand {
     stderr: Term
 }
 
+type EditorInstallLock = Mutex<Option<io::Result<()>>>;
+
 impl UvmCommand {
     pub fn new() -> UvmCommand {
         UvmCommand {
@@ -130,14 +132,14 @@ impl UvmCommand {
         }
     }
 
-    fn set_editor_install_lock(editor_installed_lock:&Arc<(Mutex<Option<bool>>,Condvar)>, value:Option<bool>) {
+    fn set_editor_install_lock(editor_installed_lock:&Arc<(EditorInstallLock,Condvar)>, value:io::Result<()>) {
         let &(ref lock, ref cvar) = &**editor_installed_lock;
         let mut is_installed = lock.lock().unwrap();
-        *is_installed = value;
+        *is_installed = Some(value);
         cvar.notify_all();
     }
 
-    fn install(install_object:InstallObject, pb:ProgressBar, editor_installed_lock:Arc<(Mutex<Option<bool>>,Condvar)>) -> io::Result<()> {
+    fn install(install_object:InstallObject, pb:ProgressBar, editor_installed_lock:Arc<(EditorInstallLock,Condvar)>) -> io::Result<()> {
         pb.set_message("download installer");
         let installer = uvm_install_core::download_installer(install_object.variant.clone(), &install_object.version)
         .map_err(|error| {
@@ -159,8 +161,8 @@ impl UvmCommand {
                 is_installed = cvar.wait(is_installed).unwrap();
             }
 
-            if let Some(is_installed ) = *is_installed {
-                if !is_installed {
+            if let Some(ref is_installed ) = *is_installed {
+                if let Err(err) = is_installed {
                     debug!("editor installation error {}", &install_object.variant);
                     pb.finish_with_message(&format!("{}", style("failed because editor failed").red().bold()));
                     return Err(io::Error::new(io::ErrorKind::Other, format!("{} failed because of {}", &install_object.variant, InstallVariant::Editor)));
@@ -185,7 +187,7 @@ impl UvmCommand {
             debug!("finishinstall {}.", &install_object.variant);
             pb.finish_with_message("done");
             if install_object.variant == InstallVariant::Editor {
-                UvmCommand::set_editor_install_lock(&editor_installed_lock, Some(true));
+                UvmCommand::set_editor_install_lock(&editor_installed_lock, Ok(()));
             }
             result
         })
@@ -193,7 +195,8 @@ impl UvmCommand {
             debug!("failed to install {}. Error: {}", &install_object.variant, style(&error).red());
             pb.finish_with_message(&format!("{}", style("failed to install").red().bold()));
             if install_object.variant == InstallVariant::Editor {
-                UvmCommand::set_editor_install_lock(&editor_installed_lock, Some(false));
+                let error = io::Error::new(io::ErrorKind::Other, "failed to install edit");
+                UvmCommand::set_editor_install_lock(&editor_installed_lock, Err(error));
             }
             error
         })
@@ -321,7 +324,7 @@ impl UvmCommand {
         }
 
         if !editor_installing {
-            UvmCommand::set_editor_install_lock(&editor_installed_lock, Some(true));
+            UvmCommand::set_editor_install_lock(&editor_installed_lock, Ok(()));
         }
 
         //wait for all progress bars to finish
