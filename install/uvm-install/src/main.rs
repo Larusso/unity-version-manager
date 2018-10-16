@@ -4,6 +4,9 @@ extern crate uvm_install;
 extern crate flexi_logger;
 extern crate console;
 
+#[macro_use]
+extern crate log;
+
 use console::style;
 use std::process;
 use console::Term;
@@ -35,11 +38,11 @@ fn main() -> std::io::Result<()> {
     let options:uvm_install::Options = uvm_cli::get_options(USAGE)?;
     uvm_install::UvmCommand::new().exec(options)
         .unwrap_or_else(|err| {
-            let message = format!("Unable to install");
+            let message = format!("Failure during installation");
             stdout.write_line(&format!("{}",style(message).red())).ok();
-            stdout.write_line(&format!("{}",style(err).red())).ok();
+            info!("{}", &format!("{}",style(err).red()));
             process::exit(1);
         });
 
-    stdout.write_line("Finish")
+    stdout.write_line(&format!("{}", style("Finish").green().bold()))
 }

@@ -287,8 +287,6 @@ impl UvmCommand {
             .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
             .template("{prefix:.bold.dim>15} {spinner} {wide_msg}");
 
-        self.stderr.write_line("download installer");
-
         let mut threads:Vec<thread::JoinHandle<io::Result<()>>> = Vec::new();
         let editor_installed_lock = Arc::new((Mutex::new(false), Condvar::new()));
         let mut editor_installing = false;
@@ -316,34 +314,23 @@ impl UvmCommand {
         }
 
         //wait for all progress bars to finish
-        multiProgress.join();
-
-        // //collect installer paths
-        // let installer:Vec<thread::Result<io::Result<(InstallVariant, PathBuf)>>> = threads.into_iter().map(thread::JoinHandle::join).collect();
-        //
-        // if installer.into_iter().any(|tr| (tr.is_err() || tr.unwrap().is_err())) {
-        //     return Err(io::Error::new(io::ErrorKind::Other, "Failed to download all installer"));
-        // }
-
-        //debug!("installer {:?}", &installer);
-
-        // debug!("download installer");
-        // let installer = uvm_install_core::download_installer(InstallVariant::Editor, &options.version())?;
-        // debug!("installer location: {}", installer.display());
-
-        //let mut diff = to_install.difference(&installed).peekable();
-        // if let Some(_) = diff.peek() {
-        //     let mut child = brew::cask::install(diff)?;
-        //     let status = child.wait()?;
-        //
-        //     if !status.success() {
-        //         return Err(io::Error::new(io::ErrorKind::Other, "Failed to install casks"));
-        //     }
-        // }
-        // else {
-        //     return Err(io::Error::new(io::ErrorKind::Other, "Version and all support packages already installed"));
-        // }
-
-        Ok(())
+        multiProgress.join_and_clear();
+        threads.into_iter()
+        .map(thread::JoinHandle::join)
+        .map(|thread_result| {
+            match thread_result {
+                Ok(x) => x,
+                Err(_) => Err(io::Error::new(io::ErrorKind::Other, "Install thread failed"))
+            }
+        })
+        .fold(Ok(()), |acc, r| {
+            if let Err(x) = r {
+                if let Err(y) = acc {
+                    return Err(io::Error::new(io::ErrorKind::Other, format!("{}\n{}", y, x)))
+                }
+                return Err(io::Error::new(io::ErrorKind::Other, x))
+            }
+            acc
+        })
     }
 }
