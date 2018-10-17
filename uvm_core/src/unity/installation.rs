@@ -1,9 +1,11 @@
-use std::path::PathBuf;
+use std::path::{Path,PathBuf};
 use unity::Version;
 use std::cmp::Ordering;
 use std;
 use std::str::FromStr;
-use std::io::{Error, ErrorKind};
+use std::io;
+use error::UvmError;
+use result;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Installation {
@@ -24,10 +26,10 @@ impl PartialOrd for Installation {
 }
 
 impl Installation {
-    pub fn new(path: PathBuf) -> std::io::Result<Installation> {
+    pub fn new(path: PathBuf) -> result::Result<Installation> {
         if path.is_dir() {
-            let name = path.file_name().ok_or_else(|| Error::new(ErrorKind::InvalidInput, "Can't read directory name."))?;
-            let name = name.to_str().ok_or_else(|| Error::new(ErrorKind::InvalidInput, "Unable to convert directory name."))?;
+            let name = path.file_name().ok_or_else(|| UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Can't read directory name.")))?;
+            let name = name.to_str().ok_or_else(|| UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Unable to convert directory name.")))?;
             match Version::from_str(name) {
                 Ok(v) => {
                     return Ok(Installation {
@@ -35,10 +37,11 @@ impl Installation {
                         path: path.clone()
                     })
                 }
-                Err(_) => return Err(Error::new(ErrorKind::InvalidInput, "Can't parse Unity version"))
+                Err(e) => Err(UvmError::ParseVersionError(e))
             }
+        } else {
+            Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Provided Path is not a directory.")))
         }
-        Err(Error::new(ErrorKind::InvalidInput, "Provided Path is not a directory."))
     }
 
     pub fn version(&self) -> &Version {

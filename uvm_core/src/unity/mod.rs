@@ -4,6 +4,7 @@ mod current_installation;
 
 pub use self::installation::Installation;
 pub use self::version::Version;
+pub use self::version::ParseVersionError;
 pub use self::version::VersionType;
 pub use self::version::unity_version_format;
 pub use self::current_installation::CurrentInstallation;
@@ -13,6 +14,7 @@ use std::fs;
 use std::path::Path;
 use std::io;
 use std::convert::From;
+use result::Result;
 
 const UNITY_INSTALL_LOCATION: &'static str = "/Applications";
 
@@ -20,14 +22,14 @@ pub struct Installations(Box<Iterator<Item = Installation>>);
 pub struct Versions(Box<Iterator<Item = Version>>);
 
 impl Installations {
-    fn new(install_location: &Path) -> io::Result<Installations> {
+    fn new(install_location: &Path) -> Result<Installations> {
         let read_dir = fs::read_dir(install_location)?;
         let iter = read_dir
-            .filter_map(io::Result::ok)
+            .filter_map(|dir_entry| dir_entry.ok())
             .filter_map(check_dir_entry)
             .map(|entry| entry.path())
             .map(Installation::new)
-            .filter_map(io::Result::ok);
+            .filter_map(Result::ok);
         Ok(Installations(Box::new(iter)))
     }
 
@@ -67,7 +69,7 @@ fn check_dir_entry(entry:fs::DirEntry) -> Option<fs::DirEntry> {
     None
 }
 
-pub fn list_installations() -> io::Result<Installations> {
+pub fn list_installations() -> Result<Installations> {
     let install_location = Path::new(UNITY_INSTALL_LOCATION);
     Installations::new(install_location)
 }
