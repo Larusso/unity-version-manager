@@ -50,6 +50,19 @@ pub fn install<I, S>(casks: I) -> io::Result<Child> where
         .spawn()
 }
 
+pub fn fetch<I, S>(casks: I, force:bool) -> io::Result<Child> where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>
+{
+    Command::new("brew")
+        .arg("cask")
+        .arg("fetch")
+        .args(casks)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+}
+
 pub fn uninstall<I, S>(casks: I) -> io::Result<Child> where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>

@@ -20,7 +20,7 @@ impl PartialOrd for VersionType {
     }
 }
 
-#[derive(Eq,Debug,Clone)]
+#[derive(Eq,Debug,Clone,Hash)]
 pub struct Version {
     major: u32,
     minor: u32,

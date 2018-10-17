@@ -2,12 +2,12 @@ use std::fs;
 use std::fs::DirBuilder;
 use std::io;
 
-use std::path::PathBuf;
+use std::path::{PathBuf,Path};
 use std::process::{Command, Stdio};
 use std::ffi::OsStr;
 
 pub fn install_editor(installer:&PathBuf, destination:&PathBuf) -> io::Result<()> {
-    info!("install editor to destination: {} with installer: {}",
+    debug!("install editor to destination: {} with installer: {}",
         destination.display(), installer.display());
 
     let tmp_destination = destination.join("tmp");
@@ -32,17 +32,20 @@ pub fn install_editor(installer:&PathBuf, destination:&PathBuf) -> io::Result<()
 }
 
 pub fn install_module(installer:&PathBuf, destination:&PathBuf) -> io::Result<()> {
+    debug!("install component {} to {}", &installer.display(), &destination.display());
     let tmp_destination = destination.join("tmp");
 
-    if installer.ends_with(".pkg") {
+    if installer.extension() == Some(OsStr::new("pkg")) {
         DirBuilder::new()
             .recursive(true)
             .create(&tmp_destination)?;
         xar_pkg(installer, &tmp_destination)?;
         untar_pkg(&tmp_destination, destination)?;
+        cleanup_ios_support_pkg(destination)?;
         cleanup_pkg(&tmp_destination)?;
         return Ok(())
     }
+
     Err(io::Error::new(
         io::ErrorKind::Other,
         format!(
@@ -52,8 +55,17 @@ pub fn install_module(installer:&PathBuf, destination:&PathBuf) -> io::Result<()
 }
 
 fn cleanup_pkg(tmp_destination:&PathBuf) -> io::Result<()> {
-    info!("{}", "cleanup");
+    debug!("cleanup {}", &tmp_destination.display());
     fs::remove_dir_all(tmp_destination)
+}
+
+fn cleanup_ios_support_pkg(destination:&PathBuf) -> io::Result<()> {
+    let tmp_ios_support_directory = destination.join("iOSSupport");
+    if tmp_ios_support_directory.exists() {
+        move_files(&tmp_ios_support_directory, &destination)?;
+        fs::remove_dir_all(&tmp_ios_support_directory)?;
+    }
+    Ok(())
 }
 
 fn cleanup_editor_pkg(destination:&PathBuf) -> io::Result<()> {

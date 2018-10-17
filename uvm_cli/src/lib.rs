@@ -42,6 +42,10 @@ pub enum ColorOption {
 }
 
 pub trait Options {
+    fn debug(&self) -> bool {
+        self.verbose()
+    }
+
     fn verbose(&self) -> bool {
         false
     }
@@ -82,8 +86,11 @@ fn set_loglevel<T>(options: &T)
 where
     T: Options,
 {
-    let log_spec_builder = if options.verbose() {
+    let log_spec_builder = if options.debug() {
         LogSpecification::default(LevelFilter::max())
+    }
+    else if options.verbose() {
+        LogSpecification::default(LevelFilter::Info)
     }
     else {
         LogSpecification::default(LevelFilter::Warn)
