@@ -3,7 +3,6 @@ extern crate serde_derive;
 extern crate uvm_cli;
 extern crate uvm_core;
 extern crate console;
-extern crate uvm_install_core;
 extern crate itertools;
 extern crate indicatif;
 
@@ -14,6 +13,7 @@ use itertools::Itertools;
 use std::collections::HashSet;
 use uvm_cli::ColorOption;
 use uvm_core::unity::VersionType;
+use uvm_core::install;
 use indicatif::{ProgressBar,ProgressStyle};
 
 #[derive(Debug, Deserialize)]
@@ -78,7 +78,7 @@ impl UvmCommand {
 
         let variants = options.list_variants();
         for variant in options.list_variants() {
-            uvm_install_core::ensure_tap_for_version_type(&variant).unwrap();
+            install::ensure_tap_for_version_type(&variant).unwrap();
         }
 
         let bar = ProgressBar::new_spinner();

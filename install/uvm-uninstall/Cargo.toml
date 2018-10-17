@@ -9,4 +9,3 @@ serde = "1.0"
 serde_derive = "1.0"
 uvm_cli = { path = "../../uvm_cli" }
 uvm_core = { path = "../../uvm_core" }
-uvm_install_core = { path = "../uvm_install_core" }

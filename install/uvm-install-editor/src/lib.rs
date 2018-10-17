@@ -3,14 +3,13 @@ extern crate serde_derive;
 extern crate uvm_cli;
 extern crate uvm_core;
 extern crate console;
-extern crate uvm_install_core;
 
 use std::path::PathBuf;
 use console::style;
 use console::Term;
 use std::io;
 use uvm_cli::ColorOption;
-use uvm_install_core::installer;
+use uvm_core::install;
 
 #[derive(Debug, Deserialize)]
 pub struct Options {
@@ -54,7 +53,7 @@ impl UvmCommand {
     }
 
     pub fn exec(&self, options:Options) -> io::Result<()> {
-        installer::install_editor(options.installer(), options.destination())?;
+        install::install_editor(options.installer(), options.destination())?;
         self.stderr.write_line(&format!("{}", style("success").green().bold()))
     }
 }
