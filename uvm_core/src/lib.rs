@@ -24,14 +24,17 @@ macro_rules! cargo_version {
 
 pub mod unity;
 pub mod brew;
+pub mod error;
+pub mod result;
 
 pub use self::unity::list_installations;
 pub use self::unity::current_installation;
-
+pub use self::result::Result;
 pub use self::unity::Installation;
 pub use self::unity::CurrentInstallation;
 pub use self::unity::Version;
 
+use self::error::UvmError;
 use std::io;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -41,6 +44,7 @@ use std::os::unix;
 use std::str::FromStr;
 use std::convert::AsRef;
 
+
 pub fn is_active(version: &Version) -> bool {
     if let Ok(current) = current_installation() {
         current.version() == version
@@ -49,17 +53,17 @@ pub fn is_active(version: &Version) -> bool {
     }
 }
 
-pub fn find_installation(version: &Version) -> io::Result<Installation> {
+pub fn find_installation(version: &Version) -> Result<Installation> {
     let mut installations = list_installations()?;
     installations
         .find(|i| i.version() == version)
         .ok_or(io::Error::new(
             io::ErrorKind::NotFound,
             format!("Unable to find Unity version {}", version),
-        ))
+        ).into())
 }
 
-pub fn activate(ref installation: Installation) -> io::Result<()> {
+pub fn activate(ref installation: Installation) -> Result<()> {
     let active_path = Path::new("/Applications/Unity");
     if active_path.exists() {
         fs::remove_file(active_path)?;

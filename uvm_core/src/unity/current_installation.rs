@@ -2,18 +2,19 @@ use unity::Installation;
 use std::path::PathBuf;
 use std::path::Path;
 use std::io;
+use result::Result;
 
 pub type CurrentInstallation = Installation;
 const UNITY_CURRENT_LOCATION: &'static str = "/Applications/Unity";
 
 impl CurrentInstallation {
-    fn current(path: PathBuf) -> io::Result<Installation> {
+    fn current(path: PathBuf) -> Result<Installation> {
         let linked_file = path.read_link()?;
         CurrentInstallation::new(linked_file)
     }
 }
 
-pub fn current_installation() -> io::Result<CurrentInstallation> {
+pub fn current_installation() -> Result<CurrentInstallation> {
     let active_path = Path::new(UNITY_CURRENT_LOCATION);
     CurrentInstallation::current(active_path.to_path_buf())
 }

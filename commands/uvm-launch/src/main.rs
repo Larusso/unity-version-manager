@@ -9,6 +9,7 @@ use std::path::{Path};
 use std::process;
 use uvm_cli::LaunchOptions;
 use uvm_cli::Options;
+use uvm_core::Result;
 
 const USAGE: &'static str = "
 uvm-launch - Launch the current active version of unity.
@@ -32,7 +33,7 @@ Options:
 fn get_installation(
     project_path: &Path,
     use_project_version: bool,
-) -> io::Result<uvm_core::Installation> {
+) -> Result<uvm_core::Installation> {
     if use_project_version {
         let version = uvm_core::dectect_project_version(&project_path, None)?;
         return uvm_core::find_installation(&version);
@@ -41,7 +42,7 @@ fn get_installation(
     uvm_core::current_installation()
 }
 
-fn launch(options: LaunchOptions) -> io::Result<()> {
+fn launch(options: LaunchOptions) -> Result<()> {
     let project_path = uvm_core::detect_unity_project_dir(
         options.project_path().unwrap_or(&env::current_dir().unwrap()),
         options.recursive(),

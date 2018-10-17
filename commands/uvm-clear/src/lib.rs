@@ -11,6 +11,7 @@ use std::io;
 use std::path::Path;
 use uvm_cli::ColorOption;
 use uvm_cli::Options;
+use uvm_core::error::UvmError;
 
 #[derive(Debug, Deserialize)]
 pub struct ClearOptions {
@@ -43,11 +44,11 @@ impl UvmCommand {
         }
     }
 
-    pub fn exec(&self, options:ClearOptions) -> io::Result<()>
+    pub fn exec(&self, options:ClearOptions) -> uvm_core::Result<()>
     {
         let active_path = Path::new(UNITY_CURRENT_LOCATION);
         if !active_path.exists() {
-            return Err(io::Error::new(io::ErrorKind::NotFound, "No active unity version"));
+            return Err(UvmError::IoError(io::Error::new(io::ErrorKind::NotFound, "No active unity version")));
         }
 
         if options.verbose() {
@@ -60,7 +61,7 @@ impl UvmCommand {
         }
 
         fs::remove_file(active_path)
-            .map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to clear active version"))?;
+            .map_err(|_| UvmError::IoError(io::Error::new(io::ErrorKind::Other, "Failed to clear active version")))?;
         self.stdout.write_line(&format!("{}", style("success").green()))?;
         Ok(())
     }
