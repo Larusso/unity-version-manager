@@ -7,7 +7,10 @@ extern crate proptest;
 #[cfg(test)]
 extern crate rand;
 #[cfg(test)]
-extern crate tempdir;
+extern crate tempfile;
+extern crate plist;
+#[macro_use]
+extern crate serde_derive;
 
 #[macro_export]
 macro_rules! cargo_version {

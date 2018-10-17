@@ -81,18 +81,44 @@ mod tests {
     use std::path::Path;
     use std::path::PathBuf;
     use rand;
-    use tempdir::TempDir;
+    use tempfile::Builder;
     use std::str::FromStr;
+    use std::fs::File;
     use super::*;
+    use unity::installation::AppInfo;
+    use plist::serde::{deserialize, serialize_to_xml};
+
+    fn create_test_path(base_dir:&PathBuf, version: &str) -> PathBuf {
+
+        let path = base_dir.join(format!("Unity-{version}", version = version));
+        let mut dir_builder = fs::DirBuilder::new();
+        dir_builder.recursive(true);
+        dir_builder.create(&path).unwrap();
+
+        let info_plist_path = path.join(Path::new("Unity.app/Contents/Info.plist"));
+        dir_builder.create(info_plist_path.parent().unwrap()).unwrap();
+
+        let info = AppInfo {
+            c_f_bundle_version: String::from_str(version).unwrap(),
+            unity_build_number: String::from_str("ssdsdsdd").unwrap()
+        };
+        let file = File::create(info_plist_path).unwrap();
+        serialize_to_xml(file, &info).unwrap();
+
+        path
+    }
 
     macro_rules! prepare_unity_installations {
         ($($input:expr),*) => {
             {
-                let test_dir = TempDir::new("list_installations_in_directory").unwrap();
-                let mut dir_builder = fs::DirBuilder::new();
+                let test_dir = Builder::new()
+                                .prefix("list_installations")
+                                .rand_bytes(5)
+                                .suffix("_in_directory")
+                                .tempdir()
+                                .unwrap();
                 $(
-                    let dir = test_dir.path().join($input);
-                    dir_builder.create(dir).unwrap();
+                    create_test_path(&test_dir.path().to_path_buf(), $input);
                 )*
                 test_dir
             }
@@ -102,15 +128,25 @@ mod tests {
     #[test]
     fn list_installations_in_directory_filters_unity_installations() {
         let test_dir = prepare_unity_installations![
-            "Unity-2017.1.2f3",
-            "some_random_name",
-            "Unity-2017.2.3f4"
+            "2017.1.2f3",
+            "2017.2.3f4"
         ];
+
+        let mut builder = Builder::new();
+        builder.prefix("some-dir");
+        builder.rand_bytes(5);
+
+        let temp_dir1 = builder.tempdir_in(&test_dir).unwrap();
+        let temp_dir2 = builder.tempdir_in(&test_dir).unwrap();
+        let temp_dir3 = builder.tempdir_in(&test_dir).unwrap();
 
         let mut subject = Installations::new(test_dir.path()).unwrap();
 
         let r1 = Version::from_str("2017.1.2f3").unwrap();
         let r2 = Version::from_str("2017.2.3f4").unwrap();
+
+        assert_eq!(fs::read_dir(&test_dir).unwrap().count(), 5);
+
         for installation in subject {
             let version = installation.version_owned();
             assert!(version == r1 || version == r2);
@@ -126,9 +162,8 @@ mod tests {
     #[test]
     fn installations_can_be_converted_to_versions() {
         let test_dir = prepare_unity_installations![
-            "Unity-2017.1.2f3",
-            "some_random_name",
-            "Unity-2017.2.3f4"
+            "2017.1.2f3",
+            "2017.2.3f4"
         ];
 
         let installations = Installations::new(test_dir.path()).unwrap();
@@ -142,11 +177,10 @@ mod tests {
     }
 
     #[test]
-    fn versions_can_be_created_from_intallations() {
+    fn versions_can_be_created_from_installations() {
         let test_dir = prepare_unity_installations![
-            "Unity-2017.1.2f3",
-            "some_random_name",
-            "Unity-2017.2.3f4"
+            "2017.1.2f3",
+            "2017.2.3f4"
         ];
 
         let installations = Installations::new(test_dir.path()).unwrap();
@@ -168,7 +202,7 @@ mod tests {
         #[test]
         fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
             let test_dir = prepare_unity_installations![
-                format!("Unity-{}",s)
+                s
             ];
             let mut subject = Installations::new(test_dir.path()).unwrap();
             assert_eq!(subject.count(), 1);
