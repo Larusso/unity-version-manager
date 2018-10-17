@@ -32,6 +32,7 @@ pub mod unity;
 pub mod brew;
 pub mod error;
 pub mod result;
+pub mod install;
 
 pub use self::unity::list_installations;
 pub use self::unity::current_installation;

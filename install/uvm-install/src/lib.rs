@@ -4,14 +4,14 @@ extern crate console;
 extern crate serde;
 extern crate uvm_cli;
 extern crate uvm_core;
-extern crate uvm_install_core;
 
 use std::io::Write;
 use console::Term;
 use uvm_cli::ColorOption;
 use std::collections::HashSet;
 use uvm_core::unity::Version;
-use uvm_install_core::InstallVariant;
+use uvm_core::install;
+use uvm_core::install::InstallVariant;
 use std::str::FromStr;
 
 use console::style;
@@ -102,7 +102,7 @@ impl UvmCommand {
     pub fn exec(&self, options:Options) -> io::Result<()> {
         write!(Term::stderr(), "{}: {}\n", style("install unity version").green(), options.version().to_string()).ok();
 
-        uvm_install_core::ensure_tap_for_version(&options.version())?;
+        install::ensure_tap_for_version(&options.version())?;
 
         let casks = brew::cask::list()?;
         let installed: HashSet<brew::cask::Cask> = casks
@@ -110,14 +110,14 @@ impl UvmCommand {
             .collect();
 
         let mut to_install = HashSet::new();
-        to_install.insert(uvm_install_core::cask_name_for_type_version(
+        to_install.insert(install::cask_name_for_type_version(
             InstallVariant::Editor,
             &options.version(),
         ));
 
         if let Some(variants) = options.install_variants() {
             for variant in variants {
-                to_install.insert(uvm_install_core::cask_name_for_type_version(variant, &options.version()));
+                to_install.insert(install::cask_name_for_type_version(variant, &options.version()));
             }
         }
 

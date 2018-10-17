@@ -4,7 +4,6 @@ extern crate console;
 extern crate serde;
 extern crate uvm_cli;
 extern crate uvm_core;
-extern crate uvm_install_core;
 
 use console::style;
 use console::Term;
@@ -15,7 +14,8 @@ use uvm_cli::ColorOption;
 use uvm_cli::Options;
 use uvm_core::brew;
 use uvm_core::unity::Version;
-use uvm_install_core::InstallVariant;
+use uvm_core::install;
+use uvm_core::install::InstallVariant;
 
 #[derive(Debug, Deserialize)]
 pub struct UninstallOptions {
@@ -104,7 +104,7 @@ impl UvmCommand {
         let mut to_uninstall = HashSet::new();
 
         for variant in options.install_variants() {
-            to_uninstall.insert(uvm_install_core::cask_name_for_type_version(variant, &options.version()));
+            to_uninstall.insert(install::cask_name_for_type_version(variant, &options.version()));
         }
 
         if options.verbose() {

@@ -4,7 +4,6 @@ extern crate console;
 extern crate serde;
 extern crate uvm_cli;
 extern crate uvm_core;
-extern crate uvm_install_core;
 extern crate indicatif;
 
 #[macro_use]
@@ -25,7 +24,8 @@ use std::sync::{Arc, Mutex, Condvar};
 use uvm_cli::ColorOption;
 use uvm_core::brew;
 use uvm_core::unity::{Installation,Version,Component};
-use uvm_install_core::InstallVariant;
+use uvm_core::install;
+use uvm_core::install::InstallVariant;
 
 #[derive(Debug, Deserialize)]
 pub struct Options {
@@ -146,7 +146,7 @@ impl UvmCommand {
 
     fn install(install_object:InstallObject, pb:ProgressBar, editor_installed_lock:Arc<(EditorInstallLock,Condvar)>) -> io::Result<()> {
         pb.set_message(&format!("[{}] {}",&install_object.variant, style("download installer").dim()));
-        let installer = uvm_install_core::download_installer(install_object.variant.clone(), &install_object.version)
+        let installer = install::download_installer(install_object.variant.clone(), &install_object.version)
         .map_err(|error| {
             debug!("error loading installer: {}", style(&error).red());
             pb.finish_with_message(&format!("[{}] {}", &install_object.variant, style("error").red().bold()));
@@ -183,8 +183,8 @@ impl UvmCommand {
         pb.set_message(&format!("[{}] {}", &install_object.variant, style("installing").dim()));
         debug!("install {} to {}",&install_object.variant, &destination.display());
         let install_f = match &install_object.variant {
-            InstallVariant::Editor => uvm_install_core::installer::install_editor,
-                                 _ => uvm_install_core::installer::install_module,
+            InstallVariant::Editor => install::install_editor,
+                                 _ => install::install_module,
         };
 
         install_f(&installer, &destination)
@@ -209,7 +209,7 @@ impl UvmCommand {
 
     pub fn exec(&self, options:Options) -> io::Result<()> {
         self.stderr.write_line(&format!("{}: {}", style("install unity version").green(), options.version().to_string())).ok();
-        uvm_install_core::ensure_tap_for_version(&options.version())?;
+        install::ensure_tap_for_version(&options.version())?;
         let base_dir = if let Some(ref destination) = options.destination() {
             if destination.exists() && !destination.is_dir() {
                 return Err(io::Error::new(io::ErrorKind::InvalidInput, "Requested destination is not a directory."))

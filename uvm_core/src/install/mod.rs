@@ -1,18 +1,16 @@
-extern crate uvm_core;
-#[macro_use]
-extern crate log;
-extern crate regex;
-
+use brew;
+use regex::Regex;
 use std::fmt;
 use std::io;
-use uvm_core::brew;
-use uvm_core::unity::Version;
-use uvm_core::unity::VersionType;
-use std::path::PathBuf;
 use std::path::Path;
-use regex::Regex;
-use uvm_core::unity::Component;
-pub mod installer;
+use std::path::PathBuf;
+use unity::Component;
+use unity::Version;
+use unity::VersionType;
+
+mod installer;
+pub use self::installer::install_editor;
+pub use self::installer::install_module;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum InstallVariant {
