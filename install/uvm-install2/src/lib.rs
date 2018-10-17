@@ -31,6 +31,7 @@ use uvm_install_core::InstallVariant;
 pub struct Options {
     #[serde(with = "uvm_core::unity::unity_version_format")]
     arg_version: Version,
+    arg_destination: Option<PathBuf>,
     flag_verbose: bool,
     flag_debug: bool,
     flag_android: bool,
@@ -82,6 +83,10 @@ impl Options {
             return Some(variants);
         }
         None
+    }
+
+    fn destination(&self) -> &Option<PathBuf> {
+        &self.arg_destination
     }
 }
 
@@ -204,15 +209,21 @@ impl UvmCommand {
 
     pub fn exec(&self, options:Options) -> io::Result<()> {
         self.stderr.write_line(&format!("{}: {}", style("install unity version").green(), options.version().to_string())).ok();
-
         uvm_install_core::ensure_tap_for_version(&options.version())?;
-        let installation = uvm_core::find_installation(&options.version());
+        let base_dir = if let Some(ref destination) = options.destination() {
+            if destination.exists() && !destination.is_dir() {
+                return Err(io::Error::new(io::ErrorKind::InvalidInput, "Requested destination is not a directory."))
+            }
+            destination.to_path_buf()
+        } else {
+            Path::new(&format!("/Applications/Unity-{}", options.version())).to_path_buf()
+        };
 
+        let installation = Installation::new(base_dir.clone());
         let mut to_install:HashSet<InstallObject> = HashSet::new();
         let mut installed:HashSet<InstallObject> = HashSet::new();
 
         if installation.is_err() {
-            let base_dir = Path::new(&format!("/Applications/Unity-{}", options.version())).to_path_buf();
             let installation_data = InstallObject {
                             version: options.version().to_owned(),
                             variant: InstallVariant::Editor,

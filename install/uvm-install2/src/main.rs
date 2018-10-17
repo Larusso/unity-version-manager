@@ -15,7 +15,7 @@ const USAGE: &'static str = "
 uvm-install2 - Install specified unity version.
 
 Usage:
-  uvm-install2 [options] <version>
+  uvm-install2 [options] <version> [<destination>]
   uvm-install2 (-h | --help)
 
 Options:
@@ -31,6 +31,10 @@ Options:
   -d, --debug       print debug output
   --color WHEN      Coloring: auto, always, never [default: auto]
   -h, --help        show this help message and exit
+
+Arguments:
+  <version>         The unity version to install in the form of `2018.1.0f3`
+  <destination>     A directory to install the requested version to
 ";
 
 fn main() -> std::io::Result<()> {
