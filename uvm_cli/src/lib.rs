@@ -32,6 +32,7 @@ use serde::de::Deserialize;
 use std::ffi::OsStr;
 use std::io;
 use std::process::Command;
+use std::os::unix::process::CommandExt;
 
 
 #[derive(PartialEq, Deserialize, Debug)]
@@ -109,16 +110,9 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    Command::new(command)
+    Err(Command::new(command)
         .args(args)
-        .spawn()?
-        .wait()
-        .and_then(|s| {
-            s.code().ok_or(io::Error::new(
-                io::ErrorKind::Interrupted,
-                "Process terminated by signal",
-            ))
-        })
+        .exec())
 }
 
 fn format_logs(writer: &mut io::Write, record: &Record) -> Result<(), io::Error> {
