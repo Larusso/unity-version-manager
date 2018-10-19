@@ -6,7 +6,7 @@ use unity::InstalledComponents;
 use std::io;
 use result;
 use UvmError;
-use plist::serde::{deserialize};
+use plist::serde::deserialize;
 use std::fs::File;
 
 #[derive(Deserialize, Serialize)]
@@ -83,7 +83,7 @@ mod tests {
     use std::fs::OpenOptions;
     use std::path::Path;
     use tempfile::Builder;
-
+    use plist::serde::serialize_to_xml;
     use super::*;
 
     fn create_unity_installation(base_dir:&PathBuf, version: &str) -> PathBuf {
