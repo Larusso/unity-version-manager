@@ -29,7 +29,6 @@ use uvm_core::install::InstallVariant;
 
 #[derive(Debug, Deserialize)]
 pub struct Options {
-    #[serde(with = "uvm_core::unity::unity_version_format")]
     arg_version: Version,
     arg_destination: Option<PathBuf>,
     flag_verbose: bool,

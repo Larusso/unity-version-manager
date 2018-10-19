@@ -8,7 +8,6 @@ pub use self::component::Component;
 pub use self::version::Version;
 pub use self::version::ParseVersionError;
 pub use self::version::VersionType;
-pub use self::version::unity_version_format;
 pub use self::current_installation::CurrentInstallation;
 pub use self::current_installation::current_installation;
 
