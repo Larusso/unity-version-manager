@@ -2,7 +2,7 @@ use std::fs;
 use std::fs::DirBuilder;
 use std::io;
 
-use std::path::{PathBuf,Path};
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::ffi::OsStr;
 

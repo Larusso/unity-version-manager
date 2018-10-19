@@ -13,7 +13,6 @@ pub use self::current_installation::current_installation;
 
 use std::fs;
 use std::path::Path;
-use std::io;
 use std::convert::From;
 use std::slice::Iter;
 use result::Result;

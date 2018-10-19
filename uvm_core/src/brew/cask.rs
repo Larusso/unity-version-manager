@@ -50,7 +50,7 @@ pub fn install<I, S>(casks: I) -> io::Result<Child> where
         .spawn()
 }
 
-pub fn fetch<I, S>(casks: I, force:bool) -> io::Result<Child> where
+pub fn fetch<I, S>(casks: I, _force:bool) -> io::Result<Child> where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>
 {

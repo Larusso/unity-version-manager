@@ -1,14 +1,12 @@
-use std::path::{Path,PathBuf};
+use std::path::PathBuf;
 use unity::Version;
 use std::cmp::Ordering;
-use std;
 use std::str::FromStr;
-use unity::Component;
 use unity::InstalledComponents;
 use std::io;
 use result;
 use UvmError;
-use plist::serde::{deserialize, serialize_to_xml};
+use plist::serde::{deserialize};
 use std::fs::File;
 
 #[derive(Deserialize, Serialize)]

@@ -1,7 +1,5 @@
 use unity::Installation;
-use std::path::PathBuf;
-use std::path::Path;
-use std::io;
+use std::path::{Path,PathBuf};
 use result::Result;
 
 pub type CurrentInstallation = Installation;
