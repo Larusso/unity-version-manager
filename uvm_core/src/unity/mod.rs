@@ -2,6 +2,7 @@ mod installation;
 mod version;
 mod component;
 mod current_installation;
+pub mod hub;
 
 pub use self::installation::Installation;
 pub use self::component::Component;
