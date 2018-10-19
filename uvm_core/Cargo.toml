@@ -2,6 +2,15 @@
 name = "uvm_core"
 version = "0.0.1"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
+description = "The core functionality for the unity version manager commandline client."
+repository = "https://github.com/Larusso/unity-version-manager"
+readme = "../README.md"
+keywords = ["unity","version-manager"]
+categories = ["development-tools"]
+license = "Apache-2.0"
+[badges]
+travis-ci = { repository = "Larusso/unity-version-manager", branch = "master" }
+maintenance = { status = "experimental" }
 
 [dependencies]
 regex = "1.0"
