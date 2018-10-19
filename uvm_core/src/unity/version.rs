@@ -75,6 +75,11 @@ impl<'de> Deserialize<'de> for Version {
 }
 
 impl Version {
+
+    pub fn new(major:u32, minor:u32, patch:u32, release_type:VersionType, revision: u32) -> Version {
+        Version {major, minor, patch, release_type, revision}
+    }
+
     pub fn release_type(&self) -> &VersionType {
         &self.release_type
     }
