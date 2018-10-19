@@ -6,6 +6,7 @@ use std::error::Error;
 use std::result;
 use std::convert::From;
 use unity::Installation;
+use serde::{self, Serialize, Deserialize, Deserializer, Serializer};
 
 #[derive(PartialEq,Eq,Ord,Hash,Debug,Clone)]
 pub enum VersionType {
@@ -52,6 +53,24 @@ impl PartialEq for Version {
         && (self.minor == other.minor)
         && (self.patch == other.patch)
         && (self.revision == other.revision)
+    }
+}
+
+impl Serialize for Version {
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+        let s = self.to_string();
+        serializer.serialize_str(&s)
+    }
+}
+
+impl<'de> Deserialize<'de> for Version {
+    fn deserialize<D>(deserializer: D) -> result::Result<Self, D::Error>
+        where D: Deserializer<'de>
+    {
+        let s = String::deserialize(deserializer)?;
+        Version::from_str(&s).map_err(serde::de::Error::custom)
     }
 }
 
@@ -149,19 +168,6 @@ impl FromStr for Version {
 impl From<Installation> for Version {
     fn from(item: Installation) -> Self {
         item.version_owned()
-    }
-}
-
-pub mod unity_version_format {
-    use super::Version;
-    use std::str::FromStr;
-    use serde::{self, Deserialize, Deserializer};
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Version, D::Error>
-        where D: Deserializer<'de>
-    {
-        let s = String::deserialize(deserializer)?;
-        Version::from_str(&s).map_err(serde::de::Error::custom)
     }
 }
 

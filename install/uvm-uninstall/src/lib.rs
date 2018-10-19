@@ -19,7 +19,6 @@ use uvm_core::install::InstallVariant;
 
 #[derive(Debug, Deserialize)]
 pub struct UninstallOptions {
-    #[serde(with = "uvm_core::unity::unity_version_format")]
     arg_version: Version,
     flag_verbose: bool,
     flag_android: bool,

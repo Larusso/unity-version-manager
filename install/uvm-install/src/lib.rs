@@ -21,7 +21,6 @@ use uvm_core::brew;
 
 #[derive(Debug, Deserialize)]
 pub struct Options {
-    #[serde(with = "uvm_core::unity::unity_version_format")]
     arg_version: Version,
     flag_verbose: bool,
     flag_android: bool,

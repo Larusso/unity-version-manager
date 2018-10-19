@@ -4,7 +4,6 @@ use uvm_core;
 
 #[derive(Debug, Deserialize)]
 pub struct UseOptions {
-    #[serde(with = "uvm_core::unity::unity_version_format")]
     arg_version: Version,
     flag_verbose: bool,
     flag_color: ColorOption
