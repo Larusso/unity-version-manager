@@ -47,7 +47,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::fs::File;
 use std::io::Read;
-use std::os::unix;
+
+use std::os;
+
 use std::str::FromStr;
 use std::convert::AsRef;
 
@@ -75,7 +77,12 @@ pub fn activate(ref installation: Installation) -> Result<()> {
     if active_path.exists() {
         fs::remove_file(active_path)?;
     }
-    unix::fs::symlink(installation.path(), active_path)?;
+
+    #[cfg(unix)]
+    os::unix::fs::symlink(installation.path(), active_path)?;
+    #[cfg(windows)]
+    os::windows::fs::symlink_dir(installation.path(), active_path)?;
+
     Ok(())
 }
 

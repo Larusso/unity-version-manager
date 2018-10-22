@@ -32,6 +32,8 @@ use serde::de::Deserialize;
 use std::ffi::OsStr;
 use std::io;
 use std::process::Command;
+
+#[cfg(unix)]
 use std::os::unix::process::CommandExt;
 
 
@@ -104,6 +106,8 @@ where
         .start()
         .unwrap();
 }
+
+#[cfg(unix)]
 pub fn exec_command<C, I, S>(command: C, args: I) -> io::Result<i32>
 where
     C: AsRef<OsStr>,
@@ -113,6 +117,25 @@ where
     Err(Command::new(command)
         .args(args)
         .exec())
+}
+
+#[cfg(windows)]
+pub fn exec_command<C, I, S>(command: C, args: I) -> io::Result<i32>
+where
+    C: AsRef<OsStr>,
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
+    Command::new(command)
+        .args(args)
+        .spawn()?
+        .wait()
+        .and_then(|s| {
+            s.code().ok_or(io::Error::new(
+                io::ErrorKind::Interrupted,
+                "Process terminated by signal",
+            ))
+        })
 }
 
 fn format_logs(writer: &mut io::Write, record: &Record) -> Result<(), io::Error> {

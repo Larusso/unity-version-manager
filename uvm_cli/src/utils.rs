@@ -6,8 +6,12 @@ use std::process;
 use console::style;
 use std::error::Error;
 use std;
+#[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
+#[cfg(unix)]
 use std::os::unix::fs::MetadataExt;
+#[cfg(windows)]
+use std::os::windows::fs::MetadataExt;
 
 fn find_in_path<F>(dir: &Path, predicate: &F) -> io::Result<PathBuf>
 where
@@ -25,29 +29,46 @@ where
         .map(|entry| entry.path())
 }
 
+#[cfg(unix)]
+fn check_file(entry: &fs::DirEntry) -> io::Result<bool> {
+    let metadata = entry.metadata()?;
+    let file_name = entry.file_name();
+    let file_name = file_name.to_string_lossy();
+    if !metadata.is_dir() && file_name.starts_with("uvm-") {
+        let metadata = entry.path().metadata().unwrap();
+        let process = env::current_exe().unwrap();
+        let p_metadata = process.metadata().unwrap();
+        let p_uid = p_metadata.uid();
+        let p_gid = p_metadata.gid();
+
+        let isUser = metadata.uid() == p_uid;
+        let isGroup = metadata.gid() == p_gid;
+
+        let permissions = metadata.permissions();
+        let mode = permissions.mode();
+        return Ok((mode & 0o0001) != 0
+            || ((mode & 0o0010) != 0 && isGroup)
+            || ((mode & 0o0100) != 0 && isUser))
+    }
+    Ok(false)
+}
+
+#[cfg(windows)]
+fn check_file(entry: &fs::DirEntry) -> io::Result<bool> {
+    let metadata = entry.metadata()?;
+    let file_name = entry.file_name();
+    let file_name = file_name.to_string_lossy();
+    Ok(!metadata.is_dir()
+        && file_name.starts_with("uvm-")
+        && file_name.ends_with(".exe"))
+}
+
 pub fn find_commands_in_path(dir: &Path) -> io::Result<Box<Iterator<Item = PathBuf>>>
 {
     let result = dir.read_dir()?
         .filter_map(io::Result::ok)
         .filter(|entry| {
-            let file_type = entry.file_type().unwrap();
-            if !file_type.is_dir() && entry.file_name().to_string_lossy().starts_with("uvm-") {
-                let metadata = entry.path().metadata().unwrap();
-                let process = env::current_exe().unwrap();
-                let p_metadata = process.metadata().unwrap();
-                let p_uid = p_metadata.uid();
-                let p_gid = p_metadata.gid();
-
-                let isUser = metadata.uid() == p_uid;
-                let isGroup = metadata.gid() == p_gid;
-
-                let permissions = metadata.permissions();
-                let mode = permissions.mode();
-                return (mode & 0o0001) != 0
-                    || ((mode & 0o0010) != 0 && isGroup)
-                    || ((mode & 0o0100) != 0 && isUser)
-            }
-            false
+            check_file(entry).unwrap_or(false)
         })
         .map(|entry| entry.path());
     Ok(Box::new(result))
@@ -70,7 +91,13 @@ pub fn sub_command_path(command_name: &str) -> io::Result<PathBuf> {
 
     //check PATH
     if let Ok(path) = env::var("PATH") {
-        let paths = path.split(":").map(|s| Path::new(s));
+        let split_char = if cfg!(windows) {
+            ";"
+        } else {
+            ":"
+        };
+
+        let paths = path.split(split_char).map(|s| Path::new(s));
         for path in paths {
             let command_path = find_in_path(path, &comparator);
             if command_path.is_ok() {
