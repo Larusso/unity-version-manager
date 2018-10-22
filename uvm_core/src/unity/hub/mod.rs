@@ -1,3 +1,3 @@
 mod settings;
-mod editors;
+pub mod editors;
 mod paths;
