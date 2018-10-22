@@ -16,10 +16,34 @@ pub struct AppInfo {
     pub unity_build_number: String,
 }
 
+pub trait UnityInstallation: Eq + Ord {
+    fn path(&self) -> &PathBuf;
+
+    fn version(&self) -> &Version;
+
+    fn location(&self) -> PathBuf {
+        self.path().join("Unity.app")
+    }
+
+    fn exec_path(&self) -> PathBuf {
+        self.path().join("Unity.app/Contents/MacOS/Unity")
+    }
+}
+
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Installation {
     version: Version,
     path: PathBuf,
+}
+
+impl UnityInstallation for Installation {
+    fn path(&self) -> &PathBuf {
+        &self.path
+    }
+
+    fn version(&self) -> &Version {
+        &self.version
+    }
 }
 
 impl Ord for Installation {
@@ -56,6 +80,7 @@ impl Installation {
         }
     }
 
+    //TODO remove clone()
     pub fn installed_components(&self) -> InstalledComponents {
         InstalledComponents::new(self.clone())
     }

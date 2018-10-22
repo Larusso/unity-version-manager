@@ -1,4 +1,3 @@
-use unity::hub::paths;
 use error::UvmError;
 use result::Result;
 use serde_json;
@@ -6,9 +5,14 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::io::Write;
+use std::iter::Iterator;
 use std::path::PathBuf;
 use unity;
-use std::iter::Iterator;
+use unity::hub::paths;
+use unity::installation::UnityInstallation;
+
+mod cmp;
+mod convert;
 
 pub struct Editors(HashMap<unity::Version, EditorValue>);
 
@@ -58,13 +62,13 @@ impl Iterator for Editors {
 
     fn next(&mut self) -> Option<Self::Item> {
         for n in &mut self.0 {
-            return Some(n.1.to_owned())
+            return Some(n.1.to_owned());
         }
         None
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct EditorValue {
     version: unity::Version,
     #[serde(with = "unity::hub::editors::editor_value_location")]
@@ -72,19 +76,29 @@ pub struct EditorValue {
     manual: bool,
 }
 
+impl UnityInstallation for EditorValue {
+    fn path(&self) -> &PathBuf {
+        &self.location()
+    }
+
+    fn version(&self) -> &unity::Version {
+        &self.version
+    }
+}
+
 impl EditorValue {
-    fn new(version: unity::Version, location: PathBuf) -> EditorValue {
-        let manual = true;
-        EditorValue {
-            version,
-            location,
-            manual,
-        }
+    pub fn version(&self) -> &unity::Version {
+        &self.version
+    }
+
+    pub fn location(&self) -> &PathBuf {
+        &self.location
     }
 }
 
 pub mod editor_value_location {
     use serde::{self, Deserialize, Deserializer, Serializer};
+    use serde::de::Unexpected;
     use std::path::{Path, PathBuf};
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<PathBuf, D::Error>
@@ -95,7 +109,9 @@ pub mod editor_value_location {
         let path = paths
             .first()
             .ok_or_else(|| serde::de::Error::invalid_length(0, &"1"))?;
-        Ok(Path::new(&paths[0]).to_path_buf())
+        let location = Path::new(&paths[0]).parent()
+            .ok_or_else(|| serde::de::Error::invalid_value(Unexpected::Other("location with empty parent"), &"valid unity location"))?;
+        Ok(location.to_path_buf())
     }
 
     pub fn serialize<S>(location: &PathBuf, serializer: S) -> Result<S::Ok, S::Error>
@@ -122,10 +138,10 @@ mod tests {
         let editors: HashMap<unity::Version, EditorValue> = serde_json::from_str(data).unwrap();
 
         let v = unity::Version::new(2018, 2, 5, unity::VersionType::Final, 1);
-        let p = Path::new("/Applications/Unity-2018.2.5f1/Unity.app");
+        let p = Path::new("/Applications/Unity-2018.2.5f1");
         assert_eq!(
             editors.get(&v).unwrap(),
-            &EditorValue::new(v, p.to_path_buf())
+            &EditorValue{ version: v, location: p.to_path_buf(), manual: true}
         );
     }
 }
