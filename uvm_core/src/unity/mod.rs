@@ -97,6 +97,10 @@ fn check_dir_entry(entry:fs::DirEntry) -> Option<fs::DirEntry> {
 
 pub fn list_installations() -> Result<Installations> {
     let install_location = Path::new(UNITY_INSTALL_LOCATION);
+    list_installations_in_dir(install_location)
+}
+
+pub fn list_installations_in_dir(install_location:&Path) -> Result<Installations> {
     Installations::new(install_location)
 }
 
