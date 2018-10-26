@@ -28,7 +28,7 @@ mod tests {
     use tempfile::TempDir;
     use tempfile::Builder;
     use super::*;
-    use std::os::unix;
+    use std::os;
     use std::fs::File;
     use unity::installation::AppInfo;
     use plist::serde::{deserialize, serialize_to_xml};
@@ -82,7 +82,11 @@ mod tests {
 
         let dir = test_dir.path().join("Unity");
         let src = test_dir.path().join("Unity-2017.1.0p1");
-        unix::fs::symlink(&src, &dir).unwrap();
+
+        #[cfg(unix)]
+        os::unix::fs::symlink(&src, &dir).unwrap();
+        #[cfg(windows)]
+        os::windows::fs::symlink_dir(&src, &dir).unwrap();
         dir.read_link().unwrap();
         let subject = CurrentInstallation::current(dir).unwrap();
         assert_eq!(subject.path(), &src);
