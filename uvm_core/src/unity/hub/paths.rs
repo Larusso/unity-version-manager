@@ -1,5 +1,6 @@
-use std::path::PathBuf;
+use std::path::{Path,PathBuf};
 use std::fs::File;
+use std::io;
 
 pub fn default_install_path() -> Option<PathBuf> {
     dirs::application_dir().map(|path| path.join("Unity/Hub/Editor"))
@@ -11,7 +12,10 @@ pub fn install_path() -> Option<PathBuf> {
             let path:PathBuf = serde_json::from_reader(file)?;
             Ok(path)
         }).ok()
-    }).or_else(default_install_path)
+    })
+    //filter out the default value `""` in secondaryInstallPath.json
+    .filter(|p| p.as_os_str() != std::ffi::OsStr::new(""))
+    .or_else(default_install_path)
 }
 
 pub fn config_path() -> Option<PathBuf> {
@@ -33,6 +37,18 @@ pub fn default_editor_config_path() -> Option<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::{Path,PathBuf};
+
+    #[test]
+    fn foo() {
+        assert_eq!(install_path(), default_install_path());
+    }
+
+    #[test]
+    fn bar() {
+        let p:PathBuf = PathBuf::from("");
+        assert_eq!(p.exists(), false);
+    }
 
     #[test]
     fn test_dirs() {
