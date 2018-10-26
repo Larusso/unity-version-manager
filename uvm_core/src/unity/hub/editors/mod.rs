@@ -14,7 +14,7 @@ use unity::installation::UnityInstallation;
 mod cmp;
 mod convert;
 
-pub struct Editors(HashMap<unity::Version, EditorValue>);
+pub struct Editors(HashMap<unity::Version, EditorInstallation>);
 
 impl Editors {
     fn load() -> Result<Editors> {
@@ -26,19 +26,19 @@ impl Editors {
         })?;
 
         let file = File::open(path)?;
-        let editors: HashMap<unity::Version, EditorValue> = serde_json::from_reader(file)?;
+        let editors: HashMap<unity::Version, EditorInstallation> = serde_json::from_reader(file)?;
         Ok(Editors(editors))
     }
 
-    fn add(&mut self, editor: EditorValue) -> Option<EditorValue> {
+    fn add(&mut self, editor: EditorInstallation) -> Option<EditorInstallation> {
         self.0.insert(editor.version.clone(), editor.clone())
     }
 
-    fn remove(&mut self, editor: &EditorValue) -> Option<EditorValue> {
+    fn remove(&mut self, editor: &EditorInstallation) -> Option<EditorInstallation> {
         self.0.remove(&editor.version)
     }
 
-    fn remove_version(&mut self, version: &unity::Version) -> Option<EditorValue> {
+    fn remove_version(&mut self, version: &unity::Version) -> Option<EditorInstallation> {
         self.0.remove(&version)
     }
 
@@ -58,7 +58,7 @@ impl Editors {
 }
 
 impl Iterator for Editors {
-    type Item = EditorValue;
+    type Item = EditorInstallation;
 
     fn next(&mut self) -> Option<Self::Item> {
         for n in &mut self.0 {
@@ -69,14 +69,14 @@ impl Iterator for Editors {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
-pub struct EditorValue {
+pub struct EditorInstallation {
     version: unity::Version,
     #[serde(with = "unity::hub::editors::editor_value_location")]
     location: PathBuf,
     manual: bool,
 }
 
-impl UnityInstallation for EditorValue {
+impl UnityInstallation for EditorInstallation {
     fn path(&self) -> &PathBuf {
         &self.location()
     }
@@ -86,7 +86,7 @@ impl UnityInstallation for EditorValue {
     }
 }
 
-impl EditorValue {
+impl EditorInstallation {
     pub fn version(&self) -> &unity::Version {
         &self.version
     }
@@ -109,7 +109,7 @@ pub mod editor_value_location {
         let path = paths
             .first()
             .ok_or_else(|| serde::de::Error::invalid_length(0, &"1"))?;
-        let location = Path::new(&paths[0]).parent()
+        let location = Path::new(&path).parent()
             .ok_or_else(|| serde::de::Error::invalid_value(Unexpected::Other("location with empty parent"), &"valid unity location"))?;
         Ok(location.to_path_buf())
     }
@@ -135,13 +135,13 @@ mod tests {
                         "2017.1.0f3": { "version": "2017.1.0f3", "location": ["/Applications/Unity-2017.1.0f3/Unity.app"], "manual": true }
                   }"#;
 
-        let editors: HashMap<unity::Version, EditorValue> = serde_json::from_str(data).unwrap();
+        let editors: HashMap<unity::Version, EditorInstallation> = serde_json::from_str(data).unwrap();
 
         let v = unity::Version::new(2018, 2, 5, unity::VersionType::Final, 1);
         let p = Path::new("/Applications/Unity-2018.2.5f1");
         assert_eq!(
             editors.get(&v).unwrap(),
-            &EditorValue{ version: v, location: p.to_path_buf(), manual: true}
+            &EditorInstallation{ version: v, location: p.to_path_buf(), manual: true}
         );
     }
 }
