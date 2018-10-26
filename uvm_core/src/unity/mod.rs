@@ -17,6 +17,7 @@ use std::path::Path;
 use std::convert::From;
 use std::slice::Iter;
 use result::Result;
+use unity::hub::editors::Editors;
 
 const UNITY_INSTALL_LOCATION: &'static str = "/Applications";
 
