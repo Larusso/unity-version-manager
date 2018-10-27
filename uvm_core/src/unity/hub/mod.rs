@@ -1,6 +1,5 @@
-mod settings;
 pub mod editors;
-mod paths;
+pub mod paths;
 
 use std::io;
 use unity;
