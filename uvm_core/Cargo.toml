@@ -22,6 +22,9 @@ plist = "0.3.0"
 dirs = { git = 'https://github.com/Larusso/dirs-rs.git' }
 itertools = "0.7.8"
 
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winver"] }
+
 [dev-dependencies]
 proptest = "0.8.7"
 rand = "0.5"
