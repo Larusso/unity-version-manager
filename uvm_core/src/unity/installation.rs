@@ -102,6 +102,12 @@ impl Installation {
     }
 }
 
+impl From<crate::unity::hub::editors::EditorInstallation> for Installation {
+    fn from(editor: crate::unity::hub::editors::EditorInstallation) -> Self {
+        Installation {version: editor.version().to_owned(), path: editor.location().to_path_buf()}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::fs;

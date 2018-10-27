@@ -31,10 +31,12 @@ pub struct InstalledComponents {
 
 impl Installations {
     fn new(install_location: &Path) -> Result<Installations> {
+        debug!("fetch unity installations from {}", install_location.display());
         let read_dir = fs::read_dir(install_location)?;
+
         let iter = read_dir
             .filter_map(|dir_entry| dir_entry.ok())
-            .filter_map(check_dir_entry)
+            //.filter_map(check_dir_entry)
             .map(|entry| entry.path())
             .map(Installation::new)
             .filter_map(Result::ok);
@@ -43,6 +45,15 @@ impl Installations {
 
     pub fn versions(self) -> Versions {
         self.into()
+    }
+}
+
+impl From<hub::editors::Editors> for Installations {
+    fn from(editors: hub::editors::Editors) -> Self {
+        let iter = editors.into_iter().map(|editor_installation| {
+            Installation::from(editor_installation)
+        });
+        Installations(Box::new(iter))
     }
 }
 

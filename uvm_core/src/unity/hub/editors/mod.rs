@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::io::Write;
-use std::iter::Iterator;
+use std::iter::{Iterator, IntoIterator};
 use std::path::PathBuf;
 use unity;
 use unity::hub::paths;
@@ -14,10 +14,13 @@ use unity::installation::UnityInstallation;
 mod cmp;
 mod convert;
 
-pub struct Editors(HashMap<unity::Version, EditorInstallation>);
+#[derive(Debug)]
+pub struct Editors {
+    map: HashMap<unity::Version, EditorInstallation>,
+}
 
 impl Editors {
-    fn load() -> Result<Editors> {
+    pub fn load() -> Result<Editors> {
         let path = paths::editors_config_path().ok_or_else(|| {
             UvmError::IoError(io::Error::new(
                 io::ErrorKind::NotFound,
@@ -27,22 +30,22 @@ impl Editors {
 
         let file = File::open(path)?;
         let editors: HashMap<unity::Version, EditorInstallation> = serde_json::from_reader(file)?;
-        Ok(Editors(editors))
+        Ok(Editors{map:editors})
     }
 
-    fn add(&mut self, editor: EditorInstallation) -> Option<EditorInstallation> {
-        self.0.insert(editor.version.clone(), editor.clone())
+    pub fn add(&mut self, editor: EditorInstallation) -> Option<EditorInstallation> {
+        self.map.insert(editor.version.clone(), editor.clone())
     }
 
-    fn remove(&mut self, editor: &EditorInstallation) -> Option<EditorInstallation> {
-        self.0.remove(&editor.version)
+    pub fn remove(&mut self, editor: &EditorInstallation) -> Option<EditorInstallation> {
+        self.map.remove(&editor.version)
     }
 
-    fn remove_version(&mut self, version: &unity::Version) -> Option<EditorInstallation> {
-        self.0.remove(&version)
+    pub fn remove_version(&mut self, version: &unity::Version) -> Option<EditorInstallation> {
+        self.map.remove(&version)
     }
 
-    fn flush(&self) -> Result<()> {
+    pub fn flush(&self) -> Result<()> {
         let path = paths::editors_config_path().ok_or_else(|| {
             UvmError::IoError(io::Error::new(
                 io::ErrorKind::NotFound,
@@ -51,20 +54,21 @@ impl Editors {
         })?;
 
         let mut file = File::create(path)?;
-        let j = serde_json::to_string(&self.0)?;
+        let j = serde_json::to_string(&self.map)?;
         write!(file, "{}", &j);
         Ok(())
     }
 }
 
-impl Iterator for Editors {
+impl IntoIterator for Editors {
     type Item = EditorInstallation;
+    type IntoIter = ::std::vec::IntoIter<EditorInstallation>;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        for n in &mut self.0 {
-            return Some(n.1.to_owned());
-        }
-        None
+    fn into_iter(self) -> Self::IntoIter {
+        self.map.values()
+            .map(|installation| installation.clone())
+            .collect::<Vec<Self::Item>>()
+            .into_iter()
     }
 }
 
