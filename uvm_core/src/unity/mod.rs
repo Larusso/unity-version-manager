@@ -18,6 +18,7 @@ use std::convert::From;
 use std::slice::Iter;
 use result::Result;
 use unity::hub::editors::Editors;
+use itertools::Itertools;
 
 const UNITY_INSTALL_LOCATION: &'static str = "/Applications";
 
@@ -106,6 +107,14 @@ fn check_dir_entry(entry:fs::DirEntry) -> Option<fs::DirEntry> {
         return Some(entry);
     };
     None
+}
+
+pub fn list_all_installations() -> Result<Installations> {
+    let i1 = list_installations()?;
+    let i2 = hub::list_installations()?;
+    let iter = i1.chain(i2);
+    let unique = iter.unique_by(|installation| installation.version().to_owned());
+    Ok(Installations(Box::new(unique)))
 }
 
 pub fn list_installations() -> Result<Installations> {

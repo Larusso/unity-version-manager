@@ -16,6 +16,7 @@ use uvm_cli::Options;
 #[derive(Debug, Deserialize)]
 pub struct ListOptions {
     flag_hub: bool,
+    flag_all: bool,
     flag_verbose: bool,
     flag_debug: bool,
     flag_path: bool,
@@ -29,6 +30,10 @@ impl ListOptions {
 
     pub fn use_hub(&self) -> bool {
         self.flag_hub
+    }
+
+    pub fn all(&self) -> bool {
+        self.flag_all
     }
 }
 
@@ -62,7 +67,10 @@ impl UvmCommand {
     pub fn exec(&self, options:ListOptions) -> io::Result<()>
     {
         let current_version = uvm_core::current_installation().ok();
-        let list_function = if options.use_hub() {
+        let list_function = if options.all() {
+            info!("fetch all installations");
+            uvm_core::list_all_installations
+        } else if options.use_hub() {
             info!("fetch installations from unity hub");
             uvm_core::unity::hub::list_installations
         } else {
