@@ -16,6 +16,8 @@ extern crate plist;
 #[macro_use]
 extern crate serde_derive;
 extern crate dirs;
+#[macro_use]
+extern crate itertools;
 
 #[macro_export]
 macro_rules! cargo_version {
@@ -37,6 +39,7 @@ pub mod result;
 pub mod install;
 
 pub use self::unity::list_installations;
+pub use self::unity::list_all_installations;
 pub use self::unity::current_installation;
 pub use self::result::Result;
 pub use self::unity::Installation;
