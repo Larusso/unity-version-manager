@@ -68,7 +68,7 @@ pub fn is_active(version: &Version) -> bool {
 }
 
 pub fn find_installation(version: &Version) -> Result<Installation> {
-    let mut installations = list_installations()?;
+    let mut installations = list_all_installations()?;
     installations
         .find(|i| i.version() == version)
         .ok_or(io::Error::new(
