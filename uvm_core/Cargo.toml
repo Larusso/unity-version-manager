@@ -24,6 +24,7 @@ itertools = "0.7.8"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["winver"] }
+libc = "0.2.43"
 
 [dev-dependencies]
 proptest = "0.8.7"
