@@ -100,6 +100,10 @@ impl UnityInstallation for EditorInstallation {
 }
 
 impl EditorInstallation {
+    pub fn new(version:unity::Version, location: PathBuf) -> EditorInstallation {
+        EditorInstallation {version: version, location: location, manual: true}
+    }
+
     pub fn version(&self) -> &unity::Version {
         &self.version
     }
@@ -112,6 +116,7 @@ impl EditorInstallation {
 pub mod editor_value_location {
     use serde::{self, Deserialize, Deserializer, Serializer};
     use serde::de::Unexpected;
+    use serde::ser::SerializeSeq;
     use std::path::{Path, PathBuf};
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<PathBuf, D::Error>
@@ -131,8 +136,9 @@ pub mod editor_value_location {
     where
         S: Serializer,
     {
-        let s = format!("{}", location.display());
-        serializer.serialize_str(&s)
+        let mut seq = serializer.serialize_seq(Some(1))?;
+        seq.serialize_element(&location.join("Unity.app"))?;
+        seq.end()
     }
 }
 
