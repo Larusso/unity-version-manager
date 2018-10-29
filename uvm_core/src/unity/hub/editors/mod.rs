@@ -28,9 +28,18 @@ impl Editors {
             ))
         })?;
 
-        let file = File::open(path)?;
-        let editors: HashMap<unity::Version, EditorInstallation> = serde_json::from_reader(file)?;
-        Ok(Editors{map:editors})
+        let map = if path.exists() {
+            debug!("load hub editors from file: {}", path.display());
+            let file = File::open(path)?;
+            let editors: HashMap<unity::Version, EditorInstallation> = serde_json::from_reader(file)?;
+            editors
+        } else {
+            debug!("hub editors file doesn't exist return empty map");
+            let editors:HashMap<unity::Version, EditorInstallation> = HashMap::new();
+            editors
+        };
+
+        Ok(Editors{map})
     }
 
     pub fn add(&mut self, editor: EditorInstallation) -> Option<EditorInstallation> {
