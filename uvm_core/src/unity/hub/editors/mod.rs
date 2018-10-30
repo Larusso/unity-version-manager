@@ -38,8 +38,24 @@ impl Editors {
             let editors:HashMap<unity::Version, EditorInstallation> = HashMap::new();
             editors
         };
+        Ok(Editors::create(map))
+    }
 
-        Ok(Editors{map})
+    pub fn create(mut map:HashMap<unity::Version, EditorInstallation>) -> Editors {
+        trace!("create Editors map");
+        map.retain(|version, installation| {
+            trace!("filter: version: {} - installaton: {:?}", version, installation);
+            let check_installation = unity::Installation::new(installation.location.to_path_buf());
+            if let Ok(check_installation) = check_installation {
+                trace!("Found unity installation at with version {} at location: {}", check_installation.version(), installation.location.display());
+                trace!("Installation has correct version: {}", check_installation.version() == version);
+                check_installation.version() == version
+            } else {
+                trace!("No installtion found at location: {}", installation.location.display());
+                false
+            }
+        });
+        Editors{map}
     }
 
     pub fn add(&mut self, editor: EditorInstallation) -> Option<EditorInstallation> {
