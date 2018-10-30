@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use unity;
 use unity::hub::paths;
 use unity::installation::UnityInstallation;
-
+use  std::fs;
 mod cmp;
 mod convert;
 
@@ -71,6 +71,13 @@ impl Editors {
     }
 
     pub fn flush(&self) -> Result<()> {
+        let config_path = paths::config_path().ok_or_else(|| {
+            UvmError::IoError(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Unable to find path for unity hub editors.json",
+            ))
+        })?;
+
         let path = paths::editors_config_path().ok_or_else(|| {
             UvmError::IoError(io::Error::new(
                 io::ErrorKind::NotFound,
@@ -78,6 +85,7 @@ impl Editors {
             ))
         })?;
 
+        fs::create_dir_all(config_path)?;
         let mut file = File::create(path)?;
         let j = serde_json::to_string(&self.map)?;
         write!(file, "{}", &j);
