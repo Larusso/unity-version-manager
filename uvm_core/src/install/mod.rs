@@ -78,6 +78,7 @@ fn fetch_download_path_from_output(output: &Vec<u8>) -> Option<PathBuf> {
 pub fn download_installer(variant: InstallVariant, version: &Version) -> io::Result<PathBuf> {
     debug!("download installer for variant: {} and version: {}", variant, version);
     let cask = cask_name_for_type_version(variant, version);
+    brew::update()?;
     let child = brew::cask::fetch(vec!(cask), true)?;
     let o = child.wait_with_output()?;
 
