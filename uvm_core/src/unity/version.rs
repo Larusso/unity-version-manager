@@ -140,7 +140,7 @@ impl FromStr for Version {
     type Err = ParseVersionError;
 
     fn from_str(s: &str) -> Result<Self> {
-        let version_pattern = Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b)([0-9]{1,4})").unwrap();
+        let version_pattern = Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b|a)([0-9]{1,4})").unwrap();
         match version_pattern.captures(s) {
             Some(caps) => {
                 let major: u32 = caps.get(1).map_or("0", |m| m.as_str()).parse().unwrap();
