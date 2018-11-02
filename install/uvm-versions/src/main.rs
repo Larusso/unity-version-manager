@@ -14,6 +14,7 @@ Options:
   -a, --all         list all available versions
   -f, --final       list available final versions
   -b, --beta        list available beta versions
+  --alpha           list available alpha versions
   -p, --patch       list available patch versions
   -v, --verbose     print more output
   --color WHEN      Coloring: auto, always, never [default: auto]

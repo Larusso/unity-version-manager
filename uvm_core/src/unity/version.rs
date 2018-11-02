@@ -10,6 +10,7 @@ use serde::{self, Serialize, Deserialize, Deserializer, Serializer};
 
 #[derive(PartialEq,Eq,Ord,Hash,Debug,Clone)]
 pub enum VersionType {
+    Alpha,
     Beta,
     Patch,
     Final,
@@ -87,12 +88,14 @@ impl fmt::Display for VersionType {
                 &VersionType::Final => write!(f, "final"),
                 &VersionType::Patch => write!(f, "patch"),
                 &VersionType::Beta => write!(f, "beta"),
+                &VersionType::Alpha => write!(f, "alpha"),
             }
         } else {
             match self {
                 &VersionType::Final => write!(f, "f"),
                 &VersionType::Patch => write!(f, "p"),
                 &VersionType::Beta => write!(f, "b"),
+                &VersionType::Alpha => write!(f, "a"),
             }
         }
     }
@@ -148,6 +151,7 @@ impl FromStr for Version {
                     "f" => Some(VersionType::Final),
                     "p" => Some(VersionType::Patch),
                     "b" => Some(VersionType::Beta),
+                    "a" => Some(VersionType::Alpha),
                     _ => None,
                 };
 

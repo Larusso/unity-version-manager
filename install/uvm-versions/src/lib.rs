@@ -19,6 +19,7 @@ use indicatif::{ProgressBar,ProgressStyle};
 #[derive(Debug, Deserialize)]
 pub struct VersionsOptions {
     flag_verbose: bool,
+    flag_alpha: bool,
     flag_beta: bool,
     flag_final: bool,
     flag_patch: bool,
@@ -29,6 +30,10 @@ pub struct VersionsOptions {
 impl VersionsOptions {
     pub fn list_variants(&self) -> HashSet<VersionType> {
         let mut variants:HashSet<VersionType> = HashSet::with_capacity(3);
+
+        if self.flag_alpha || self.flag_all {
+            variants.insert(VersionType::Alpha);
+        }
 
         if self.flag_beta || self.flag_all {
             variants.insert(VersionType::Beta);

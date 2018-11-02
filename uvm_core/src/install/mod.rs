@@ -102,6 +102,7 @@ pub fn ensure_tap_for_version_type(version_type: &VersionType) -> io::Result<()>
     let tap = match version_type {
         VersionType::Final => "wooga/unityversions",
         VersionType::Beta => "wooga/unityversions-beta",
+        VersionType::Alpha => "wooga/unityversions-beta",
         VersionType::Patch => "wooga/unityversions-patch",
     };
     debug!("ensure brew tap {}", tap);
