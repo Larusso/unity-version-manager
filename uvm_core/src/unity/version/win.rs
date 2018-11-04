@@ -22,16 +22,17 @@ use self::winapi::shared::basetsd::SIZE_T;
 use std::convert::AsRef;
 
 
-pub fn get_unity_version(path:PathBuf) -> Option<Version> {
-    let version_string = win_query_version_value(&path,r"\StringFileInfo\040904b0\Unity Version")?;
+pub fn read_version_from_path<P : AsRef<Path>>(path:P) -> Option<Version> {
+
+    let version_string = win_query_version_value(path.as_ref(),r"\StringFileInfo\040904b0\Unity Version")?;
     //let company_name = win_query_version_value(&path,r"\StringFileInfo\040904b0\CompanyName");
     let version_parts:Vec<&str> = version_string.as_str().split('_').collect();
     let version = Version::from_str(version_parts[0]).unwrap();
     Some(version)
 }
 
-fn win_query_version_value<P : AsRef<Path>>(path:P, query:&str) -> Option<String> {
-    let str_path = path.as_ref().to_str()?;
+fn win_query_version_value(path:&Path, query:&str) -> Option<String> {
+    let str_path = path.to_str()?;
     let c_path = CString::new(str_path).ok()?;
 
     unsafe {

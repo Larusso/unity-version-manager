@@ -11,6 +11,13 @@ use std::convert::From;
 use unity::Installation;
 use serde::{self, Serialize, Deserialize, Deserializer, Serializer};
 
+#[cfg(target_os = "windows")]   mod win;
+#[cfg(target_os = "macos")]     mod mac;
+#[cfg(target_os = "windows")]   use self::win as sys;
+#[cfg(target_os = "macos")]     use self::mac as sys;
+
+pub use self::sys::read_version_from_path;
+
 #[derive(PartialEq,Eq,Ord,Hash,Debug,Clone)]
 pub enum VersionType {
     Alpha,

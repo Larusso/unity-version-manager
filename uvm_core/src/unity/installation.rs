@@ -6,8 +6,7 @@ use unity::InstalledComponents;
 use std::io;
 use result;
 use UvmError;
-use plist::serde::deserialize;
-use std::fs::File;
+use unity::version;
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
@@ -60,23 +59,9 @@ impl PartialOrd for Installation {
 
 impl Installation {
     pub fn new(path: PathBuf) -> result::Result<Installation> {
-        //on macOS the unity installation is a directory
-        if !path.exists() {
-            return Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, format!("Provided Path does not exist. {}", path.display()))))
-        }
-        if path.is_dir() {
-            //check for the `Unity.app` package
-            let info_plist_path = path.join("Unity.app/Contents/Info.plist");
-            let file = File::open(info_plist_path)?;
-            let info:AppInfo = deserialize(file)?;
-            let version = Version::from_str(&info.c_f_bundle_version)?;
-
-            Ok(Installation {
-                version: version,
-                path: path.clone()
-            })
-        } else {
-            Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Provided Path is not a Unity installtion.")))
+        match version::read_version_from_path(&path) {
+            Some(version) => Ok(Installation { version: version, path: path.clone() }),
+            None => Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Provided Path is not a Unity installtion.")))
         }
     }
 
