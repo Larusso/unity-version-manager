@@ -59,10 +59,8 @@ impl PartialOrd for Installation {
 
 impl Installation {
     pub fn new(path: PathBuf) -> result::Result<Installation> {
-        match version::read_version_from_path(&path) {
-            Some(version) => Ok(Installation { version: version, path: path.clone() }),
-            None => Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Provided Path is not a Unity installtion.")))
-        }
+        version::read_version_from_path(&path)
+            .map(|version| Installation { version: version, path: path.clone() })
     }
 
     //TODO remove clone()

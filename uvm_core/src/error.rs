@@ -6,11 +6,35 @@ use plist;
 use serde_json;
 
 #[derive(Debug)]
+pub struct IllegalOperationError {
+    message: String
+}
+
+impl IllegalOperationError {
+    fn new(message: &str) -> IllegalOperationError {
+        IllegalOperationError { message: String::from(message) }
+    }
+}
+
+impl fmt::Display for IllegalOperationError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "IllegalOperationError {}", self.message)
+    }
+}
+
+impl Error for IllegalOperationError {
+    fn description(&self) -> &str {
+        &self.message[..]
+    }
+}
+
+#[derive(Debug)]
 pub enum UvmError {
     PlistError(plist::Error),
     JsonError(serde_json::Error),
     ParseVersionError(unity::ParseVersionError),
     IoError(io::Error),
+    IllegalOperationError(IllegalOperationError),
 }
 
 impl From<io::Error> for UvmError {
@@ -37,6 +61,12 @@ impl From<unity::ParseVersionError> for UvmError {
     }
 }
 
+impl From<IllegalOperationError> for UvmError {
+    fn from(err: IllegalOperationError) -> UvmError {
+        UvmError::IllegalOperationError(err)
+    }
+}
+
 impl Error for UvmError {
     fn description(&self) -> &str {
         match *self {
@@ -44,6 +74,7 @@ impl Error for UvmError {
             UvmError::JsonError(ref err) => err.description(),
             UvmError::ParseVersionError(ref err) => err.description(),
             UvmError::IoError(ref err) => err.description(),
+            UvmError::IllegalOperationError(ref err) => err.description(),
         }
     }
 
@@ -53,6 +84,7 @@ impl Error for UvmError {
             UvmError::JsonError(ref err) => err as &Error,
             UvmError::ParseVersionError(ref err) => err as &Error,
             UvmError::IoError(ref err) => err as &Error,
+            UvmError::IllegalOperationError(ref err) => err as &Error,
         })
     }
 }
@@ -64,6 +96,7 @@ impl fmt::Display for UvmError {
             UvmError::JsonError(ref err) => fmt::Display::fmt(err, f),
             UvmError::ParseVersionError(ref err) => fmt::Display::fmt(err, f),
             UvmError::IoError(ref err) => fmt::Display::fmt(err, f),
+            UvmError::IllegalOperationError(ref err) => fmt::Display::fmt(err, f),
         }
     }
 }
