@@ -23,13 +23,14 @@ use std::convert::AsRef;
 
 
 pub fn get_unity_version(path:PathBuf) -> Option<Version> {
-    let version_string = win_query_version_value(path)?;
+    let version_string = win_query_version_value(&path,r"\StringFileInfo\040904b0\Unity Version")?;
+    //let company_name = win_query_version_value(&path,r"\StringFileInfo\040904b0\CompanyName");
     let version_parts:Vec<&str> = version_string.as_str().split('_').collect();
     let version = Version::from_str(version_parts[0]).unwrap();
     Some(version)
 }
 
-fn win_query_version_value<P : AsRef<Path>>(path:P) -> Option<String> {
+fn win_query_version_value<P : AsRef<Path>>(path:P, query:&str) -> Option<String> {
     let str_path = path.as_ref().to_str()?;
     let c_path = CString::new(str_path).ok()?;
 
@@ -60,7 +61,7 @@ fn win_query_version_value<P : AsRef<Path>>(path:P) -> Option<String> {
 
         let mut pv_unity_version: *mut CHAR = std::ptr::null_mut();
         let mut pv_unity_version_ptr: *mut c_void = &mut pv_unity_version as *mut _ as *mut c_void;
-        let query_string = CString::new(r"\StringFileInfo\040904b0\Unity Version").ok()?;
+        let query_string = CString::new(query).ok()?;
 
         info!("start query version info {:?}", query_string);
         let version_result = winver::VerQueryValueA(data, query_string.as_ptr(),&mut pv_unity_version_ptr, raw);
