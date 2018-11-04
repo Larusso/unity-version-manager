@@ -19,8 +19,7 @@ use std::slice::Iter;
 use result::Result;
 use unity::hub::editors::Editors;
 use itertools::Itertools;
-
-const UNITY_INSTALL_LOCATION: &'static str = "/Applications";
+use std::io;
 
 pub struct Installations(Box<Iterator<Item = Installation>>);
 pub struct Versions(Box<Iterator<Item = Version>>);
@@ -118,8 +117,9 @@ pub fn list_all_installations() -> Result<Installations> {
 }
 
 pub fn list_installations() -> Result<Installations> {
-    let install_location = Path::new(UNITY_INSTALL_LOCATION);
-    list_installations_in_dir(install_location)
+    dirs::application_dir()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "unable to locate application_dir").into())
+        .and_then(|application_dir| list_installations_in_dir(&application_dir))
 }
 
 pub fn list_installations_in_dir(install_location:&Path) -> Result<Installations> {
