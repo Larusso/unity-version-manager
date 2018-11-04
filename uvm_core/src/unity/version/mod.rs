@@ -1,6 +1,3 @@
-#[cfg(windows)]
-mod win;
-
 use regex::Regex;
 use std::cmp::Ordering;
 use std::fmt;
