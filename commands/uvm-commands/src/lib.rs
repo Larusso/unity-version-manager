@@ -12,7 +12,6 @@ use std::io;
 use std::path::Path;
 use uvm_cli::ColorOption;
 use uvm_cli::Options;
-use std::os::unix::fs::PermissionsExt;
 
 #[derive(Debug, Deserialize)]
 pub struct CommandsOptions {
