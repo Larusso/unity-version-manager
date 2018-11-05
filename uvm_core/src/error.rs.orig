@@ -4,6 +4,8 @@ use std::fmt;
 use unity;
 use plist;
 use serde_json;
+<<<<<<< HEAD
+=======
 
 #[derive(Debug)]
 pub struct IllegalOperationError {
@@ -11,7 +13,7 @@ pub struct IllegalOperationError {
 }
 
 impl IllegalOperationError {
-    pub fn new(message: &str) -> IllegalOperationError {
+    fn new(message: &str) -> IllegalOperationError {
         IllegalOperationError { message: String::from(message) }
     }
 }
@@ -27,6 +29,7 @@ impl Error for IllegalOperationError {
         &self.message[..]
     }
 }
+>>>>>>> 6146de42f3787a81495c3577744bee48d99dc146
 
 #[derive(Debug)]
 pub enum UvmError {

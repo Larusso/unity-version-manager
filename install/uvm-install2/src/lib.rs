@@ -26,6 +26,8 @@ use uvm_core::brew;
 use uvm_core::unity::{Installation,Version,Component};
 use uvm_core::install;
 use uvm_core::install::InstallVariant;
+use uvm_core::unity::hub;
+use uvm_core::unity::hub::editors::{EditorInstallation, Editors};
 
 #[derive(Debug, Deserialize)]
 pub struct Options {
@@ -209,13 +211,17 @@ impl UvmCommand {
     pub fn exec(&self, options:Options) -> io::Result<()> {
         self.stderr.write_line(&format!("{}: {}", style("install unity version").green(), options.version().to_string())).ok();
         install::ensure_tap_for_version(&options.version())?;
+        let mut editorInstallation:Option<EditorInstallation> = None;
         let base_dir = if let Some(ref destination) = options.destination() {
             if destination.exists() && !destination.is_dir() {
                 return Err(io::Error::new(io::ErrorKind::InvalidInput, "Requested destination is not a directory."))
             }
+            editorInstallation = Some(EditorInstallation::new(options.version().to_owned(), destination.to_path_buf()));
             destination.to_path_buf()
         } else {
-            Path::new(&format!("/Applications/Unity-{}", options.version())).to_path_buf()
+            hub::paths::install_path()
+            .map(|path| path.join(format!("{}", options.version())))
+            .unwrap_or_else(|| Path::new(&format!("/Applications/Unity-{}", options.version())).to_path_buf())
         };
 
         let installation = Installation::new(base_dir.clone());
@@ -359,6 +365,18 @@ impl UvmCommand {
                 return Err(io::Error::new(io::ErrorKind::Other, x))
             }
             acc
-        })
+        })?;
+
+        //write new unity hub editor installation
+        if let Some(installation) = editorInstallation {
+            let mut editors = Editors::load()
+            .and_then(|mut editors| {
+                editors.add(installation);
+                editors.flush();
+                Ok(())
+            });
+        }
+
+        Ok(())
     }
 }

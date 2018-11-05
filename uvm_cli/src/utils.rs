@@ -58,6 +58,7 @@ fn check_file(entry: &fs::DirEntry) -> io::Result<bool> {
     let metadata = entry.metadata()?;
     let file_name = entry.file_name();
     let file_name = file_name.to_string_lossy();
+    trace!("file_name {}", file_name);
     Ok(!metadata.is_dir()
         && file_name.starts_with("uvm-")
         && file_name.ends_with(".exe"))
@@ -77,7 +78,12 @@ pub fn find_commands_in_path(dir: &Path) -> io::Result<Box<Iterator<Item = PathB
 pub fn sub_command_path(command_name: &str) -> io::Result<PathBuf> {
     let p = env::current_exe()?;
     let base_search_dir = p.parent().unwrap();
+
+    #[cfg(windows)]
+    let command_name = format!("uvm-{}.exe", command_name);
+    #[cfg(unix)]
     let command_name = format!("uvm-{}", command_name);
+    debug!("fetch path to subcommand: {}", &command_name);
 
     //first check exe directory
     let comparator = |entry: &fs::DirEntry| {

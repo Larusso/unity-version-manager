@@ -13,6 +13,9 @@ Usage:
 Options:
   -p, --path        print only the path to the current version
   -v, --verbose     print more output
+  -d, --debug       print debug output
+  --hub             print unity hub installations
+  --all             print all unity installations
   --color WHEN      Coloring: auto, always, never [default: auto]
   -h, --help        show this help message and exit
 ";

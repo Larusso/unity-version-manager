@@ -6,8 +6,7 @@ use unity::InstalledComponents;
 use std::io;
 use result;
 use UvmError;
-use plist::serde::deserialize;
-use std::fs::File;
+use unity::version;
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
@@ -16,10 +15,46 @@ pub struct AppInfo {
     pub unity_build_number: String,
 }
 
+pub trait UnityInstallation: Eq + Ord {
+    fn path(&self) -> &PathBuf;
+
+    fn version(&self) -> &Version;
+
+    #[cfg(target_os = "windows")]
+    fn location(&self) -> PathBuf {
+        self.path().join("Editor/Unity.exe")
+    }
+
+    #[cfg(target_os = "macos")]
+    fn location(&self) -> PathBuf {
+         return self.path().join("Unity.app")
+    }
+
+    #[cfg(target_os = "windows")]
+    fn exec_path(&self) -> PathBuf {
+        self.location()
+    }
+
+    #[cfg(target_os = "macos")]
+    fn exec_path(&self) -> PathBuf {
+        self.path().join("Unity.app/Contents/MacOS/Unity")
+    }
+}
+
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Installation {
     version: Version,
     path: PathBuf,
+}
+
+impl UnityInstallation for Installation {
+    fn path(&self) -> &PathBuf {
+        &self.path
+    }
+
+    fn version(&self) -> &Version {
+        &self.version
+    }
 }
 
 impl Ord for Installation {
@@ -36,26 +71,11 @@ impl PartialOrd for Installation {
 
 impl Installation {
     pub fn new(path: PathBuf) -> result::Result<Installation> {
-        //on macOS the unity installation is a directory
-        if !path.exists() {
-            return Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, format!("Provided Path does not exist. {}", path.display()))))
-        }
-        if path.is_dir() {
-            //check for the `Unity.app` package
-            let info_plist_path = path.join("Unity.app/Contents/Info.plist");
-            let file = File::open(info_plist_path)?;
-            let info:AppInfo = deserialize(file)?;
-            let version = Version::from_str(&info.c_f_bundle_version)?;
-
-            Ok(Installation {
-                version: version,
-                path: path.clone()
-            })
-        } else {
-            Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Provided Path is not a Unity installtion.")))
-        }
+        version::read_version_from_path(&path)
+            .map(|version| Installation { version: version, path: path.clone() })
     }
 
+    //TODO remove clone()
     pub fn installed_components(&self) -> InstalledComponents {
         InstalledComponents::new(self.clone())
     }
@@ -77,13 +97,20 @@ impl Installation {
     }
 }
 
-#[cfg(test)]
+impl From<crate::unity::hub::editors::EditorInstallation> for Installation {
+    fn from(editor: crate::unity::hub::editors::EditorInstallation) -> Self {
+        Installation {version: editor.version().to_owned(), path: editor.location().to_path_buf()}
+    }
+}
+
+#[cfg(all(test, target_os="macos"))]
 mod tests {
     use std::fs;
     use std::fs::OpenOptions;
     use std::path::Path;
     use tempfile::Builder;
     use plist::serde::serialize_to_xml;
+    use std::fs::File;
     use super::*;
 
     fn create_unity_installation(base_dir:&PathBuf, version: &str) -> PathBuf {

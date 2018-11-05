@@ -1,5 +1,6 @@
 extern crate regex;
 extern crate serde;
+extern crate serde_json;
 
 #[macro_use]
 extern crate log;
@@ -14,6 +15,9 @@ extern crate tempfile;
 extern crate plist;
 #[macro_use]
 extern crate serde_derive;
+extern crate dirs;
+#[macro_use]
+extern crate itertools;
 
 #[macro_export]
 macro_rules! cargo_version {
@@ -35,6 +39,7 @@ pub mod result;
 pub mod install;
 
 pub use self::unity::list_installations;
+pub use self::unity::list_all_installations;
 pub use self::unity::current_installation;
 pub use self::result::Result;
 pub use self::unity::Installation;
@@ -63,7 +68,7 @@ pub fn is_active(version: &Version) -> bool {
 }
 
 pub fn find_installation(version: &Version) -> Result<Installation> {
-    let mut installations = list_installations()?;
+    let mut installations = list_all_installations()?;
     installations
         .find(|i| i.version() == version)
         .ok_or(io::Error::new(

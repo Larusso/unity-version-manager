@@ -3,7 +3,10 @@ extern crate serde_derive;
 extern crate uvm_cli;
 extern crate uvm_core;
 extern crate console;
+extern crate log;
 
+use log::info;
+use log::trace;
 use console::Style;
 use console::Term;
 use std::io;
@@ -12,7 +15,10 @@ use uvm_cli::Options;
 
 #[derive(Debug, Deserialize)]
 pub struct ListOptions {
+    flag_hub: bool,
+    flag_all: bool,
     flag_verbose: bool,
+    flag_debug: bool,
     flag_path: bool,
     flag_color: ColorOption
 }
@@ -21,11 +27,23 @@ impl ListOptions {
     pub fn path_only(&self) -> bool {
         self.flag_path
     }
+
+    pub fn use_hub(&self) -> bool {
+        self.flag_hub
+    }
+
+    pub fn all(&self) -> bool {
+        self.flag_all
+    }
 }
 
 impl uvm_cli::Options for ListOptions {
     fn verbose(&self) -> bool {
         self.flag_verbose
+    }
+
+    fn debug(&self) -> bool {
+        self.flag_debug
     }
 
     fn color(&self) -> &ColorOption {
@@ -49,8 +67,18 @@ impl UvmCommand {
     pub fn exec(&self, options:ListOptions) -> io::Result<()>
     {
         let current_version = uvm_core::current_installation().ok();
+        let list_function = if options.all() {
+            info!("fetch all installations");
+            uvm_core::list_all_installations
+        } else if options.use_hub() {
+            info!("fetch installations from unity hub");
+            uvm_core::unity::hub::list_installations
+        } else {
+            info!("fetch installations from uvm");
+            uvm_core::list_installations
+        };
 
-        if let Ok(installations) = uvm_core::list_installations() {
+        if let Ok(installations) = list_function() {
             self.stderr.write_line("Installed Unity versions:")?;
             let verbose = options.verbose();
             let path_only = options.path_only();

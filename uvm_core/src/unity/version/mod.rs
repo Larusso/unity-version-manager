@@ -8,6 +8,16 @@ use std::convert::From;
 use unity::Installation;
 use serde::{self, Serialize, Deserialize, Deserializer, Serializer};
 
+#[cfg(target_os = "windows")]                                           mod win;
+#[cfg(target_os = "macos")]                                             mod mac;
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]            mod other;
+
+#[cfg(target_os = "windows")]                                           use self::win as sys;
+#[cfg(target_os = "macos")]                                             use self::mac as sys;
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]            use self::other as sys;
+
+pub use self::sys::read_version_from_path;
+
 #[derive(PartialEq,Eq,Ord,Hash,Debug,Clone)]
 pub enum VersionType {
     Alpha,
@@ -76,6 +86,11 @@ impl<'de> Deserialize<'de> for Version {
 }
 
 impl Version {
+
+    pub fn new(major:u32, minor:u32, patch:u32, release_type:VersionType, revision: u32) -> Version {
+        Version {major, minor, patch, release_type, revision}
+    }
+
     pub fn release_type(&self) -> &VersionType {
         &self.release_type
     }

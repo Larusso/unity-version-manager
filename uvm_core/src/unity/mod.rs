@@ -2,6 +2,7 @@ mod installation;
 mod version;
 mod component;
 mod current_installation;
+pub mod hub;
 
 pub use self::installation::Installation;
 pub use self::component::Component;
@@ -16,8 +17,9 @@ use std::path::Path;
 use std::convert::From;
 use std::slice::Iter;
 use result::Result;
-
-const UNITY_INSTALL_LOCATION: &'static str = "/Applications";
+use unity::hub::editors::Editors;
+use itertools::Itertools;
+use std::io;
 
 pub struct Installations(Box<Iterator<Item = Installation>>);
 pub struct Versions(Box<Iterator<Item = Version>>);
@@ -29,10 +31,12 @@ pub struct InstalledComponents {
 
 impl Installations {
     fn new(install_location: &Path) -> Result<Installations> {
+        debug!("fetch unity installations from {}", install_location.display());
         let read_dir = fs::read_dir(install_location)?;
+
         let iter = read_dir
             .filter_map(|dir_entry| dir_entry.ok())
-            .filter_map(check_dir_entry)
+            //.filter_map(check_dir_entry)
             .map(|entry| entry.path())
             .map(Installation::new)
             .filter_map(Result::ok);
@@ -41,6 +45,15 @@ impl Installations {
 
     pub fn versions(self) -> Versions {
         self.into()
+    }
+}
+
+impl From<hub::editors::Editors> for Installations {
+    fn from(editors: hub::editors::Editors) -> Self {
+        let iter = editors.into_iter().map(|editor_installation| {
+            Installation::from(editor_installation)
+        });
+        Installations(Box::new(iter))
     }
 }
 
@@ -95,9 +108,18 @@ fn check_dir_entry(entry:fs::DirEntry) -> Option<fs::DirEntry> {
     None
 }
 
+pub fn list_all_installations() -> Result<Installations> {
+    let i1 = list_installations()?;
+    let i2 = hub::list_installations()?;
+    let iter = i1.chain(i2);
+    let unique = iter.unique_by(|installation| installation.version().to_owned());
+    Ok(Installations(Box::new(unique)))
+}
+
 pub fn list_installations() -> Result<Installations> {
-    let install_location = Path::new(UNITY_INSTALL_LOCATION);
-    list_installations_in_dir(install_location)
+    dirs::application_dir()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "unable to locate application_dir").into())
+        .and_then(|application_dir| list_installations_in_dir(&application_dir))
 }
 
 pub fn list_installations_in_dir(install_location:&Path) -> Result<Installations> {
@@ -230,6 +252,7 @@ mod tests {
         }
 
         #[test]
+        #[cfg(targed_os="macos")]
         fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
             let test_dir = prepare_unity_installations![
                 s
