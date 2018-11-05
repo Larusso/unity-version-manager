@@ -3,6 +3,14 @@
 
 dist: trusty
 language: rust
+<<<<<<< HEAD
+os: osx
+rust:
+  - stable
+  - beta
+  - nightly
+cache: cargo
+=======
 services: docker
 sudo: required
 
@@ -13,6 +21,7 @@ env:
   global:
     - CRATE_NAME=uvm
 
+>>>>>>> Use trust CI templates
 matrix:
   # TODO These are all the build jobs. Adjust as necessary. Comment out what you
   # don't need
