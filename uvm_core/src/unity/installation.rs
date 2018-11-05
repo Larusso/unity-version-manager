@@ -110,6 +110,7 @@ mod tests {
     use std::path::Path;
     use tempfile::Builder;
     use plist::serde::serialize_to_xml;
+    use std::fs::File;
     use super::*;
 
     fn create_unity_installation(base_dir:&PathBuf, version: &str) -> PathBuf {
