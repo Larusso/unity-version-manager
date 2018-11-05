@@ -37,7 +37,10 @@ pub fn read_version_from_path<P : AsRef<Path>>(path:P) -> Result<Version> {
         //check for the `Unity.exe`
         let executable_path = path.join("Editor/Unity.exe");
         let version_string = win_query_version_value(&executable_path, r"\StringFileInfo\040904b0\Unity Version")
-            .map_err(|err| ParseVersionError::new("error"))?;
+            .map_err(|err| {
+                debug!(err.to_string())
+                ParseVersionError::new(err.to_string())
+            })?;
         //let company_name = win_query_version_value(&path,r"\StringFileInfo\040904b0\CompanyName");
         let version_parts:Vec<&str> = version_string.as_str().split('_').collect();
         let version = Version::from_str(version_parts[0])?;
@@ -108,7 +111,7 @@ fn win_query_version_value(path:&Path, query:&str) -> std::result::Result<String
                 WinVersionError::new("failed to create CString from query")
             })?;
 
-        info!("start query version info {:?}", query_string);
+        debug!("start query version info {:?}", query_string);
         let version_result = winver::VerQueryValueA(data, query_string.as_ptr(),&mut pv_unity_version_ptr, raw);
         if version_result == 0 {
             libc::free(data as *mut libc::c_void);
@@ -116,22 +119,15 @@ fn win_query_version_value(path:&Path, query:&str) -> std::result::Result<String
         }
 
         let result = CStr::from_ptr(pv_unity_version_ptr as *const i8);
-        result.to_str()
+        let version = result.to_str()
             .map(|string| String::from(string))
-            .map_err(|err| WinVersionError::new("Unable to create UTF8 string"))
-    }
-}
+            .map(|result| {
+                debug!(&format!("version info result from query {:?}: {}", query_string, &result));
+                result
+            })
+            .map_err(|err| WinVersionError::new("Unable to create UTF8 string"));
 
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::{Path,PathBuf};
-    #[test]
-    fn check_win() {
-        let path:PathBuf = Path::new(r"C:\Program Files\Unity\Editor\Unity.exe").to_path_buf();
-        let v = get_unity_version(path);
-        let version = Version::from_str("5.5.5f1").unwrap();
-        assert_eq!(v, Some(version));
+        libc::free(data as *mut libc::c_void);
+        version
     }
 }
