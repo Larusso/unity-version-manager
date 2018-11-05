@@ -152,6 +152,12 @@ pub mod editor_value_location {
             .first()
             .ok_or_else(|| serde::de::Error::invalid_length(0, &"1"))?;
         let location = Path::new(&path).parent()
+            .and_then(|location| {
+                if cfg!(target_os = "windows") {
+                    return location.parent()
+                }
+                Some(location)
+            })
             .ok_or_else(|| serde::de::Error::invalid_value(Unexpected::Other("location with empty parent"), &"valid unity location"))?;
         Ok(location.to_path_buf())
     }

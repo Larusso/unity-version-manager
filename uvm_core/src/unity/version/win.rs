@@ -29,25 +29,31 @@ use std::io;
 
 pub fn read_version_from_path<P : AsRef<Path>>(path:P) -> Result<Version> {
     let path = path.as_ref();
+    debug!("read_version_from_path: {}", path.display());
+
     if !path.exists() {
+        trace!("path does not exist: {}", path.display());
         return Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, format!("Provided Path does not exist. {}", path.display()))))
     }
 
     if path.is_dir() {
         //check for the `Unity.exe`
         let executable_path = path.join("Editor/Unity.exe");
-        let version_string = win_query_version_value(&executable_path, r"\StringFileInfo\040904b0\Unity Version")
-            .map_err(|err| {
-                debug!(err.to_string())
-                ParseVersionError::new(err.to_string())
-            })?;
-        //let company_name = win_query_version_value(&path,r"\StringFileInfo\040904b0\CompanyName");
-        let version_parts:Vec<&str> = version_string.as_str().split('_').collect();
-        let version = Version::from_str(version_parts[0])?;
-        Ok(version)
-    } else {
-        Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Provided Path is not a Unity installation.")))
+        trace!("executable_path {} exists: {}", executable_path.display(), executable_path.exists());
+        if executable_path.exists() {
+            let version_string = win_query_version_value(&executable_path, r"\StringFileInfo\040904b0\Unity Version")
+                .map_err(|err| {
+                    debug!("{}", err.to_string());
+                    ParseVersionError::new(&err.to_string())
+                })?;
+            //let company_name = win_query_version_value(&path,r"\StringFileInfo\040904b0\CompanyName");
+            let version_parts:Vec<&str> = version_string.as_str().split('_').collect();
+            let version = Version::from_str(version_parts[0])?;
+            return Ok(version)
+        }
     }
+
+    Err(UvmError::IoError(io::Error::new(io::ErrorKind::InvalidInput, "Provided Path is not a Unity installation.")))
 }
 
 #[derive(Debug)]
@@ -122,7 +128,7 @@ fn win_query_version_value(path:&Path, query:&str) -> std::result::Result<String
         let version = result.to_str()
             .map(|string| String::from(string))
             .map(|result| {
-                debug!(&format!("version info result from query {:?}: {}", query_string, &result));
+                debug!("version info result from query {:?}: {}", query_string, &result);
                 result
             })
             .map_err(|err| WinVersionError::new("Unable to create UTF8 string"));
