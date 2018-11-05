@@ -17,7 +17,7 @@ pub fn current_installation() -> Result<CurrentInstallation> {
     CurrentInstallation::current(active_path.to_path_buf())
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os="macos"))]
 mod tests {
     use std::env;
     use std::fs;

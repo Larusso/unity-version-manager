@@ -172,7 +172,7 @@ pub mod editor_value_location {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os="macos"))]
 mod tests {
     use super::*;
     use std::path::Path;

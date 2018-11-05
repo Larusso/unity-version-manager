@@ -252,6 +252,7 @@ mod tests {
         }
 
         #[test]
+        #[cfg(targed_os="macos")]
         fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
             let test_dir = prepare_unity_installations![
                 s

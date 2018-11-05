@@ -20,10 +20,22 @@ pub trait UnityInstallation: Eq + Ord {
 
     fn version(&self) -> &Version;
 
+    #[cfg(target_os = "windows")]
     fn location(&self) -> PathBuf {
-        self.path().join("Unity.app")
+        self.path().join("Editor/Unity.exe")
     }
 
+    #[cfg(target_os = "macos")]
+    fn location(&self) -> PathBuf {
+         return self.path().join("Unity.app")
+    }
+
+    #[cfg(target_os = "windows")]
+    fn exec_path(&self) -> PathBuf {
+        self.location()
+    }
+
+    #[cfg(target_os = "macos")]
     fn exec_path(&self) -> PathBuf {
         self.path().join("Unity.app/Contents/MacOS/Unity")
     }
@@ -91,7 +103,7 @@ impl From<crate::unity::hub::editors::EditorInstallation> for Installation {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os="macos"))]
 mod tests {
     use std::fs;
     use std::fs::OpenOptions;
