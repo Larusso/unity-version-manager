@@ -11,7 +11,7 @@ pub struct IllegalOperationError {
 }
 
 impl IllegalOperationError {
-    fn new(message: &str) -> IllegalOperationError {
+    pub fn new(message: &str) -> IllegalOperationError {
         IllegalOperationError { message: String::from(message) }
     }
 }
