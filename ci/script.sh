@@ -14,9 +14,9 @@ main() {
     cross test --target $TARGET
     cross test --target $TARGET --release
 
-    cross run --target $TARGET
-    cross run --target $TARGET --release
-}
+    cross run --target $TARGET --bin uvm -- --help
+    cross run --target $TARGET --bin uvm --release -- --help
+ }
 
 # we don't run the "test phase" when doing deploys
 if [ -z $TRAVIS_TAG ]; then
