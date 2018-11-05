@@ -4,6 +4,8 @@ use super::Options;
 pub struct UvmOptions {
     pub arg_command: String,
     pub arg_args: Option<Vec<String>>,
+    flag_verbose: bool,
+    flag_debug: bool,
 }
 
 impl UvmOptions {
@@ -25,4 +27,11 @@ impl UvmOptions {
 }
 
 impl Options for UvmOptions {
+    fn verbose(&self) -> bool {
+        self.flag_verbose
+    }
+
+    fn debug(&self) -> bool {
+        self.flag_debug
+    }
 }

@@ -8,11 +8,13 @@ const USAGE: &'static str = "
 uvm - Tool that just manipulates a link to the current unity version
 
 Usage:
-  uvm <command> [<args>...]
+  uvm [options] <command> [<args>...]
   uvm (-h | --help)
   uvm --version
 
 Options:
+  -v, --verbose     print more output
+  -d, --debug       print debug output
   --version         print version
   -h, --help        show this help message and exit
 
