@@ -1,6 +1,7 @@
 extern crate regex;
 extern crate serde;
 extern crate serde_json;
+extern crate semver;
 
 #[macro_use]
 extern crate log;

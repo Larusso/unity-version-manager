@@ -7,6 +7,7 @@ use std::result;
 use std::convert::From;
 use unity::Installation;
 use serde::{self, Serialize, Deserialize, Deserializer, Serializer};
+use semver;
 
 #[cfg(target_os = "windows")]                                           mod win;
 #[cfg(target_os = "macos")]                                             mod mac;
@@ -34,18 +35,15 @@ impl PartialOrd for VersionType {
 
 #[derive(Eq,Debug,Clone,Hash)]
 pub struct Version {
-    major: u32,
-    minor: u32,
-    patch: u32,
+    base: semver::Version,
     release_type: VersionType,
-    revision: u32,
+    revision: u64,
+    hash: Option<String>
 }
 
 impl Ord for Version {
     fn cmp(&self, other: &Version) -> Ordering {
-        self.major.cmp(&other.major)
-        .then(self.minor.cmp(&other.minor))
-        .then(self.patch.cmp(&other.patch))
+        self.base.cmp(&other.base)
         .then(self.release_type.cmp(&other.release_type))
         .then(self.revision.cmp(&other.revision))
     }
@@ -60,9 +58,7 @@ impl PartialOrd for Version {
 impl PartialEq for Version {
     fn eq(&self, other: &Version) -> bool {
         (self.release_type == other.release_type)
-        && (self.major == other.major)
-        && (self.minor == other.minor)
-        && (self.patch == other.patch)
+        && (self.base == other.base)
         && (self.revision == other.revision)
     }
 }
@@ -86,13 +82,40 @@ impl<'de> Deserialize<'de> for Version {
 }
 
 impl Version {
+    pub fn new(major:u64, minor:u64, patch:u64, release_type:VersionType, revision: u64) -> Version {
+        let base = semver::Version::new(major,minor,patch);
+        Version {base, release_type:release_type, revision, hash:None }
+    }
 
-    pub fn new(major:u32, minor:u32, patch:u32, release_type:VersionType, revision: u32) -> Version {
-        Version {major, minor, patch, release_type, revision}
+    pub fn a(major:u64, minor:u64, patch:u64, revision: u64) -> Version {
+        let base = semver::Version::new(major,minor,patch);
+        Version {base, release_type:VersionType::Alpha, revision, hash:None }
+    }
+
+    pub fn b(major:u64, minor:u64, patch:u64, revision: u64) -> Version {
+        let base = semver::Version::new(major,minor,patch);
+        Version {base, release_type:VersionType::Beta, revision, hash:None }
+    }
+
+    pub fn p(major:u64, minor:u64, patch:u64, revision: u64) -> Version {
+        let base = semver::Version::new(major,minor,patch);
+        Version {base, release_type:VersionType::Patch, revision, hash:None }
+    }
+
+    pub fn f(major:u64, minor:u64, patch:u64, revision: u64) -> Version {
+        let base = semver::Version::new(major,minor,patch);
+        Version {base, release_type:VersionType::Final, revision, hash:None }
     }
 
     pub fn release_type(&self) -> &VersionType {
         &self.release_type
+    }
+}
+
+impl From<(u64,u64,u64,u64)> for Version {
+    fn from(tuple: (u64,u64,u64,u64)) -> Version {
+        let (major, minor, patch, revision) = tuple;
+        Version::f(major, minor, patch, revision)
     }
 }
 
@@ -120,8 +143,8 @@ impl fmt::Display for Version {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{}.{}.{}{}{}",
-            self.major, self.minor, self.patch, self.release_type.to_string(), self.revision
+            "{}{}{}",
+            self.base, self.release_type.to_string(), self.revision
         )
     }
 }
@@ -158,9 +181,9 @@ impl FromStr for Version {
         let version_pattern = Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b|a)([0-9]{1,4})").unwrap();
         match version_pattern.captures(s) {
             Some(caps) => {
-                let major: u32 = caps.get(1).map_or("0", |m| m.as_str()).parse().unwrap();
-                let minor: u32 = caps.get(2).map_or("0", |m| m.as_str()).parse().unwrap();
-                let patch: u32 = caps.get(3).map_or("0", |m| m.as_str()).parse().unwrap();
+                let major: u64 = caps.get(1).map_or("0", |m| m.as_str()).parse().unwrap();
+                let minor: u64 = caps.get(2).map_or("0", |m| m.as_str()).parse().unwrap();
+                let patch: u64 = caps.get(3).map_or("0", |m| m.as_str()).parse().unwrap();
 
                 let release_type = match caps.get(4).map_or("", |m| m.as_str()) {
                     "f" => Some(VersionType::Final),
@@ -170,13 +193,13 @@ impl FromStr for Version {
                     _ => None,
                 };
 
-                let revision: u32 = caps.get(5).map_or("0", |m| m.as_str()).parse().unwrap();
+                let revision: u64 = caps.get(5).map_or("0", |m| m.as_str()).parse().unwrap();
+                let base = semver::Version::new(major, minor, patch);
                 Ok(Version {
-                    major,
-                    minor,
-                    patch,
+                    base,
                     revision,
                     release_type: release_type.unwrap(),
+                    hash: None
                 })
             }
             None => Err( ParseVersionError::new("Failed to match version pattern to input") ),
@@ -246,14 +269,11 @@ mod tests {
         let version_string = "1.2.3f4";
         let version = Version::from_str(version_string).ok().unwrap();
 
-        assert!(version.major == 1, "parse correct major component");
-
-        assert!(version.minor == 2, "parse correct minor component");
-
-        assert!(version.patch == 3, "parse correct patch component");
+        assert!(version.base.major == 1, "parse correct major component");
+        assert!(version.base.minor == 2, "parse correct minor component");
+        assert!(version.base.patch == 3, "parse correct patch component");
 
         assert_eq!(version.release_type, VersionType::Final);
-
         assert!(version.revision == 4, "parse correct revision component");
     }
 
@@ -325,15 +345,80 @@ mod tests {
         }
 
         #[test]
-        fn parses_version_back_to_original(major in 0u32..9999, minor in 0u32..9999, patch in 0u32..9999, revision in 0u32..9999 ) {
+        fn parses_version_back_to_original(major in 0u64..9999, minor in 0u64..9999, patch in 0u64..9999, revision in 0u64..9999 ) {
             let v1 = Version {
-                major,
-                minor,
-                patch,
+                base: (major,minor,patch).into(),
                 revision,
-                release_type: VersionType::Final};
+                release_type: VersionType::Final,
+                hash: None
+            };
 
             let v2 = Version::from_str(&format!("{:04}.{:04}.{:04}f{:04}", major, minor, patch, revision)).ok().unwrap();
+            prop_assert_eq!(v1, v2);
+        }
+
+        #[test]
+        fn create_version_from_tuple(major in 0u64..9999, minor in 0u64..9999, patch in 0u64..9999, revision in 0u64..9999 ) {
+            let v1 = Version {
+                base: (major,minor,patch).into(),
+                revision,
+                release_type: VersionType::Final,
+                hash: None
+            };
+
+            let v2:Version = (major, minor, patch, revision).into();
+            prop_assert_eq!(v1, v2);
+        }
+
+        #[test]
+        fn create_version_final_versions(major in 0u64..9999, minor in 0u64..9999, patch in 0u64..9999, revision in 0u64..9999 ) {
+            let v1 = Version {
+                base: (major,minor,patch).into(),
+                revision,
+                release_type: VersionType::Final,
+                hash: None
+            };
+
+            let v2:Version = Version::f(major, minor, patch, revision);
+            prop_assert_eq!(v1, v2);
+        }
+
+        #[test]
+        fn create_version_beta_versions(major in 0u64..9999, minor in 0u64..9999, patch in 0u64..9999, revision in 0u64..9999 ) {
+            let v1 = Version {
+                base: (major,minor,patch).into(),
+                revision,
+                release_type: VersionType::Beta,
+                hash: None
+            };
+
+            let v2:Version = Version::b(major, minor, patch, revision);
+            prop_assert_eq!(v1, v2);
+        }
+
+        #[test]
+        fn create_version_alpha_versions(major in 0u64..9999, minor in 0u64..9999, patch in 0u64..9999, revision in 0u64..9999 ) {
+            let v1 = Version {
+                base: (major,minor,patch).into(),
+                revision,
+                release_type: VersionType::Alpha,
+                hash: None
+            };
+
+            let v2:Version = Version::a(major, minor, patch, revision);
+            prop_assert_eq!(v1, v2);
+        }
+
+        #[test]
+        fn create_version_patch_versions(major in 0u64..9999, minor in 0u64..9999, patch in 0u64..9999, revision in 0u64..9999 ) {
+            let v1 = Version {
+                base: (major,minor,patch).into(),
+                revision,
+                release_type: VersionType::Patch,
+                hash: None
+            };
+
+            let v2:Version = Version::p(major, minor, patch, revision);
             prop_assert_eq!(v1, v2);
         }
     }
