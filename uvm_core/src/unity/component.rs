@@ -5,8 +5,9 @@ use std::error::Error;
 use std::slice::Iter;
 use self::Component::*;
 
-#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Deserialize)]
 pub enum Component {
+    #[serde(rename = "Unity")]
     Editor,
     Mono,
     VisualStudio,
@@ -14,12 +15,16 @@ pub enum Component {
     Documentation,
     StandardAssets,
     Android,
+    #[serde(rename = "iOS")]
     Ios,
     TvOs,
     WebGl,
     Linux,
     Windows,
+    #[serde(rename = "Windows-Mono")]
     WindowsMono,
+    #[serde(other)]
+    Unknown,
 }
 
 impl Component {
