@@ -18,6 +18,7 @@ pub enum Component {
     #[serde(rename = "iOS")]
     Ios,
     TvOs,
+    #[serde(rename = "WebGL")]
     WebGl,
     Linux,
     Windows,

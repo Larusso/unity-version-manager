@@ -5,7 +5,9 @@ extern crate serde_yaml;
 extern crate serde_ini;
 extern crate semver;
 extern crate reqwest;
-
+extern crate md5;
+#[cfg(unix)]
+extern crate cluFlock;
 #[macro_use]
 extern crate log;
 
@@ -14,7 +16,6 @@ extern crate log;
 extern crate proptest;
 #[cfg(test)]
 extern crate rand;
-#[cfg(any(test,windows))]
 extern crate tempfile;
 extern crate plist;
 #[macro_use]

@@ -36,7 +36,11 @@ pub fn default_editor_config_path() -> Option<PathBuf> {
 }
 
 pub fn cache_dir() -> Option<PathBuf> {
-    dirs::cache_dir().map(|path| path.join("Wooga").join("Unity Version Manager"))
+    dirs::cache_dir().map(|path| path.join("Wooga").join("UnityVersionManager"))
+}
+
+pub fn locks_dir() -> Option<PathBuf> {
+    cache_dir().map(|path| path.join("locks"))
 }
 
 #[cfg(test)]
@@ -52,5 +56,6 @@ mod tests {
         println!("install_path:                        {:?}", install_path());
         println!("default_install_path:                {:?}", default_install_path());
         println!("cache_dir:                           {:?}", cache_dir());
+        println!("locks:                               {:?}", locks_dir());
     }
 }
