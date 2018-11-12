@@ -11,7 +11,7 @@ extern crate log;
 extern crate proptest;
 #[cfg(test)]
 extern crate rand;
-#[cfg(test)]
+#[cfg(any(test,windows))]
 extern crate tempfile;
 extern crate plist;
 #[macro_use]

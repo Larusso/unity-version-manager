@@ -1,7 +1,11 @@
 use std::io;
+use std::io::Write as IoWrite;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::ffi::OsStr;
+use tempfile::Builder;
+use std::fs;
+use log::Level::Trace;
 
 pub fn install_editor(installer:&PathBuf, destination:&PathBuf) -> io::Result<()> {
     debug!("install editor to destination: {} with installer: {}",
@@ -18,12 +22,24 @@ pub fn install_module(installer:&PathBuf, destination:&PathBuf) -> io::Result<()
 fn install_from_exe(installer:&PathBuf, destination:&PathBuf) -> io::Result<()>
 {
     debug!("install unity from installer exe");
-    let destination_arg = &format!("/D={}", destination.display());
-    let args = vec!["/S", destination_arg];
+    let mut install_helper = Builder::new()
+        .suffix(".cmd")
+        .rand_bytes(20)
+        .tempfile()?;
 
-    info!("install {} to {} with arguments {}", installer.display(), destination.display(), args.join(" "));
-    let install_process = Command::new(installer)
-        .args(args)
+    info!("create install helper script {}", install_helper.path().display());
+    {
+        let mut script = install_helper.as_file_mut();
+        let install_command = format!(r#"CALL "{}" /S /D={}"#, installer.display(), destination.display());
+        trace!("install helper script content:");
+        writeln!(script, "ECHO OFF");
+        trace!("{}", &install_command);
+        writeln!(script, "{}", install_command);
+    }
+
+    info!("install {} to {}", installer.display(), destination.display());
+    let installer_script = install_helper.into_temp_path();
+    let install_process = Command::new(&installer_script)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -31,8 +47,8 @@ fn install_from_exe(installer:&PathBuf, destination:&PathBuf) -> io::Result<()>
             error!("error while spawning installer");
             err
         })?;
-
     let output = install_process.wait_with_output()?;
+    installer_script.close()?;
     if !output.status.success() {
         return Err(io::Error::new(
             io::ErrorKind::Other,
