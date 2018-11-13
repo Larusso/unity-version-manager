@@ -4,10 +4,13 @@ use std::fmt;
 use std::str::FromStr;
 use std::error::Error;
 use std::result;
-use std::convert::From;
+use std::convert::{From,AsRef};
 use unity::Installation;
 use serde::{self, Serialize, Deserialize, Deserializer, Serializer};
 use semver;
+
+mod hash;
+mod manifest;
 
 #[cfg(target_os = "windows")]                                           mod win;
 #[cfg(target_os = "macos")]                                             mod mac;
@@ -110,6 +113,10 @@ impl Version {
     pub fn release_type(&self) -> &VersionType {
         &self.release_type
     }
+
+    pub fn version_hash(&self) -> Option<String> {
+        hash::hash_for_version(self).ok()
+    }
 }
 
 impl From<(u64,u64,u64,u64)> for Version {
@@ -146,6 +153,12 @@ impl fmt::Display for Version {
             "{}{}{}",
             self.base, self.release_type.to_string(), self.revision
         )
+    }
+}
+
+impl AsRef<Version> for Version {
+    fn as_ref(&self) -> &Self {
+        self
     }
 }
 
@@ -331,6 +344,18 @@ mod tests {
         let version_a = Version::from_str("1.2.3f4").ok().unwrap();
         let version_b = Version::from_str("1.2.3f3").ok().unwrap();
         assert_eq!(Ordering::Greater, version_a.cmp(&version_b));
+    }
+
+    #[test]
+    fn fetch_hash_for_known_version() {
+        let mut version = Version::f(2017,1,0,2);
+        assert_eq!(version.version_hash(), Some(String::from("66e9e4bfc850")));
+    }
+
+    #[test]
+    fn fetch_hash_for_unknown_version_yields_none() {
+        let mut version = Version::f(2080,2,0,2);
+        assert_eq!(version.version_hash(), None);
     }
 
     proptest! {

@@ -35,6 +35,10 @@ pub fn default_editor_config_path() -> Option<PathBuf> {
     config_path().map(|path| path.join("defaultEditor.json"))
 }
 
+pub fn cache_dir() -> Option<PathBuf> {
+    dirs::cache_dir().map(|path| path.join("Wooga").join("Unity Version Manager"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -47,5 +51,6 @@ mod tests {
         println!("config_path:                         {:?}", config_path());
         println!("install_path:                        {:?}", install_path());
         println!("default_install_path:                {:?}", default_install_path());
+        println!("cache_dir:                           {:?}", cache_dir());
     }
 }

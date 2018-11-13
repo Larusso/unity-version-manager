@@ -1,7 +1,10 @@
 extern crate regex;
 extern crate serde;
 extern crate serde_json;
+extern crate serde_yaml;
+extern crate serde_ini;
 extern crate semver;
+extern crate reqwest;
 
 #[macro_use]
 extern crate log;

@@ -4,6 +4,8 @@ use std::fmt;
 use unity;
 use plist;
 use serde_json;
+use serde_ini;
+use reqwest;
 
 #[derive(Debug)]
 pub struct IllegalOperationError {
@@ -32,9 +34,12 @@ impl Error for IllegalOperationError {
 pub enum UvmError {
     PlistError(plist::Error),
     JsonError(serde_json::Error),
+    IniError(serde_ini::de::Error),
     ParseVersionError(unity::ParseVersionError),
     IoError(io::Error),
     IllegalOperationError(IllegalOperationError),
+    RequestError(reqwest::Error),
+    UrlParseError(reqwest::UrlError),
 }
 
 impl From<io::Error> for UvmError {
@@ -55,6 +60,12 @@ impl From<serde_json::Error> for UvmError {
     }
 }
 
+impl From<serde_ini::de::Error> for UvmError {
+    fn from(err: serde_ini::de::Error) -> UvmError {
+        UvmError::IniError(err)
+    }
+}
+
 impl From<unity::ParseVersionError> for UvmError {
     fn from(err: unity::ParseVersionError) -> UvmError {
         UvmError::ParseVersionError(err)
@@ -67,14 +78,29 @@ impl From<IllegalOperationError> for UvmError {
     }
 }
 
+impl From<reqwest::Error> for UvmError {
+    fn from(err: reqwest::Error) -> UvmError {
+        UvmError::RequestError(err)
+    }
+}
+
+impl From<reqwest::UrlError> for UvmError {
+    fn from(err: reqwest::UrlError) -> UvmError {
+        UvmError::UrlParseError(err)
+    }
+}
+
 impl Error for UvmError {
     fn description(&self) -> &str {
         match *self {
             UvmError::PlistError(ref err) => err.description(),
             UvmError::JsonError(ref err) => err.description(),
+            UvmError::IniError(ref err) => err.description(),
             UvmError::ParseVersionError(ref err) => err.description(),
             UvmError::IoError(ref err) => err.description(),
             UvmError::IllegalOperationError(ref err) => err.description(),
+            UvmError::RequestError(ref err) => err.description(),
+            UvmError::UrlParseError(ref err) => err.description(),
         }
     }
 
@@ -82,9 +108,12 @@ impl Error for UvmError {
         Some(match *self {
             UvmError::PlistError(ref err) => err as &Error,
             UvmError::JsonError(ref err) => err as &Error,
+            UvmError::IniError(ref err) => err as &Error,
             UvmError::ParseVersionError(ref err) => err as &Error,
             UvmError::IoError(ref err) => err as &Error,
             UvmError::IllegalOperationError(ref err) => err as &Error,
+            UvmError::RequestError(ref err) => err as &Error,
+            UvmError::UrlParseError(ref err) => err as &Error,
         })
     }
 }
@@ -94,9 +123,12 @@ impl fmt::Display for UvmError {
         match *self {
             UvmError::PlistError(ref err) => fmt::Display::fmt(err, f),
             UvmError::JsonError(ref err) => fmt::Display::fmt(err, f),
+            UvmError::IniError(ref err) => fmt::Display::fmt(err, f),
             UvmError::ParseVersionError(ref err) => fmt::Display::fmt(err, f),
             UvmError::IoError(ref err) => fmt::Display::fmt(err, f),
             UvmError::IllegalOperationError(ref err) => fmt::Display::fmt(err, f),
+            UvmError::RequestError(ref err) => fmt::Display::fmt(err, f),
+            UvmError::UrlParseError(ref err) => fmt::Display::fmt(err, f),
         }
     }
 }
