@@ -3,12 +3,12 @@ extern crate serde_derive;
 extern crate console;
 extern crate serde;
 extern crate uvm_cli;
+#[macro_use]
 extern crate uvm_core;
 extern crate indicatif;
 
 #[macro_use]
 extern crate log;
-extern crate cluFlock;
 
 use console::style;
 use console::Term;
@@ -29,8 +29,8 @@ use uvm_core::install;
 use uvm_core::install::InstallVariant;
 use uvm_core::unity::hub;
 use uvm_core::unity::hub::editors::{EditorInstallation, Editors};
-use cluFlock::Flock;
 use uvm_core::unity::hub::paths;
+use uvm_core::utils;
 use std::fs;
 
 #[derive(Debug, Deserialize)]
@@ -220,20 +220,7 @@ impl UvmCommand {
 
         let lock_file_name = format!("{}.lock", &version);
         let lock_file = locks_dir.join(lock_file_name);
-        let lock_file = fs::File::create(lock_file)?;
-        let _lock = match lock_file.try_exclusive_lock() {
-            Ok(Some(lock)) => {
-                trace!("aquire lock for install operation");
-                Ok(lock)
-            },
-            Ok(None) => {
-                debug!("install already in progress.");
-                debug!("wait for other process to finish.");
-                let lock = lock_file.exclusive_lock()?;
-                Ok(lock)
-            },
-            Err(err) => Err(err)
-        }?;
+        lock_process!(lock_file);
 
         let mut editorInstallation:Option<EditorInstallation> = None;
         let base_dir = if let Some(ref destination) = options.destination() {

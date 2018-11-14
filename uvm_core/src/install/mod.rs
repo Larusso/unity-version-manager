@@ -11,12 +11,12 @@ use unity::Manifest;
 use unity::MD5;
 use tempfile::Builder;
 use std::fs;
+use utils;
 use unity::hub::paths;
 use md5::{Md5, Digest};
 use reqwest::header::{USER_AGENT,RANGE};
 use reqwest::StatusCode;
 mod installer;
-use cluFlock::Flock;
 pub use self::installer::install_editor;
 pub use self::installer::install_module;
 
@@ -160,20 +160,7 @@ pub fn download_installer(variant: InstallVariant, version: &Version) -> ::resul
     fs::DirBuilder::new().recursive(true).create(&installer_dir)?;
 
     let lock_file = installer_dir.join(lock_file_name);
-    let lock_file = fs::File::create(lock_file)?;
-    let _lock = match lock_file.try_exclusive_lock() {
-        Ok(Some(lock)) => {
-            trace!("aquire lock for download operation");
-            Ok(lock)
-        },
-        Ok(None) => {
-            debug!("download already in progress.");
-            debug!("wait for other process to finish.");
-            let lock = lock_file.exclusive_lock()?;
-            Ok(lock)
-        },
-        Err(err) => Err(err)
-    }?;
+    lock_process!(lock_file);
 
     let installer_path = installer_dir.join(file_name);
     if installer_path.exists() {
