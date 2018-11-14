@@ -18,6 +18,6 @@ Options:
 ";
 
 fn main() {
-    let options:CurrentOptions = uvm_cli::get_options(USAGE).unwrap();
+    let options: CurrentOptions = uvm_cli::get_options(USAGE).unwrap();
     uvm_current::UvmCommand::new().exec(options).unwrap();
 }

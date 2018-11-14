@@ -1,37 +1,32 @@
 #[macro_use]
 extern crate serde_derive;
 extern crate console;
+extern crate indicatif;
 extern crate serde;
 extern crate uvm_cli;
 #[macro_use]
 extern crate uvm_core;
-extern crate indicatif;
 
 #[macro_use]
 extern crate log;
 
-use console::style;
-use console::Term;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle, ProgressDrawTarget};
+use console::{style, Term};
+use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
 use std::collections::HashSet;
+use std::fs;
 use std::io;
-use std::io::Write;
-use std::path::{PathBuf,Path};
-use std::process;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
-use std::time::Duration;
-use std::sync::{Arc, Mutex, Condvar};
 use uvm_cli::ColorOption;
-use uvm_core::brew;
-use uvm_core::unity::{Installation,Version,Component};
 use uvm_core::install;
 use uvm_core::install::InstallVariant;
 use uvm_core::unity::hub;
 use uvm_core::unity::hub::editors::{EditorInstallation, Editors};
 use uvm_core::unity::hub::paths;
+use uvm_core::unity::{Component, Installation, Version};
 use uvm_core::utils;
-use std::fs;
 
 #[derive(Debug, Deserialize)]
 pub struct Options {
@@ -56,8 +51,14 @@ impl Options {
     }
 
     pub fn install_variants(&self) -> Option<HashSet<InstallVariant>> {
-        if self.flag_android || self.flag_ios || self.flag_webgl || self.flag_linux
-            || self.flag_windows || self.flag_mobile || self.flag_desktop || self.flag_all
+        if self.flag_android
+            || self.flag_ios
+            || self.flag_webgl
+            || self.flag_linux
+            || self.flag_windows
+            || self.flag_mobile
+            || self.flag_desktop
+            || self.flag_all
         {
             let mut variants: HashSet<InstallVariant> = HashSet::with_capacity(5);
 
@@ -74,11 +75,15 @@ impl Options {
             }
 
             let check_version = Version::from_str("2018.0.0b0").unwrap();
-            if (self.flag_windows || self.flag_desktop || self.flag_all) && self.version() >= &check_version {
+            if (self.flag_windows || self.flag_desktop || self.flag_all)
+                && self.version() >= &check_version
+            {
                 variants.insert(InstallVariant::WindowsMono);
             }
 
-            if (self.flag_windows || self.flag_desktop || self.flag_all) && self.version() < &check_version {
+            if (self.flag_windows || self.flag_desktop || self.flag_all)
+                && self.version() < &check_version
+            {
                 variants.insert(InstallVariant::Windows);
             }
 
@@ -113,12 +118,11 @@ impl uvm_cli::Options for Options {
 struct InstallObject {
     version: Version,
     variant: InstallVariant,
-    destination: Option<PathBuf>
+    destination: Option<PathBuf>,
 }
 
 pub struct UvmCommand {
-    stdout: Term,
-    stderr: Term
+    stderr: Term,
 }
 
 type EditorInstallLock = Mutex<Option<io::Result<()>>>;
@@ -126,37 +130,55 @@ type EditorInstallLock = Mutex<Option<io::Result<()>>>;
 impl UvmCommand {
     pub fn new() -> UvmCommand {
         UvmCommand {
-            stdout: Term::stdout(),
             stderr: Term::stderr(),
         }
     }
 
-    fn progress_draw_target<T>(options:&T) -> ProgressDrawTarget
+    fn progress_draw_target<T>(options: &T) -> ProgressDrawTarget
     where
         T: uvm_cli::Options,
     {
-        if( options.debug()) {
+        if options.debug() {
             ProgressDrawTarget::hidden()
         } else {
             ProgressDrawTarget::stderr()
         }
     }
 
-    fn set_editor_install_lock(editor_installed_lock:&Arc<(EditorInstallLock,Condvar)>, value:io::Result<()>) {
+    fn set_editor_install_lock(
+        editor_installed_lock: &Arc<(EditorInstallLock, Condvar)>,
+        value: io::Result<()>,
+    ) {
         let &(ref lock, ref cvar) = &**editor_installed_lock;
         let mut is_installed = lock.lock().unwrap();
         *is_installed = Some(value);
         cvar.notify_all();
     }
 
-    fn install(install_object:InstallObject, pb:ProgressBar, editor_installed_lock:Arc<(EditorInstallLock,Condvar)>) -> io::Result<()> {
-        pb.set_message(&format!("[{}] {}",&install_object.variant, style("download installer").dim()));
-        let installer = install::download_installer(install_object.variant.clone(), &install_object.version)
-        .map_err(|error| {
-            debug!("error loading installer: {}", style(&error).red());
-            pb.finish_with_message(&format!("[{}] {}", &install_object.variant, style("error").red().bold()));
-            io::Error::new(io::ErrorKind::Other, format!("Failed to fetch installer url \n{}", error.to_string()))
-        })?;
+    fn install(
+        install_object: InstallObject,
+        pb: ProgressBar,
+        editor_installed_lock: Arc<(EditorInstallLock, Condvar)>,
+    ) -> io::Result<()> {
+        pb.set_message(&format!(
+            "[{}] {}",
+            &install_object.variant,
+            style("download installer").dim()
+        ));
+        let installer =
+            install::download_installer(install_object.variant.clone(), &install_object.version)
+                .map_err(|error| {
+                    debug!("error loading installer: {}", style(&error).red());
+                    pb.finish_with_message(&format!(
+                        "[{}] {}",
+                        &install_object.variant,
+                        style("error").red().bold()
+                    ));
+                    io::Error::new(
+                        io::ErrorKind::Other,
+                        format!("Failed to fetch installer url \n{}", error.to_string()),
+                    )
+                })?;
 
         debug!("installer location: {}", &installer.display());
 
@@ -166,18 +188,42 @@ impl UvmCommand {
             let mut is_installed = lock.lock().unwrap();
             // As long as the value inside the `Mutex` is false, we wait.
             while (*is_installed).is_none() {
-                pb.set_message(&format!("[{}] {}", &install_object.variant, style("waiting").dim()));
-                debug!("waiting for editor to finish installation of {}", &install_object.variant);
+                pb.set_message(&format!(
+                    "[{}] {}",
+                    &install_object.variant,
+                    style("waiting").dim()
+                ));
+                debug!(
+                    "waiting for editor to finish installation of {}",
+                    &install_object.variant
+                );
                 is_installed = cvar.wait(is_installed).unwrap();
             }
 
-            if let Some(ref is_installed ) = *is_installed {
-                if let Err(err) = is_installed {
-                    debug!("editor installation error. Abort installation of {}", &install_object.variant);
-                    pb.finish_with_message(&format!("[{}] {}", &install_object.variant, style("editor failed").red().bold()));
-                    return Err(io::Error::new(io::ErrorKind::Other, format!("{} failed because of {}", &install_object.variant, InstallVariant::Editor)));
+            if let Some(ref is_installed) = *is_installed {
+                if let Err(_) = is_installed {
+                    debug!(
+                        "editor installation error. Abort installation of {}",
+                        &install_object.variant
+                    );
+                    pb.finish_with_message(&format!(
+                        "[{}] {}",
+                        &install_object.variant,
+                        style("editor failed").red().bold()
+                    ));
+                    return Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        format!(
+                            "{} failed because of {}",
+                            &install_object.variant,
+                            InstallVariant::Editor
+                        ),
+                    ));
                 }
-                trace!("editor installation finished. Continue installtion of {}", &install_object.variant);
+                trace!(
+                    "editor installation finished. Continue installtion of {}",
+                    &install_object.variant
+                );
             }
         }
 
@@ -185,95 +231,132 @@ impl UvmCommand {
             io::Error::new(io::ErrorKind::Other, "Missing installtion destination")
         })?;
 
-        pb.set_message(&format!("[{}] {}", &install_object.variant, style("installing").dim()));
-        debug!("install {} to {}",&install_object.variant, &destination.display());
+        pb.set_message(&format!(
+            "[{}] {}",
+            &install_object.variant,
+            style("installing").dim()
+        ));
+        debug!(
+            "install {} to {}",
+            &install_object.variant,
+            &destination.display()
+        );
         let install_f = match &install_object.variant {
             InstallVariant::Editor => install::install_editor,
-                                 _ => install::install_module,
+            _ => install::install_module,
         };
 
         install_f(&installer, &destination)
-        .map(|result| {
-            debug!("installation finished {}.", &install_object.variant);
-            pb.finish_with_message(&format!("[{}] {}", &install_object.variant, style("done").green().bold()));
-            if install_object.variant == InstallVariant::Editor {
-                UvmCommand::set_editor_install_lock(&editor_installed_lock, Ok(()));
-            }
-            result
-        })
-        .map_err(|error| {
-            debug!("failed to install {}. Error: {}", &install_object.variant, style(&error).red());
-            pb.finish_with_message(&format!("[{}] {}", &install_object.variant, style("failed").red().bold()));
-            if install_object.variant == InstallVariant::Editor {
-                let error = io::Error::new(io::ErrorKind::Other, "failed to install edit");
-                UvmCommand::set_editor_install_lock(&editor_installed_lock, Err(error));
-            }
-            error
-        })
+            .map(|result| {
+                debug!("installation finished {}.", &install_object.variant);
+                pb.finish_with_message(&format!(
+                    "[{}] {}",
+                    &install_object.variant,
+                    style("done").green().bold()
+                ));
+                if install_object.variant == InstallVariant::Editor {
+                    UvmCommand::set_editor_install_lock(&editor_installed_lock, Ok(()));
+                }
+                result
+            }).map_err(|error| {
+                debug!(
+                    "failed to install {}. Error: {}",
+                    &install_object.variant,
+                    style(&error).red()
+                );
+                pb.finish_with_message(&format!(
+                    "[{}] {}",
+                    &install_object.variant,
+                    style("failed").red().bold()
+                ));
+                if install_object.variant == InstallVariant::Editor {
+                    let error = io::Error::new(io::ErrorKind::Other, "failed to install edit");
+                    UvmCommand::set_editor_install_lock(&editor_installed_lock, Err(error));
+                }
+                error
+            })
     }
 
-    pub fn exec(&self, options:Options) -> io::Result<()> {
+    pub fn exec(&self, options: Options) -> io::Result<()> {
         let version = options.version();
-        self.stderr.write_line(&format!("{}: {}", style("install unity version").green(), version.to_string())).ok();
-        let locks_dir = paths::locks_dir().ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Unable to locate locks directory."))?;
+        self.stderr
+            .write_line(&format!(
+                "{}: {}",
+                style("install unity version").green(),
+                version.to_string()
+            )).ok();
+        let locks_dir = paths::locks_dir().ok_or_else(|| {
+            io::Error::new(io::ErrorKind::NotFound, "Unable to locate locks directory.")
+        })?;
         fs::DirBuilder::new().recursive(true).create(&locks_dir)?;
 
         let lock_file_name = format!("{}.lock", &version);
         let lock_file = locks_dir.join(lock_file_name);
         lock_process!(lock_file);
 
-        let mut editorInstallation:Option<EditorInstallation> = None;
+        let mut editor_installation: Option<EditorInstallation> = None;
         let base_dir = if let Some(ref destination) = options.destination() {
             if destination.exists() && !destination.is_dir() {
-                return Err(io::Error::new(io::ErrorKind::InvalidInput, "Requested destination is not a directory."))
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Requested destination is not a directory.",
+                ));
             }
-            editorInstallation = Some(EditorInstallation::new(options.version().to_owned(), destination.to_path_buf()));
+            editor_installation = Some(EditorInstallation::new(
+                options.version().to_owned(),
+                destination.to_path_buf(),
+            ));
             destination.to_path_buf()
         } else {
             hub::paths::install_path()
-            .map(|path| path.join(format!("{}", options.version())))
-            .unwrap_or_else(|| Path::new(&format!("/Applications/Unity-{}", options.version())).to_path_buf())
+                .map(|path| path.join(format!("{}", options.version())))
+                .unwrap_or_else(|| {
+                    Path::new(&format!("/Applications/Unity-{}", options.version())).to_path_buf()
+                })
         };
 
         let installation = Installation::new(base_dir.clone());
-        let mut to_install:HashSet<InstallObject> = HashSet::new();
-        let mut installed:HashSet<InstallObject> = HashSet::new();
+        let mut to_install: HashSet<InstallObject> = HashSet::new();
+        let mut installed: HashSet<InstallObject> = HashSet::new();
 
         if installation.is_err() {
             let installation_data = InstallObject {
-                            version: options.version().to_owned(),
-                            variant: InstallVariant::Editor,
-                            destination: Some(base_dir.to_path_buf()),
-                        };
+                version: options.version().to_owned(),
+                variant: InstallVariant::Editor,
+                destination: Some(base_dir.to_path_buf()),
+            };
             to_install.insert(installation_data);
 
             if let Some(variants) = options.install_variants() {
                 for variant in variants {
-                    let component:Component = variant.into();
+                    let component: Component = variant.into();
                     let variant_destination = component.installpath();
                     let installation_data = InstallObject {
-                                    version: options.version().to_owned(),
-                                    variant: component.into(),
-                                    destination: variant_destination.map(|d| base_dir.join(d)),
-                                };
+                        version: options.version().to_owned(),
+                        variant: component.into(),
+                        destination: variant_destination.map(|d| base_dir.join(d)),
+                    };
                     to_install.insert(installation_data);
                 }
             } else {
-               info!("No components requested to install");
+                info!("No components requested to install");
             }
         } else {
             let installation = installation.unwrap();
-            info!("Editor already installed at {}", &installation.path().display());
+            info!(
+                "Editor already installed at {}",
+                &installation.path().display()
+            );
             let base_dir = installation.path();
             if let Some(variants) = options.install_variants() {
                 for variant in variants {
-                    let component:Component = variant.into();
+                    let component: Component = variant.into();
                     let variant_destination = component.installpath();
                     let installation_data = InstallObject {
-                                    version: options.version().to_owned(),
-                                    variant: component.into(),
-                                    destination: variant_destination.map(|d| base_dir.join(d))
-                                };
+                        version: options.version().to_owned(),
+                        variant: component.into(),
+                        destination: variant_destination.map(|d| base_dir.join(d)),
+                    };
                     to_install.insert(installation_data);
                 }
             }
@@ -282,18 +365,20 @@ impl UvmCommand {
                 for component in installation.installed_components() {
                     let variant_destination = component.installpath();
                     let installation_data = InstallObject {
-                                    version: options.version().to_owned(),
-                                    variant: component.into(),
-                                    destination: variant_destination.map(|d| base_dir.join(d))
-                                };
+                        version: options.version().to_owned(),
+                        variant: component.into(),
+                        destination: variant_destination.map(|d| base_dir.join(d)),
+                    };
                     installed.insert(installation_data);
                 }
             }
         }
 
         if to_install.is_empty() {
-            self.stderr.write_line(&format!("{}", style("Nothing to install").green())).ok();
-            return Ok(())
+            self.stderr
+                .write_line(&format!("{}", style("Nothing to install").green()))
+                .ok();
+            return Ok(());
         }
 
         if log_enabled!(log::Level::Info) {
@@ -313,7 +398,10 @@ impl UvmCommand {
 
             let mut intersection = to_install.intersection(&installed).peekable();
             if let Some(_) = intersection.peek() {
-                info!("{}", style("Skip variants already installed:").green().bold());
+                info!(
+                    "{}",
+                    style("Skip variants already installed:").green().bold()
+                );
                 for c in intersection {
                     info!("{}", style(&c.variant).yellow());
                 }
@@ -322,36 +410,36 @@ impl UvmCommand {
 
         let mut diff = to_install.difference(&installed).cloned().peekable();
         if let None = diff.peek() {
-            self.stderr.write_line(&format!("{}", style("Nothing to install").green())).ok();
-            return Ok(())
+            self.stderr
+                .write_line(&format!("{}", style("Nothing to install").green()))
+                .ok();
+            return Ok(());
         }
 
-        let multiProgress = MultiProgress::new();
-        multiProgress.set_draw_target(UvmCommand::progress_draw_target(&options));
+        let multi_progress = MultiProgress::new();
+        multi_progress.set_draw_target(UvmCommand::progress_draw_target(&options));
         let sty = ProgressStyle::default_bar()
             .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
             .template("{prefix:.bold.dim>15} {spinner} {wide_msg}");
 
-        let mut threads:Vec<thread::JoinHandle<io::Result<()>>> = Vec::new();
+        let mut threads: Vec<thread::JoinHandle<io::Result<()>>> = Vec::new();
         let editor_installed_lock = Arc::new((Mutex::new(None), Condvar::new()));
         let mut editor_installing = false;
         let size = to_install.len();
         let mut counter = 1;
 
         for install_object in diff {
-            let pb = multiProgress.add(ProgressBar::new(1));
+            let pb = multi_progress.add(ProgressBar::new(1));
             pb.set_style(sty.clone());
             pb.enable_steady_tick(100);
             pb.tick();
             pb.set_prefix(&format!("{}/{}", counter, size));
             let editor_installed_lock_c = editor_installed_lock.clone();
             editor_installing |= install_object.variant == InstallVariant::Editor;
-            counter+=1;
-            threads.push(
-                thread::spawn(move || {
-                    UvmCommand::install(install_object, pb, editor_installed_lock_c)
-                })
-            );
+            counter += 1;
+            threads.push(thread::spawn(move || {
+                UvmCommand::install(install_object, pb, editor_installed_lock_c)
+            }));
         }
 
         if !editor_installing {
@@ -359,31 +447,34 @@ impl UvmCommand {
         }
 
         //wait for all progress bars to finish
-        multiProgress.join_and_clear();
-        threads.into_iter()
-        .map(thread::JoinHandle::join)
-        .map(|thread_result| {
-            match thread_result {
+        multi_progress.join_and_clear()?;
+        threads
+            .into_iter()
+            .map(thread::JoinHandle::join)
+            .map(|thread_result| match thread_result {
                 Ok(x) => x,
-                Err(_) => Err(io::Error::new(io::ErrorKind::Other, "Install thread failed"))
-            }
-        })
-        .fold(Ok(()), |acc, r| {
-            if let Err(x) = r {
-                if let Err(y) = acc {
-                    return Err(io::Error::new(io::ErrorKind::Other, format!("{}\n{}", y, x)))
+                Err(_) => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Install thread failed",
+                )),
+            }).fold(Ok(()), |acc, r| {
+                if let Err(x) = r {
+                    if let Err(y) = acc {
+                        return Err(io::Error::new(
+                            io::ErrorKind::Other,
+                            format!("{}\n{}", y, x),
+                        ));
+                    }
+                    return Err(io::Error::new(io::ErrorKind::Other, x));
                 }
-                return Err(io::Error::new(io::ErrorKind::Other, x))
-            }
-            acc
-        })?;
+                acc
+            })?;
 
         //write new unity hub editor installation
-        if let Some(installation) = editorInstallation {
-            let mut editors = Editors::load()
-            .and_then(|mut editors| {
+        if let Some(installation) = editor_installation {
+            let mut _editors = Editors::load().and_then(|mut editors| {
                 editors.add(installation);
-                editors.flush();
+                editors.flush()?;
                 Ok(())
             });
         }

@@ -20,6 +20,6 @@ Options:
 ";
 
 fn main() -> std::io::Result<()> {
-    let options:CommandsOptions = uvm_cli::get_options(USAGE)?;
+    let options: CommandsOptions = uvm_cli::get_options(USAGE)?;
     uvm_commands::UvmCommand::new().exec(options)
 }

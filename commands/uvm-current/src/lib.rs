@@ -1,20 +1,18 @@
-#[macro_use]
-extern crate serde_derive;
+extern crate console;
 extern crate uvm_cli;
 extern crate uvm_core;
-extern crate console;
+#[macro_use]
+extern crate serde_derive;
 
-use console::style;
-use console::Term;
+use console::{style, Term};
 use std::io;
-use uvm_cli::ColorOption;
-use uvm_cli::Options;
+use uvm_cli::{ColorOption, Options};
 
 #[derive(Debug, Deserialize)]
 pub struct CurrentOptions {
     flag_verbose: bool,
     flag_path: bool,
-    flag_color: ColorOption
+    flag_color: ColorOption,
 }
 
 impl CurrentOptions {
@@ -35,7 +33,7 @@ impl uvm_cli::Options for CurrentOptions {
 
 pub struct UvmCommand {
     stdout: Term,
-    stderr: Term
+    stderr: Term,
 }
 
 impl UvmCommand {
@@ -46,8 +44,7 @@ impl UvmCommand {
         }
     }
 
-    pub fn exec(&self, options:CurrentOptions) -> io::Result<()>
-    {
+    pub fn exec(&self, options: CurrentOptions) -> io::Result<()> {
         if let Ok(installation) = uvm_core::current_installation() {
             let verbose = options.verbose();
             let line = if verbose {

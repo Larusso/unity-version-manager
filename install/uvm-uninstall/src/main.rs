@@ -25,6 +25,6 @@ Options:
 ";
 
 fn main() -> std::io::Result<()> {
-    let options:UninstallOptions = uvm_cli::get_options(USAGE)?;
+    let options: UninstallOptions = uvm_cli::get_options(USAGE)?;
     uvm_uninstall::UvmCommand::new().exec(options)
 }

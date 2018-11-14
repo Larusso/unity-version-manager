@@ -1,24 +1,15 @@
-use brew;
-use regex::Regex;
-use std::fmt;
-use std::io;
-use std::path::Path;
-use std::path::PathBuf;
-use unity::Component;
-use unity::Version;
-use unity::VersionType;
-use unity::Manifest;
-use unity::MD5;
-use tempfile::Builder;
-use std::fs;
-use utils;
-use unity::hub::paths;
-use md5::{Md5, Digest};
-use reqwest::header::{USER_AGENT,RANGE};
-use reqwest::StatusCode;
 mod installer;
 pub use self::installer::install_editor;
 pub use self::installer::install_module;
+use brew;
+use md5::{Digest, Md5};
+use regex::Regex;
+use reqwest::header::{RANGE, USER_AGENT};
+use reqwest::StatusCode;
+use std::path::{Path, PathBuf};
+use std::{fmt, fs, io};
+use unity::hub::paths;
+use unity::{Component, Manifest, Version, VersionType, MD5};
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum InstallVariant {
@@ -54,7 +45,7 @@ impl From<Component> for InstallVariant {
             Component::Linux => InstallVariant::Linux,
             Component::Windows => InstallVariant::Windows,
             Component::WindowsMono => InstallVariant::WindowsMono,
-            _ => InstallVariant::Editor
+            _ => InstallVariant::Editor,
         }
     }
 }
@@ -68,38 +59,51 @@ impl From<InstallVariant> for Component {
             InstallVariant::Linux => Component::Linux,
             InstallVariant::Windows => Component::Windows,
             InstallVariant::WindowsMono => Component::WindowsMono,
-            InstallVariant::Editor => Component::Editor
+            InstallVariant::Editor => Component::Editor,
         }
     }
 }
 
 fn fetch_download_path_from_output(output: &Vec<u8>) -> Option<PathBuf> {
     let url_pattern = Regex::new(r"^==> Success! Downloaded to -> (.*)$").unwrap();
-    String::from_utf8_lossy(output).lines().find(|line| {
-        url_pattern.is_match(line)
-    }).map(|line| {
-        let caps = url_pattern.captures(line).unwrap();
-        Path::new(&caps.get(1).unwrap().as_str()).to_path_buf()
-    })
+    String::from_utf8_lossy(output)
+        .lines()
+        .find(|line| url_pattern.is_match(line))
+        .map(|line| {
+            let caps = url_pattern.captures(line).unwrap();
+            Path::new(&caps.get(1).unwrap().as_str()).to_path_buf()
+        })
 }
 
 pub fn download_installer2(variant: InstallVariant, version: &Version) -> io::Result<PathBuf> {
-    debug!("download installer for variant: {} and version: {}", variant, version);
+    debug!(
+        "download installer for variant: {} and version: {}",
+        variant, version
+    );
     let cask = cask_name_for_type_version(variant, version);
     brew::update()?;
-    let child = brew::cask::fetch(vec!(cask), true)?;
+    let child = brew::cask::fetch(vec![cask], true)?;
     let o = child.wait_with_output()?;
 
     if !o.status.success() {
         //error!("{}", String::from_utf8_lossy(&o.stderr));
-        return Err(io::Error::new(io::ErrorKind::Other, "Failed to download installer"));
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            "Failed to download installer",
+        ));
     }
 
     trace!("stderr:\n{}", String::from_utf8_lossy(&o.stderr));
     trace!("stdout:\n{}", String::from_utf8_lossy(&o.stdout));
 
     fetch_download_path_from_output(&o.stdout).ok_or_else(|| {
-        io::Error::new(io::ErrorKind::Other, format!("Failed to fetch installer url \n{}", String::from_utf8_lossy(&o.stdout)))
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!(
+                "Failed to fetch installer url \n{}",
+                String::from_utf8_lossy(&o.stdout)
+            ),
+        )
     })
 }
 
@@ -108,10 +112,13 @@ enum CheckSumResult {
     NoCheckSum,
     NoFile,
     Equal,
-    NotEqual
+    NotEqual,
 }
 
-fn verify_checksum<P:AsRef<Path>>(path:P, check_sum:Option<MD5>) -> ::result::Result<CheckSumResult> {
+fn verify_checksum<P: AsRef<Path>>(
+    path: P,
+    check_sum: Option<MD5>,
+) -> ::result::Result<CheckSumResult> {
     let path = path.as_ref();
     if path.exists() {
         debug!("installer already downloaded at {}", path.display());
@@ -123,41 +130,49 @@ fn verify_checksum<P:AsRef<Path>>(path:P, check_sum:Option<MD5>) -> ::result::Re
             let hash = hasher.result();
             if hash[..] == md5.0 {
                 debug!("checksum check success.");
-                return Ok(CheckSumResult::Equal)
+                return Ok(CheckSumResult::Equal);
             } else {
                 warn!("checksum miss match.");
-                return Ok(CheckSumResult::NotEqual)
+                return Ok(CheckSumResult::NotEqual);
             }
         } else {
-            return Ok(CheckSumResult::NoCheckSum)
+            return Ok(CheckSumResult::NoCheckSum);
         }
     }
     Ok(CheckSumResult::NoFile)
 }
 
 pub fn download_installer(variant: InstallVariant, version: &Version) -> ::result::Result<PathBuf> {
-    debug!("download installer for variant: {} and version: {}", variant, version);
+    debug!(
+        "download installer for variant: {} and version: {}",
+        variant, version
+    );
     let manifest = Manifest::load(version.to_owned())?;
-    let component:Component = variant.into();
-    let component_url = manifest.url(&component)
-                                .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Failed to fetch installer url"))?;
-    let component_data = manifest.get(&component)
-                                .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Failed to fetch component data"))?;
+    let component: Component = variant.into();
+    let component_url = manifest
+        .url(&component)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Failed to fetch installer url"))?;
+    let component_data = manifest
+        .get(&component)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Failed to fetch component data"))?;
 
     let installer_dir = paths::cache_dir()
-                            .map(|c| c.join(&format!("installer/{}", version)))
-                            .ok_or_else(|| {
-                                io::Error::new(io::ErrorKind::Other, "Unable to fetch cache installer directory")
-                            })?;
-    let file_name = component_url.as_str().rsplit('/')
-                            .next()
-                            .unwrap();
+        .map(|c| c.join(&format!("installer/{}", version)))
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                "Unable to fetch cache installer directory",
+            )
+        })?;
+    let file_name = component_url.as_str().rsplit('/').next().unwrap();
 
     let temp_file_name = format!("{}.part", file_name);
     let lock_file_name = format!("{}.lock", file_name);
 
     trace!("ensure installer cache dir");
-    fs::DirBuilder::new().recursive(true).create(&installer_dir)?;
+    fs::DirBuilder::new()
+        .recursive(true)
+        .create(&installer_dir)?;
 
     let lock_file = installer_dir.join(lock_file_name);
     lock_process!(lock_file);
@@ -167,7 +182,7 @@ pub fn download_installer(variant: InstallVariant, version: &Version) -> ::resul
         debug!("found installer at {}", installer_path.display());
         let r = verify_checksum(&installer_path, component_data.md5)?;
         if CheckSumResult::Equal == r {
-            return Ok(installer_path)
+            return Ok(installer_path);
         } else {
             fs::remove_file(&installer_path)?;
         }
@@ -187,13 +202,21 @@ pub fn download_installer(variant: InstallVariant, version: &Version) -> ::resul
     debug!("request installer with offset {}", start_range);
 
     let client = reqwest::Client::new();
-    let mut response = client.get(component_url.as_str())
+    let response = client
+        .get(component_url.as_str())
         .header(USER_AGENT, "uvm")
         .header(RANGE, format!("bytes={}-", start_range))
         .send()?;
     let status = response.status();
     if status.is_client_error() || status.is_server_error() {
-        return Err(io::Error::new(io::ErrorKind::Other, format!("Download failed for {} with status {}", installer_path.display(), status)).into())
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!(
+                "Download failed for {} with status {}",
+                installer_path.display(),
+                status
+            ),
+        ).into());
     }
 
     debug!("server responds with code {}", status);
@@ -201,18 +224,23 @@ pub fn download_installer(variant: InstallVariant, version: &Version) -> ::resul
     debug!("server supports partial respond {}", append);
 
     let mut dest = fs::OpenOptions::new()
-                    .append(append)
-                    .create(true)
-                    .write(true)
-                    .open(&temp_file)?;
+        .append(append)
+        .create(true)
+        .write(true)
+        .open(&temp_file)?;
     let mut source = response;
     let _ = io::copy(&mut source, &mut dest)?;
 
     fs::rename(&temp_file, &installer_path)?;
 
     match verify_checksum(&installer_path, component_data.md5)? {
-        CheckSumResult::NotEqual => Err(io::Error::new(io::ErrorKind::Other, format!("Checksum verify failed for {}", installer_path.display())).into()),
-        CheckSumResult::NoFile => Err(io::Error::new(io::ErrorKind::Other, "Failed to download installer").into()),
+        CheckSumResult::NotEqual => Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!("Checksum verify failed for {}", installer_path.display()),
+        ).into()),
+        CheckSumResult::NoFile => {
+            Err(io::Error::new(io::ErrorKind::Other, "Failed to download installer").into())
+        }
         _ => Ok(installer_path),
     }
 }
@@ -232,9 +260,12 @@ pub fn ensure_tap_for_version_type(version_type: &VersionType) -> io::Result<()>
     brew::tap::ensure(tap)
 }
 
-
 pub fn cask_name_for_type_version(variant: InstallVariant, version: &Version) -> brew::cask::Cask {
-    debug!("fetch cask name for variant {} and version {}", variant, version.to_string());
+    debug!(
+        "fetch cask name for variant {} and version {}",
+        variant,
+        version.to_string()
+    );
     let base_name = if variant == InstallVariant::Editor {
         String::from("unity")
     } else {

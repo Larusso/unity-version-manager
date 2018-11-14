@@ -1,12 +1,12 @@
-use std::path::PathBuf;
 use super::ColorOption;
+use std::path::PathBuf;
 
 #[derive(Debug, Deserialize)]
 pub struct DetectOptions {
     arg_project_path: Option<PathBuf>,
     flag_recursive: bool,
     flag_verbose: bool,
-    flag_color: ColorOption
+    flag_color: ColorOption,
 }
 
 impl DetectOptions {

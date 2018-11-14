@@ -1,20 +1,22 @@
-use std::error::Error;
-use std::io;
-use std::fmt;
-use unity;
 use plist;
-use serde_json;
-use serde_ini;
 use reqwest;
+use serde_ini;
+use serde_json;
+use std::error::Error;
+use std::fmt;
+use std::io;
+use unity;
 
 #[derive(Debug)]
 pub struct IllegalOperationError {
-    message: String
+    message: String,
 }
 
 impl IllegalOperationError {
     pub fn new(message: &str) -> IllegalOperationError {
-        IllegalOperationError { message: String::from(message) }
+        IllegalOperationError {
+            message: String::from(message),
+        }
     }
 }
 

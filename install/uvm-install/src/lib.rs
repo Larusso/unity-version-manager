@@ -5,19 +5,16 @@ extern crate serde;
 extern crate uvm_cli;
 extern crate uvm_core;
 
-use std::io::Write;
-use console::Term;
-use uvm_cli::ColorOption;
+use console::{style, Term};
 use std::collections::HashSet;
-use uvm_core::unity::Version;
+use std::io;
+use std::io::Write;
+use std::str::FromStr;
+use uvm_cli::ColorOption;
+use uvm_core::brew;
 use uvm_core::install;
 use uvm_core::install::InstallVariant;
-use std::str::FromStr;
-
-use console::style;
-use std::process;
-use std::io;
-use uvm_core::brew;
+use uvm_core::unity::Version;
 
 #[derive(Debug, Deserialize)]
 pub struct Options {
@@ -40,8 +37,14 @@ impl Options {
     }
 
     pub fn install_variants(&self) -> Option<HashSet<InstallVariant>> {
-        if self.flag_android || self.flag_ios || self.flag_webgl || self.flag_linux
-            || self.flag_windows || self.flag_mobile || self.flag_desktop || self.flag_all
+        if self.flag_android
+            || self.flag_ios
+            || self.flag_webgl
+            || self.flag_linux
+            || self.flag_windows
+            || self.flag_mobile
+            || self.flag_desktop
+            || self.flag_all
         {
             let mut variants: HashSet<InstallVariant> = HashSet::with_capacity(5);
 
@@ -58,11 +61,15 @@ impl Options {
             }
 
             let check_version = Version::from_str("2018.0.0b0").unwrap();
-            if (self.flag_windows || self.flag_desktop || self.flag_all) && self.version() >= &check_version {
+            if (self.flag_windows || self.flag_desktop || self.flag_all)
+                && self.version() >= &check_version
+            {
                 variants.insert(InstallVariant::WindowsMono);
             }
 
-            if (self.flag_windows || self.flag_desktop || self.flag_all) && self.version() < &check_version {
+            if (self.flag_windows || self.flag_desktop || self.flag_all)
+                && self.version() < &check_version
+            {
                 variants.insert(InstallVariant::Windows);
             }
 
@@ -86,20 +93,23 @@ impl uvm_cli::Options for Options {
 }
 
 pub struct UvmCommand {
-    stdout: Term,
-    stderr: Term
+    stderr: Term,
 }
 
 impl UvmCommand {
     pub fn new() -> UvmCommand {
         UvmCommand {
-            stdout: Term::stdout(),
             stderr: Term::stderr(),
         }
     }
 
-    pub fn exec(&self, options:Options) -> io::Result<()> {
-        write!(Term::stderr(), "{}: {}\n", style("install unity version").green(), options.version().to_string()).ok();
+    pub fn exec(&self, options: Options) -> io::Result<()> {
+        write!(
+            Term::stderr(),
+            "{}: {}\n",
+            style("install unity version").green(),
+            options.version().to_string()
+        ).ok();
 
         install::ensure_tap_for_version(&options.version())?;
 
@@ -116,7 +126,10 @@ impl UvmCommand {
 
         if let Some(variants) = options.install_variants() {
             for variant in variants {
-                to_install.insert(install::cask_name_for_type_version(variant, &options.version()));
+                to_install.insert(install::cask_name_for_type_version(
+                    variant,
+                    &options.version(),
+                ));
             }
         }
 
@@ -129,7 +142,11 @@ impl UvmCommand {
             let mut diff = to_install.union(&installed).peekable();
             if let Some(_) = diff.peek() {
                 self.stderr.write_line("").ok();
-                write!(Term::stderr(), "{}\n", style("Skip variants already installed:").yellow()).ok();
+                write!(
+                    Term::stderr(),
+                    "{}\n",
+                    style("Skip variants already installed:").yellow()
+                ).ok();
                 for c in diff {
                     write!(Term::stderr(), "{}\n", style(c).yellow().bold()).ok();
                 }
@@ -142,11 +159,16 @@ impl UvmCommand {
             let status = child.wait()?;
 
             if !status.success() {
-                return Err(io::Error::new(io::ErrorKind::Other, "Failed to install casks"));
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Failed to install casks",
+                ));
             }
-        }
-        else {
-            return Err(io::Error::new(io::ErrorKind::Other, "Version and all support packages already installed"));
+        } else {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "Version and all support packages already installed",
+            ));
         }
 
         Ok(())

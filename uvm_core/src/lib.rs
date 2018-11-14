@@ -1,27 +1,26 @@
-extern crate regex;
-extern crate serde;
-extern crate serde_json;
-extern crate serde_yaml;
-extern crate serde_ini;
-extern crate semver;
-extern crate reqwest;
-extern crate md5;
 #[cfg(unix)]
 extern crate cluFlock;
+extern crate md5;
+extern crate regex;
+extern crate reqwest;
+extern crate semver;
+extern crate serde;
+extern crate serde_ini;
+extern crate serde_json;
+extern crate serde_yaml;
 #[macro_use]
 extern crate log;
 
 #[cfg(test)]
 #[macro_use]
 extern crate proptest;
+extern crate plist;
 #[cfg(test)]
 extern crate rand;
 extern crate tempfile;
-extern crate plist;
 #[macro_use]
 extern crate serde_derive;
 extern crate dirs;
-#[macro_use]
 extern crate itertools;
 
 pub mod utils;
@@ -29,58 +28,57 @@ pub mod utils;
 #[macro_export]
 #[cfg(unix)]
 macro_rules! lock_process {
-
-    ($lock_path:expr) => (
+    ($lock_path:expr) => {
         let lock_file = fs::File::create($lock_path)?;
-        let _lock = utils::lock_process_or_wait(&lock_file)?;
-    )
+        let _lock = ::utils::lock_process_or_wait(&lock_file)?;
+    };
 }
 
 #[macro_export]
 #[cfg(windows)]
 macro_rules! lock_process {
-    ($lock_path:expr) => ()
+    ($lock_path:expr) => {};
 }
 
 #[macro_export]
 macro_rules! cargo_version {
     // `()` indicates that the macro takes no argument.
-    () => (
+    () => {
         // The macro will expand into the contents of this block.
-        format!("{}.{}.{}{}",
-          env!("CARGO_PKG_VERSION_MAJOR"),
-          env!("CARGO_PKG_VERSION_MINOR"),
-          env!("CARGO_PKG_VERSION_PATCH"),
-          option_env!("CARGO_PKG_VERSION_PRE").unwrap_or(""));
-    )
+        format!(
+            "{}.{}.{}{}",
+            env!("CARGO_PKG_VERSION_MAJOR"),
+            env!("CARGO_PKG_VERSION_MINOR"),
+            env!("CARGO_PKG_VERSION_PATCH"),
+            option_env!("CARGO_PKG_VERSION_PRE").unwrap_or("")
+        );
+    };
 }
 
-pub mod unity;
 pub mod brew;
 pub mod error;
-pub mod result;
 pub mod install;
+pub mod result;
+pub mod unity;
 
-pub use self::unity::list_installations;
-pub use self::unity::list_all_installations;
-pub use self::unity::current_installation;
 pub use self::result::Result;
-pub use self::unity::Installation;
+pub use self::unity::current_installation;
+pub use self::unity::list_all_installations;
+pub use self::unity::list_installations;
 pub use self::unity::CurrentInstallation;
+pub use self::unity::Installation;
 pub use self::unity::Version;
 
-use self::error::UvmError;
-use std::io;
 use std::fs;
-use std::path::{Path, PathBuf};
 use std::fs::File;
+use std::io;
 use std::io::Read;
+use std::path::{Path, PathBuf};
 
 use std::os;
 
-use std::str::FromStr;
 use std::convert::AsRef;
-
+use std::str::FromStr;
 
 pub fn is_active(version: &Version) -> bool {
     if let Ok(current) = current_installation() {
@@ -92,12 +90,12 @@ pub fn is_active(version: &Version) -> bool {
 
 pub fn find_installation(version: &Version) -> Result<Installation> {
     let mut installations = list_all_installations()?;
-    installations
-        .find(|i| i.version() == version)
-        .ok_or(io::Error::new(
+    installations.find(|i| i.version() == version).ok_or(
+        io::Error::new(
             io::ErrorKind::NotFound,
             format!("Unable to find Unity version {}", version),
-        ).into())
+        ).into(),
+    )
 }
 
 pub fn activate(ref installation: Installation) -> Result<()> {

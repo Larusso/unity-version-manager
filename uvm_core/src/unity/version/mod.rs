@@ -1,28 +1,34 @@
 use regex::Regex;
-use std::cmp::Ordering;
-use std::fmt;
-use std::str::FromStr;
-use std::error::Error;
-use std::result;
-use std::convert::{From,AsRef};
-use unity::Installation;
-use serde::{self, Serialize, Deserialize, Deserializer, Serializer};
 use semver;
+use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
+use std::cmp::Ordering;
+use std::convert::{AsRef, From};
+use std::error::Error;
+use std::fmt;
+use std::result;
+use std::str::FromStr;
+use unity::Installation;
 
 mod hash;
 pub mod manifest;
 
-#[cfg(target_os = "windows")]                                           mod win;
-#[cfg(target_os = "macos")]                                             mod mac;
-#[cfg(not(any(target_os = "windows", target_os = "macos")))]            mod other;
+#[cfg(target_os = "macos")]
+mod mac;
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+mod other;
+#[cfg(target_os = "windows")]
+mod win;
 
-#[cfg(target_os = "windows")]                                           use self::win as sys;
-#[cfg(target_os = "macos")]                                             use self::mac as sys;
-#[cfg(not(any(target_os = "windows", target_os = "macos")))]            use self::other as sys;
+#[cfg(target_os = "macos")]
+use self::mac as sys;
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+use self::other as sys;
+#[cfg(target_os = "windows")]
+use self::win as sys;
 
 pub use self::sys::read_version_from_path;
 
-#[derive(PartialEq,Eq,Ord,Hash,Debug,Clone)]
+#[derive(PartialEq, Eq, Ord, Hash, Debug, Clone)]
 pub enum VersionType {
     Alpha,
     Beta,
@@ -36,19 +42,20 @@ impl PartialOrd for VersionType {
     }
 }
 
-#[derive(Eq,Debug,Clone,Hash)]
+#[derive(Eq, Debug, Clone, Hash)]
 pub struct Version {
     base: semver::Version,
     release_type: VersionType,
     revision: u64,
-    hash: Option<String>
+    hash: Option<String>,
 }
 
 impl Ord for Version {
     fn cmp(&self, other: &Version) -> Ordering {
-        self.base.cmp(&other.base)
-        .then(self.release_type.cmp(&other.release_type))
-        .then(self.revision.cmp(&other.revision))
+        self.base
+            .cmp(&other.base)
+            .then(self.release_type.cmp(&other.release_type))
+            .then(self.revision.cmp(&other.revision))
     }
 }
 
@@ -61,14 +68,15 @@ impl PartialOrd for Version {
 impl PartialEq for Version {
     fn eq(&self, other: &Version) -> bool {
         (self.release_type == other.release_type)
-        && (self.base == other.base)
-        && (self.revision == other.revision)
+            && (self.base == other.base)
+            && (self.revision == other.revision)
     }
 }
 
 impl Serialize for Version {
     fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let s = self.to_string();
         serializer.serialize_str(&s)
@@ -77,7 +85,8 @@ impl Serialize for Version {
 
 impl<'de> Deserialize<'de> for Version {
     fn deserialize<D>(deserializer: D) -> result::Result<Self, D::Error>
-        where D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
         Version::from_str(&s).map_err(serde::de::Error::custom)
@@ -85,29 +94,60 @@ impl<'de> Deserialize<'de> for Version {
 }
 
 impl Version {
-    pub fn new(major:u64, minor:u64, patch:u64, release_type:VersionType, revision: u64) -> Version {
-        let base = semver::Version::new(major,minor,patch);
-        Version {base, release_type:release_type, revision, hash:None }
+    pub fn new(
+        major: u64,
+        minor: u64,
+        patch: u64,
+        release_type: VersionType,
+        revision: u64,
+    ) -> Version {
+        let base = semver::Version::new(major, minor, patch);
+        Version {
+            base,
+            release_type: release_type,
+            revision,
+            hash: None,
+        }
     }
 
-    pub fn a(major:u64, minor:u64, patch:u64, revision: u64) -> Version {
-        let base = semver::Version::new(major,minor,patch);
-        Version {base, release_type:VersionType::Alpha, revision, hash:None }
+    pub fn a(major: u64, minor: u64, patch: u64, revision: u64) -> Version {
+        let base = semver::Version::new(major, minor, patch);
+        Version {
+            base,
+            release_type: VersionType::Alpha,
+            revision,
+            hash: None,
+        }
     }
 
-    pub fn b(major:u64, minor:u64, patch:u64, revision: u64) -> Version {
-        let base = semver::Version::new(major,minor,patch);
-        Version {base, release_type:VersionType::Beta, revision, hash:None }
+    pub fn b(major: u64, minor: u64, patch: u64, revision: u64) -> Version {
+        let base = semver::Version::new(major, minor, patch);
+        Version {
+            base,
+            release_type: VersionType::Beta,
+            revision,
+            hash: None,
+        }
     }
 
-    pub fn p(major:u64, minor:u64, patch:u64, revision: u64) -> Version {
-        let base = semver::Version::new(major,minor,patch);
-        Version {base, release_type:VersionType::Patch, revision, hash:None }
+    pub fn p(major: u64, minor: u64, patch: u64, revision: u64) -> Version {
+        let base = semver::Version::new(major, minor, patch);
+        Version {
+            base,
+            release_type: VersionType::Patch,
+            revision,
+            hash: None,
+        }
     }
 
-    pub fn f(major:u64, minor:u64, patch:u64, revision: u64) -> Version {
-        let base = semver::Version::new(major,minor,patch);
-        Version {base, release_type:VersionType::Final, revision, hash:None }
+    pub fn f(major: u64, minor: u64, patch: u64, revision: u64) -> Version {
+        let base = semver::Version::new(major, minor, patch);
+        Version {
+            base,
+            release_type: VersionType::Final,
+            revision,
+            hash: None,
+        }
     }
 
     pub fn release_type(&self) -> &VersionType {
@@ -119,8 +159,8 @@ impl Version {
     }
 }
 
-impl From<(u64,u64,u64,u64)> for Version {
-    fn from(tuple: (u64,u64,u64,u64)) -> Version {
+impl From<(u64, u64, u64, u64)> for Version {
+    fn from(tuple: (u64, u64, u64, u64)) -> Version {
         let (major, minor, patch, revision) = tuple;
         Version::f(major, minor, patch, revision)
     }
@@ -151,7 +191,9 @@ impl fmt::Display for Version {
         write!(
             f,
             "{}{}{}",
-            self.base, self.release_type.to_string(), self.revision
+            self.base,
+            self.release_type.to_string(),
+            self.revision
         )
     }
 }
@@ -164,12 +206,14 @@ impl AsRef<Version> for Version {
 
 #[derive(Debug)]
 pub struct ParseVersionError {
-    message: String
+    message: String,
 }
 
 impl ParseVersionError {
     fn new(message: &str) -> ParseVersionError {
-        ParseVersionError { message: String::from(message) }
+        ParseVersionError {
+            message: String::from(message),
+        }
     }
 }
 
@@ -191,7 +235,8 @@ impl FromStr for Version {
     type Err = ParseVersionError;
 
     fn from_str(s: &str) -> Result<Self> {
-        let version_pattern = Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b|a)([0-9]{1,4})").unwrap();
+        let version_pattern =
+            Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b|a)([0-9]{1,4})").unwrap();
         match version_pattern.captures(s) {
             Some(caps) => {
                 let major: u64 = caps.get(1).map_or("0", |m| m.as_str()).parse().unwrap();
@@ -212,10 +257,12 @@ impl FromStr for Version {
                     base,
                     revision,
                     release_type: release_type.unwrap(),
-                    hash: None
+                    hash: None,
                 })
             }
-            None => Err( ParseVersionError::new("Failed to match version pattern to input") ),
+            None => Err(ParseVersionError::new(
+                "Failed to match version pattern to input",
+            )),
         }
     }
 }
@@ -348,13 +395,13 @@ mod tests {
 
     #[test]
     fn fetch_hash_for_known_version() {
-        let mut version = Version::f(2017,1,0,2);
+        let mut version = Version::f(2017, 1, 0, 2);
         assert_eq!(version.version_hash(), Some(String::from("66e9e4bfc850")));
     }
 
     #[test]
     fn fetch_hash_for_unknown_version_yields_none() {
-        let mut version = Version::f(2080,2,0,2);
+        let mut version = Version::f(2080, 2, 0, 2);
         assert_eq!(version.version_hash(), None);
     }
 

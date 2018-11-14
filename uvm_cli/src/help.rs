@@ -1,6 +1,6 @@
 #[derive(Debug, Deserialize)]
 pub struct HelpOptions {
-    pub arg_command: String
+    pub arg_command: String,
 }
 
 impl HelpOptions {

@@ -1,6 +1,6 @@
+use std::fs;
 use std::io;
 use std::process::Command;
-use std::fs;
 
 const BREW_TAPS_LOCATION: &'static str = "/usr/local/Homebrew/Library/Taps";
 
@@ -14,22 +14,23 @@ impl Taps {
             .flat_map(|d| {
                 let inner_read = fs::read_dir(d.path()).expect("read dir");
                 inner_read.filter_map(io::Result::ok)
-            })
-            .map(|d| {
+            }).map(|d| {
                 let path = d.path();
-                let parent = path.parent()
+                let parent = path
+                    .parent()
                     .and_then(|d| d.file_name())
                     .and_then(|d| d.to_str());
 
-                let tap_name = path.file_name()
+                let tap_name = path
+                    .file_name()
                     .and_then(|d| d.to_str())
-                    .and_then(|f| Some(f.replace("homebrew-","")));
+                    .and_then(|f| Some(f.replace("homebrew-", "")));
 
                 match (parent, tap_name) {
                     (Some(p), Some(t)) => Some(format!("{}/{}", p, t)),
-                    _ => None
+                    _ => None,
                 }
-            }).filter_map(|d| d );
+            }).filter_map(|d| d);
         Ok(Taps(Box::new(iter)))
     }
 }
@@ -48,7 +49,7 @@ pub fn list() -> io::Result<Taps> {
 
 pub fn contains(tap_name: &str) -> bool {
     if let Ok(l) = list() {
-        return l.collect::<Vec<String>>().contains(&String::from(tap_name))
+        return l.collect::<Vec<String>>().contains(&String::from(tap_name));
     }
     false
 }

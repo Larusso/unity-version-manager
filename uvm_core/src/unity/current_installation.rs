@@ -1,6 +1,6 @@
-use unity::Installation;
-use std::path::{Path,PathBuf};
 use result::Result;
+use std::path::{Path, PathBuf};
+use unity::Installation;
 
 pub type CurrentInstallation = Installation;
 const UNITY_CURRENT_LOCATION: &'static str = "/Applications/Unity";
@@ -17,34 +17,33 @@ pub fn current_installation() -> Result<CurrentInstallation> {
     CurrentInstallation::current(active_path.to_path_buf())
 }
 
-#[cfg(all(test, target_os="macos"))]
+#[cfg(all(test, target_os = "macos"))]
 mod tests {
-    use std::env;
+    use super::*;
+    use plist::serde::serialize_to_xml;
     use std::fs;
-    use std::str::FromStr;
+    use std::fs::File;
+    use std::os;
     use std::path::Path;
     use std::path::PathBuf;
-    use rand;
-    use tempfile::TempDir;
+    use std::str::FromStr;
     use tempfile::Builder;
-    use super::*;
-    use std::os;
-    use std::fs::File;
     use unity::installation::AppInfo;
-    use plist::serde::{deserialize, serialize_to_xml};
 
-    fn create_test_path(base_dir:&PathBuf, version: &str) -> PathBuf {
+    fn create_test_path(base_dir: &PathBuf, version: &str) -> PathBuf {
         let path = base_dir.join(format!("Unity-{version}", version = version));
         let mut dir_builder = fs::DirBuilder::new();
         dir_builder.recursive(true);
         dir_builder.create(&path).unwrap();
 
         let info_plist_path = path.join(Path::new("Unity.app/Contents/Info.plist"));
-        dir_builder.create(info_plist_path.parent().unwrap()).unwrap();
+        dir_builder
+            .create(info_plist_path.parent().unwrap())
+            .unwrap();
 
         let info = AppInfo {
             c_f_bundle_version: String::from_str(version).unwrap(),
-            unity_build_number: String::from_str("ssdsdsdd").unwrap()
+            unity_build_number: String::from_str("ssdsdsdd").unwrap(),
         };
         let file = File::create(info_plist_path).unwrap();
         serialize_to_xml(file, &info).unwrap();
@@ -74,11 +73,7 @@ mod tests {
 
     #[test]
     fn current_installation_returns_active_installation() {
-        let test_dir = prepare_unity_installations![
-            "5.6.0p3",
-            "2017.1.0p1",
-            "2017.2.0f2"
-        ];
+        let test_dir = prepare_unity_installations!["5.6.0p3", "2017.1.0p1", "2017.2.0f2"];
 
         let dir = test_dir.path().join("Unity");
         let src = test_dir.path().join("Unity-2017.1.0p1");

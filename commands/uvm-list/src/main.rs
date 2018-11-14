@@ -21,6 +21,6 @@ Options:
 ";
 
 fn main() {
-    let options:ListOptions = uvm_cli::get_options(USAGE).unwrap();
+    let options: ListOptions = uvm_cli::get_options(USAGE).unwrap();
     uvm_list::UvmCommand::new().exec(options).unwrap();
 }

@@ -1,13 +1,13 @@
 #[macro_use]
 extern crate serde_derive;
+extern crate console;
 extern crate uvm_cli;
 extern crate uvm_core;
-extern crate console;
 
-use std::path::PathBuf;
 use console::style;
 use console::Term;
 use std::io;
+use std::path::PathBuf;
 use uvm_cli::ColorOption;
 use uvm_core::install;
 
@@ -40,20 +40,19 @@ impl uvm_cli::Options for Options {
 }
 
 pub struct UvmCommand {
-    stdout: Term,
-    stderr: Term
+    stderr: Term,
 }
 
 impl UvmCommand {
     pub fn new() -> UvmCommand {
         UvmCommand {
-            stdout: Term::stdout(),
             stderr: Term::stderr(),
         }
     }
 
-    pub fn exec(&self, options:Options) -> io::Result<()> {
+    pub fn exec(&self, options: Options) -> io::Result<()> {
         install::install_editor(options.installer(), options.destination())?;
-        self.stderr.write_line(&format!("{}", style("success").green().bold()))
+        self.stderr
+            .write_line(&format!("{}", style("success").green().bold()))
     }
 }

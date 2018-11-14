@@ -1,7 +1,7 @@
+use super::*;
+use std::cmp::Ord;
 use std::cmp::Ordering;
 use std::cmp::PartialOrd;
-use std::cmp::Ord;
-use super::*;
 
 impl Ord for EditorInstallation {
     fn cmp(&self, other: &EditorInstallation) -> Ordering {

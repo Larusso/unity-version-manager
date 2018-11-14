@@ -20,14 +20,14 @@ pub use self::detect::*;
 pub use self::help::*;
 pub use self::launch::*;
 pub use self::use_version::*;
+pub use self::utils::find_sub_commands;
 pub use self::utils::print_error_and_exit;
 pub use self::utils::sub_command_path;
-pub use self::utils::find_sub_commands;
 pub use self::uvm::*;
 
-use flexi_logger::{Logger, LogSpecification, Record, LevelFilter, Level};
 use console::Style;
 use docopt::Docopt;
+use flexi_logger::{Level, LevelFilter, LogSpecification, Logger, Record};
 use serde::de::Deserialize;
 use std::ffi::OsStr;
 use std::io;
@@ -35,7 +35,6 @@ use std::process::Command;
 
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
-
 
 #[derive(PartialEq, Deserialize, Debug)]
 pub enum ColorOption {
@@ -91,20 +90,15 @@ where
 {
     let log_spec_builder = if options.debug() {
         LogSpecification::default(LevelFilter::max())
-    }
-    else if options.verbose() {
+    } else if options.verbose() {
         LogSpecification::default(LevelFilter::Info)
-    }
-    else {
+    } else {
         LogSpecification::default(LevelFilter::Warn)
     };
 
     let log_spec = log_spec_builder.build();
 
-    Logger::with(log_spec)
-        .format(format_logs)
-        .start()
-        .unwrap();
+    Logger::with(log_spec).format(format_logs).start().unwrap();
 }
 
 #[cfg(unix)]
@@ -114,9 +108,7 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    Err(Command::new(command)
-        .args(args)
-        .exec())
+    Err(Command::new(command).args(args).exec())
 }
 
 #[cfg(windows)]
@@ -144,9 +136,10 @@ fn format_logs(writer: &mut io::Write, record: &Record) -> Result<(), io::Error>
         Level::Debug => Style::new().white().dim(),
         Level::Info => Style::new().white(),
         Level::Warn => Style::new().yellow(),
-        Level::Error => Style::new().red()
+        Level::Error => Style::new().red(),
     };
 
-    writer.write(&format!("{}", style.apply_to(record.args())).into_bytes())
+    writer
+        .write(&format!("{}", style.apply_to(record.args())).into_bytes())
         .map(|_| ())
 }

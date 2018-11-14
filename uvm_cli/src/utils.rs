@@ -1,15 +1,12 @@
-use std::path::{Path, PathBuf};
-use std::io;
-use std::fs;
-use std::env;
-use std::process;
 use console::style;
 use std::error::Error;
-use std;
-#[cfg(unix)]
-use std::os::unix::fs::PermissionsExt;
+use std::path::{Path, PathBuf};
+use std::{env, fs, io, process};
+
 #[cfg(unix)]
 use std::os::unix::fs::MetadataExt;
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 #[cfg(windows)]
 use std::os::windows::fs::MetadataExt;
 
@@ -25,8 +22,7 @@ where
                 io::ErrorKind::NotFound,
                 format!("Item not found in directory: {}", dir.display()),
             )
-        })
-        .map(|entry| entry.path())
+        }).map(|entry| entry.path())
 }
 
 #[cfg(unix)]
@@ -41,14 +37,14 @@ fn check_file(entry: &fs::DirEntry) -> io::Result<bool> {
         let p_uid = p_metadata.uid();
         let p_gid = p_metadata.gid();
 
-        let isUser = metadata.uid() == p_uid;
-        let isGroup = metadata.gid() == p_gid;
+        let is_user = metadata.uid() == p_uid;
+        let is_group = metadata.gid() == p_gid;
 
         let permissions = metadata.permissions();
         let mode = permissions.mode();
         return Ok((mode & 0o0001) != 0
-            || ((mode & 0o0010) != 0 && isGroup)
-            || ((mode & 0o0100) != 0 && isUser))
+            || ((mode & 0o0010) != 0 && is_group)
+            || ((mode & 0o0100) != 0 && is_user));
     }
     Ok(false)
 }
@@ -59,18 +55,14 @@ fn check_file(entry: &fs::DirEntry) -> io::Result<bool> {
     let file_name = entry.file_name();
     let file_name = file_name.to_string_lossy();
     trace!("file_name {}", file_name);
-    Ok(!metadata.is_dir()
-        && file_name.starts_with("uvm-")
-        && file_name.ends_with(".exe"))
+    Ok(!metadata.is_dir() && file_name.starts_with("uvm-") && file_name.ends_with(".exe"))
 }
 
-pub fn find_commands_in_path(dir: &Path) -> io::Result<Box<Iterator<Item = PathBuf>>>
-{
-    let result = dir.read_dir()?
+pub fn find_commands_in_path(dir: &Path) -> io::Result<Box<Iterator<Item = PathBuf>>> {
+    let result = dir
+        .read_dir()?
         .filter_map(io::Result::ok)
-        .filter(|entry| {
-            check_file(entry).unwrap_or(false)
-        })
+        .filter(|entry| check_file(entry).unwrap_or(false))
         .map(|entry| entry.path());
     Ok(Box::new(result))
 }
@@ -97,11 +89,7 @@ pub fn sub_command_path(command_name: &str) -> io::Result<PathBuf> {
 
     //check PATH
     if let Ok(path) = env::var("PATH") {
-        let split_char = if cfg!(windows) {
-            ";"
-        } else {
-            ":"
-        };
+        let split_char = if cfg!(windows) { ";" } else { ":" };
 
         let paths = path.split(split_char).map(|s| Path::new(s));
         for path in paths {
@@ -132,7 +120,7 @@ impl UvmSubCommands {
                 if let Ok(sub_commands) = find_commands_in_path(path) {
                     iter = match iter {
                         Some(i) => Some(Box::new(i.chain(sub_commands))),
-                        None    => Some(sub_commands)
+                        None => Some(sub_commands),
                     };
                 }
             }
@@ -142,10 +130,7 @@ impl UvmSubCommands {
             let m = i.map(|path| UvmSubCommand(path));
             Ok(UvmSubCommands(Box::new(m)))
         } else {
-            Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "not Found",
-            ))
+            Err(io::Error::new(io::ErrorKind::NotFound, "not Found"))
         }
     }
 }
@@ -165,7 +150,15 @@ impl UvmSubCommand {
         self.0.clone()
     }
     pub fn command_name(&self) -> String {
-        String::from(self.0.file_name().unwrap().to_string_lossy().split("uvm-").last().unwrap())
+        String::from(
+            self.0
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .split("uvm-")
+                .last()
+                .unwrap(),
+        )
     }
 
     pub fn description(&self) -> String {
