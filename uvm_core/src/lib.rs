@@ -5,7 +5,9 @@ extern crate serde_yaml;
 extern crate serde_ini;
 extern crate semver;
 extern crate reqwest;
-
+extern crate md5;
+#[cfg(unix)]
+extern crate cluFlock;
 #[macro_use]
 extern crate log;
 
@@ -14,7 +16,6 @@ extern crate log;
 extern crate proptest;
 #[cfg(test)]
 extern crate rand;
-#[cfg(any(test,windows))]
 extern crate tempfile;
 extern crate plist;
 #[macro_use]
@@ -22,6 +23,24 @@ extern crate serde_derive;
 extern crate dirs;
 #[macro_use]
 extern crate itertools;
+
+pub mod utils;
+
+#[macro_export]
+#[cfg(unix)]
+macro_rules! lock_process {
+
+    ($lock_path:expr) => (
+        let lock_file = fs::File::create($lock_path)?;
+        let _lock = utils::lock_process_or_wait(&lock_file)?;
+    )
+}
+
+#[macro_export]
+#[cfg(windows)]
+macro_rules! lock_process {
+    ($lock_path:expr) => ()
+}
 
 #[macro_export]
 macro_rules! cargo_version {

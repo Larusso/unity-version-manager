@@ -83,14 +83,18 @@ impl Manifest {
 
 #[derive(Deserialize, Debug)]
 pub struct ComponentData {
-    title: String,
-    description: String,
+    pub title: String,
+    pub description: String,
     url: String,
-    size: u64,
-    md5: Option<String>,
+    pub size: u64,
+    pub md5: Option<MD5>,
     #[serde(flatten)]
-    other: HashMap<String, String>,
+    pub other: HashMap<String, String>,
 }
+
+#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Deserialize)]
+#[serde(transparent)]
+pub struct MD5(#[serde(with="hex_serde")]pub [u8; 16]);
 
 #[cfg(any(target_os = "windows", target_os = "macos"))]
 #[cfg(test)]

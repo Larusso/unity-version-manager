@@ -10,7 +10,7 @@ use serde::{self, Serialize, Deserialize, Deserializer, Serializer};
 use semver;
 
 mod hash;
-mod manifest;
+pub mod manifest;
 
 #[cfg(target_os = "windows")]                                           mod win;
 #[cfg(target_os = "macos")]                                             mod mac;

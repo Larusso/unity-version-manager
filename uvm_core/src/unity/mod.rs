@@ -8,6 +8,8 @@ pub mod urls;
 pub use self::installation::Installation;
 pub use self::component::Component;
 pub use self::version::Version;
+pub use self::version::manifest::Manifest;
+pub use self::version::manifest::MD5;
 pub use self::version::ParseVersionError;
 pub use self::version::VersionType;
 pub use self::current_installation::CurrentInstallation;

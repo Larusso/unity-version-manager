@@ -3,6 +3,7 @@ extern crate serde_derive;
 extern crate console;
 extern crate serde;
 extern crate uvm_cli;
+#[macro_use]
 extern crate uvm_core;
 extern crate indicatif;
 
@@ -28,6 +29,9 @@ use uvm_core::install;
 use uvm_core::install::InstallVariant;
 use uvm_core::unity::hub;
 use uvm_core::unity::hub::editors::{EditorInstallation, Editors};
+use uvm_core::unity::hub::paths;
+use uvm_core::utils;
+use std::fs;
 
 #[derive(Debug, Deserialize)]
 pub struct Options {
@@ -151,7 +155,7 @@ impl UvmCommand {
         .map_err(|error| {
             debug!("error loading installer: {}", style(&error).red());
             pb.finish_with_message(&format!("[{}] {}", &install_object.variant, style("error").red().bold()));
-            error
+            io::Error::new(io::ErrorKind::Other, format!("Failed to fetch installer url \n{}", error.to_string()))
         })?;
 
         debug!("installer location: {}", &installer.display());
@@ -209,8 +213,15 @@ impl UvmCommand {
     }
 
     pub fn exec(&self, options:Options) -> io::Result<()> {
-        self.stderr.write_line(&format!("{}: {}", style("install unity version").green(), options.version().to_string())).ok();
-        install::ensure_tap_for_version(&options.version())?;
+        let version = options.version();
+        self.stderr.write_line(&format!("{}: {}", style("install unity version").green(), version.to_string())).ok();
+        let locks_dir = paths::locks_dir().ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Unable to locate locks directory."))?;
+        fs::DirBuilder::new().recursive(true).create(&locks_dir)?;
+
+        let lock_file_name = format!("{}.lock", &version);
+        let lock_file = locks_dir.join(lock_file_name);
+        lock_process!(lock_file);
+
         let mut editorInstallation:Option<EditorInstallation> = None;
         let base_dir = if let Some(ref destination) = options.destination() {
             if destination.exists() && !destination.is_dir() {
