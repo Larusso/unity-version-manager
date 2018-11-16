@@ -3,16 +3,18 @@ extern crate flexi_logger;
 extern crate uvm_cli;
 extern crate uvm_install;
 
+#[macro_use]
+extern crate log;
+
 use console::style;
 use console::Term;
-use std::io::Write;
 use std::process;
 
 const USAGE: &'static str = "
 uvm-install - Install specified unity version.
 
 Usage:
-  uvm-install [options] <version>
+  uvm-install [options] <version> [<destination>]
   uvm-install (-h | --help)
 
 Options:
@@ -25,21 +27,26 @@ Options:
   --windows         install windows support for editor
   --desktop         install desktop support (linux, windows)
   -v, --verbose     print more output
+  -d, --debug       print debug output
   --color WHEN      Coloring: auto, always, never [default: auto]
   -h, --help        show this help message and exit
+
+Arguments:
+  <version>         The unity version to install in the form of `2018.1.0f3`
+  <destination>     A directory to install the requested version to
 ";
 
 fn main() -> std::io::Result<()> {
-    let mut stdout = Term::stderr();
+    let stdout = Term::stderr();
     let options: uvm_install::Options = uvm_cli::get_options(USAGE)?;
     uvm_install::UvmCommand::new()
         .exec(options)
         .unwrap_or_else(|err| {
-            let message = format!("Unable to install");
-            write!(stdout, "{}\n", style(message).red()).ok();
-            write!(stdout, "{}\n", style(err).red()).ok();
+            let message = format!("Failure during installation");
+            stdout.write_line(&format!("{}", style(message).red())).ok();
+            info!("{}", &format!("{}", style(err).red()));
             process::exit(1);
         });
 
-    stdout.write_line("Finish")
+    stdout.write_line(&format!("{}", style("Finish").green().bold()))
 }
