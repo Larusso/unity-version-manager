@@ -1,9 +1,9 @@
-use std::io;
-use std::process::{Command, Stdio};
-use std::process::Child;
-use std::str;
-use std::fs;
 use std::ffi::OsStr;
+use std::fs;
+use std::io;
+use std::process::Child;
+use std::process::{Command, Stdio};
+use std::str;
 
 pub type Cask = String;
 pub struct Casks(Box<Iterator<Item = Cask>>);
@@ -17,9 +17,9 @@ impl Casks {
             .filter_map(io::Result::ok)
             .map(|e| {
                 e.path()
-                .file_name()
-                .and_then(|f| f.to_str())
-                .and_then(|s| Some(String::from(s)))
+                    .file_name()
+                    .and_then(|f| f.to_str())
+                    .and_then(|s| Some(String::from(s)))
             }).filter_map(|d| d);
         Ok(Casks(Box::new(iter)))
     }
@@ -37,9 +37,10 @@ pub fn list() -> io::Result<Casks> {
     Casks::new()
 }
 
-pub fn install<I, S>(casks: I) -> io::Result<Child> where
+pub fn install<I, S>(casks: I) -> io::Result<Child>
+where
     I: IntoIterator<Item = S>,
-    S: AsRef<OsStr>
+    S: AsRef<OsStr>,
 {
     Command::new("brew")
         .arg("cask")
@@ -50,9 +51,10 @@ pub fn install<I, S>(casks: I) -> io::Result<Child> where
         .spawn()
 }
 
-pub fn fetch<I, S>(casks: I, _force:bool) -> io::Result<Child> where
+pub fn fetch<I, S>(casks: I, _force: bool) -> io::Result<Child>
+where
     I: IntoIterator<Item = S>,
-    S: AsRef<OsStr>
+    S: AsRef<OsStr>,
 {
     Command::new("brew")
         .arg("cask")
@@ -63,9 +65,10 @@ pub fn fetch<I, S>(casks: I, _force:bool) -> io::Result<Child> where
         .spawn()
 }
 
-pub fn uninstall<I, S>(casks: I) -> io::Result<Child> where
+pub fn uninstall<I, S>(casks: I) -> io::Result<Child>
+where
     I: IntoIterator<Item = S>,
-    S: AsRef<OsStr>
+    S: AsRef<OsStr>,
 {
     Command::new("brew")
         .arg("cask")

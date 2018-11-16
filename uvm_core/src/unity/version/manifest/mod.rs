@@ -1,14 +1,14 @@
+use reqwest::Url;
 use result::Result;
 use serde_ini;
 use std::collections::HashMap;
 use std::fs::{DirBuilder, File};
 use std::io::{self, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use unity::hub::paths;
-use unity::urls::{IniUrl, DownloadURL};
+use unity::urls::{DownloadURL, IniUrl};
 use unity::Component;
 use unity::Version;
-use reqwest::Url;
 
 #[derive(Debug)]
 pub struct Manifest {
@@ -22,14 +22,14 @@ impl Manifest {
         Self::get_manifest(version)
     }
 
-    pub fn get(&self, component:&Component) -> Option<&ComponentData> {
+    pub fn get(&self, component: &Component) -> Option<&ComponentData> {
         self.components.get(component)
     }
 
-    pub fn url(&self, component:&Component) -> Option<Url> {
-        self.components.get(component).and_then(|c| {
-            self.base_url.join(&c.url).ok()
-        })
+    pub fn url(&self, component: &Component) -> Option<Url> {
+        self.components
+            .get(component)
+            .and_then(|c| self.base_url.join(&c.url).ok())
     }
 
     fn get_manifest(version: Version) -> Result<Manifest> {
@@ -46,38 +46,43 @@ impl Manifest {
         }
         let base_url = DownloadURL::new(&version)?;
         let manifest = File::open(manifest_path)?;
-        let components:HashMap<Component, ComponentData> = serde_ini::from_read(manifest)?;
-        Ok(Manifest { version, base_url, components })
+        let components: HashMap<Component, ComponentData> = serde_ini::from_read(manifest)?;
+        Ok(Manifest {
+            version,
+            base_url,
+            components,
+        })
     }
 
     fn download_manifest<V, P>(version: V, path: P) -> Result<()>
-        where   V: AsRef<Version>,
-                P: AsRef<Path>
+    where
+        V: AsRef<Version>,
+        P: AsRef<Path>,
     {
         let ini_url = IniUrl::new(version)?;
         let url = ini_url.to_url();
         let body = reqwest::get(url)
-                        .and_then(|mut response| response.text())
-                        .map(Self::cleanup_ini_data)?;
+            .and_then(|mut response| response.text())
+            .map(Self::cleanup_ini_data)?;
         let mut f = File::create(path)?;
         write!(f, "{}", body);
         Ok(())
     }
 
-    fn cleanup_ini_data(ini_data:String) -> String {
-        ini_data.as_str()
-                .lines()
-                .filter(|line| {
-                    let line = line.trim();
-                    line.starts_with('[')
-                        || line.split('=')
-                                .next()
-                                .map(|sub| sub.trim())
-                                .and_then(|sub| if !sub.contains(' ') { Some(()) } else { None })
-                                .is_some()
-                })
-                .collect::<Vec<&str>>()
-                .join("\n")
+    fn cleanup_ini_data(ini_data: String) -> String {
+        ini_data
+            .as_str()
+            .lines()
+            .filter(|line| {
+                let line = line.trim();
+                line.starts_with('[') || line
+                    .split('=')
+                    .next()
+                    .map(|sub| sub.trim())
+                    .and_then(|sub| if !sub.contains(' ') { Some(()) } else { None })
+                    .is_some()
+            }).collect::<Vec<&str>>()
+            .join("\n")
     }
 }
 
@@ -94,7 +99,7 @@ pub struct ComponentData {
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Deserialize)]
 #[serde(transparent)]
-pub struct MD5(#[serde(with="hex_serde")]pub [u8; 16]);
+pub struct MD5(#[serde(with = "hex_serde")] pub [u8; 16]);
 
 #[cfg(any(target_os = "windows", target_os = "macos"))]
 #[cfg(test)]
@@ -106,8 +111,10 @@ mod tests {
     #[test]
     fn fetch_metedata_for_known_unity_version_does_not_fail() {
         //2018.2.5f1: 3071d1717b71
-        let version = Version::f(2018,2,5,1);
-        let cache_file = paths::cache_dir().map(|f| f.join(&format!("{}_manifest.ini", version.to_string()))).unwrap();
+        let version = Version::f(2018, 2, 5, 1);
+        let cache_file = paths::cache_dir()
+            .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
+            .unwrap();
         if cache_file.exists() {
             fs::remove_file(&cache_file);
         }
@@ -116,8 +123,10 @@ mod tests {
 
     #[test]
     fn fetch_metedata_for_unknown_unity_version_fails() {
-        let version = Version::f(2030,1,1,1);
-        let cache_file = paths::cache_dir().map(|f| f.join(&format!("{}_manifest.ini", version.to_string()))).unwrap();
+        let version = Version::f(2030, 1, 1, 1);
+        let cache_file = paths::cache_dir()
+            .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
+            .unwrap();
         if cache_file.exists() {
             fs::remove_file(&cache_file);
         }
@@ -126,15 +135,18 @@ mod tests {
 
     #[test]
     fn can_retrieve_download_url_for_component() {
-        let version = Version::f(2017,3,0,2);
-        let cache_file = paths::cache_dir().map(|f| f.join(&format!("{}_manifest.ini", version.to_string()))).unwrap();
+        let version = Version::f(2017, 3, 0, 2);
+        let cache_file = paths::cache_dir()
+            .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
+            .unwrap();
         if cache_file.exists() {
             fs::remove_file(&cache_file);
         }
         let m = Manifest::load(version).unwrap();
 
         #[cfg(target_os = "macos")]
-        let expected_url = "https://download.unity3d.com/download_unity/d3a5469e8c44/MacEditorInstaller/Unity.pkg";
+        let expected_url =
+            "https://download.unity3d.com/download_unity/d3a5469e8c44/MacEditorInstaller/Unity.pkg";
         #[cfg(target_os = "windows")]
         let expected_url = "https://download.unity3d.com/download_unity/d3a5469e8c44/Windows64EditorInstaller/UnitySetup64.exe";
         #[cfg(not(any(target_os = "windows", target_os = "macos")))]
@@ -145,8 +157,10 @@ mod tests {
 
     #[test]
     fn saves_meta_file_to_cache_dir() {
-        let version = Version::f(2017,4,9,1);
-        let cache_file = paths::cache_dir().map(|f| f.join(&format!("{}_manifest.ini", version.to_string()))).unwrap();
+        let version = Version::f(2017, 4, 9, 1);
+        let cache_file = paths::cache_dir()
+            .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
+            .unwrap();
         if cache_file.exists() {
             fs::remove_file(&cache_file);
         }
@@ -158,8 +172,10 @@ mod tests {
     #[test]
     fn downloads_manifest_to_local_path() {
         let tempdir = tempfile::tempdir().unwrap();
-        let version = Version::f(2018,2,0,2);
-        let path = tempdir.path().join(&format!("{}_manifest.ini", version.to_string()));
+        let version = Version::f(2018, 2, 0, 2);
+        let path = tempdir
+            .path()
+            .join(&format!("{}_manifest.ini", version.to_string()));
 
         Manifest::download_manifest(version, &path).unwrap();
         assert!(path.exists());

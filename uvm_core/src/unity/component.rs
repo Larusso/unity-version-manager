@@ -1,9 +1,9 @@
-use std::path::{PathBuf,Path};
-use std::str::FromStr;
-use std::fmt;
-use std::error::Error;
-use std::slice::Iter;
 use self::Component::*;
+use std::error::Error;
+use std::fmt;
+use std::path::{Path, PathBuf};
+use std::slice::Iter;
+use std::str::FromStr;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Deserialize)]
 pub enum Component {
@@ -30,8 +30,20 @@ pub enum Component {
 
 impl Component {
     pub fn iterator() -> Iter<'static, Component> {
-        static COMPONENTS: [Component;  12] = [Mono, VisualStudio, MonoDevelop, Documentation,
-        StandardAssets, Android, Ios, TvOs, WebGl, Linux, Windows, WindowsMono];
+        static COMPONENTS: [Component; 12] = [
+            Mono,
+            VisualStudio,
+            MonoDevelop,
+            Documentation,
+            StandardAssets,
+            Android,
+            Ios,
+            TvOs,
+            WebGl,
+            Linux,
+            Windows,
+            WindowsMono,
+        ];
         COMPONENTS.into_iter()
     }
 
@@ -45,13 +57,13 @@ impl Component {
             Windows => Some("PlaybackEngines/WindowsStandaloneSupport"),
             WindowsMono => Some("PlaybackEngines/WindowsStandaloneSupport"),
             WebGl => Some("PlaybackEngines/WebGLSupport"),
-            _ => None
+            _ => None,
         };
 
         path.map(|p| Path::new(p).to_path_buf())
     }
 
-    pub fn is_installed(&self, unity_install_location:&Path ) -> bool {
+    pub fn is_installed(&self, unity_install_location: &Path) -> bool {
         self.installpath()
             .map(|install_path| unity_install_location.join(install_path))
             .map(|install_path| install_path.exists())
@@ -61,12 +73,14 @@ impl Component {
 
 #[derive(Debug)]
 pub struct ParseComponentError {
-    message: String
+    message: String,
 }
 
 impl ParseComponentError {
     fn new(message: &str) -> ParseComponentError {
-        ParseComponentError { message: String::from(message) }
+        ParseComponentError {
+            message: String::from(message),
+        }
     }
 }
 
@@ -96,7 +110,10 @@ impl FromStr for Component {
             "webgl" => Ok(Component::WebGl),
             "linux" => Ok(Component::Linux),
             "windows" => Ok(Component::Windows),
-            x => Err(ParseComponentError::new(&format!("Unsupported component {}", x)))
+            x => Err(ParseComponentError::new(&format!(
+                "Unsupported component {}",
+                x
+            ))),
         }
     }
 }

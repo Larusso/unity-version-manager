@@ -13,9 +13,9 @@ use std::io::Write;
 use uvm_cli::ColorOption;
 use uvm_cli::Options;
 use uvm_core::brew;
-use uvm_core::unity::Version;
 use uvm_core::install;
 use uvm_core::install::InstallVariant;
+use uvm_core::unity::Version;
 
 #[derive(Debug, Deserialize)]
 pub struct UninstallOptions {
@@ -33,13 +33,12 @@ pub struct UninstallOptions {
 }
 
 impl UninstallOptions {
-
     pub fn version(&self) -> &Version {
         &self.arg_version
     }
 
     pub fn install_variants(&self) -> HashSet<InstallVariant> {
-        let mut variants:HashSet<InstallVariant> = HashSet::with_capacity(6);
+        let mut variants: HashSet<InstallVariant> = HashSet::with_capacity(6);
 
         if self.flag_android || self.flag_mobile || self.flag_all {
             variants.insert(InstallVariant::Android);
@@ -69,7 +68,7 @@ impl UninstallOptions {
             variants.insert(InstallVariant::Windows);
             variants.insert(InstallVariant::Linux);
         }
-        return variants
+        return variants;
     }
 }
 
@@ -83,17 +82,21 @@ impl Options for UninstallOptions {
     }
 }
 
-pub struct UvmCommand {
-}
+pub struct UvmCommand {}
 
 impl UvmCommand {
     pub fn new() -> UvmCommand {
         UvmCommand {}
     }
 
-    pub fn exec(&self, options:UninstallOptions) -> io::Result<()> {
+    pub fn exec(&self, options: UninstallOptions) -> io::Result<()> {
         let mut stderr = Term::stderr();
-        write!(stderr, "{}: {}\n", style("uninstall unity version").green(), options.version().to_string()).ok();
+        write!(
+            stderr,
+            "{}: {}\n",
+            style("uninstall unity version").green(),
+            options.version().to_string()
+        ).ok();
 
         let casks = brew::cask::list()?;
         let installed: HashSet<brew::cask::Cask> = casks
@@ -103,7 +106,10 @@ impl UvmCommand {
         let mut to_uninstall = HashSet::new();
 
         for variant in options.install_variants() {
-            to_uninstall.insert(install::cask_name_for_type_version(variant, &options.version()));
+            to_uninstall.insert(install::cask_name_for_type_version(
+                variant,
+                &options.version(),
+            ));
         }
 
         if options.verbose() {
@@ -115,7 +121,11 @@ impl UvmCommand {
             let mut diff = to_uninstall.difference(&installed).peekable();
             if let Some(_) = diff.peek() {
                 stderr.write_line("").ok();
-                write!(stderr, "{}\n", style("Skip variants not installed:").yellow()).ok();
+                write!(
+                    stderr,
+                    "{}\n",
+                    style("Skip variants not installed:").yellow()
+                ).ok();
                 for c in diff {
                     write!(stderr, "{}\n", style(c).yellow().bold()).ok();
                 }
@@ -129,11 +139,16 @@ impl UvmCommand {
             let status = child.wait()?;
 
             if !status.success() {
-                return Err(io::Error::new(io::ErrorKind::Other, "Failed to uninstall casks"));
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Failed to uninstall casks",
+                ));
             }
-        }
-        else {
-            return Err(io::Error::new(io::ErrorKind::Other, "Version and all support packages not installed"));
+        } else {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "Version and all support packages not installed",
+            ));
         }
 
         Ok(())

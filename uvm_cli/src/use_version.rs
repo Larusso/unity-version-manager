@@ -1,12 +1,11 @@
 use super::ColorOption;
 use uvm_core::unity::Version;
-use uvm_core;
 
 #[derive(Debug, Deserialize)]
 pub struct UseOptions {
     arg_version: Version,
     flag_verbose: bool,
-    flag_color: ColorOption
+    flag_color: ColorOption,
 }
 
 impl UseOptions {

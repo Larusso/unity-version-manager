@@ -1,15 +1,12 @@
 #[macro_use]
 extern crate serde_derive;
+extern crate console;
 extern crate uvm_cli;
 extern crate uvm_core;
-extern crate console;
 
 use console::Style;
-use console::style;
 use console::Term;
-use std::fs;
 use std::io;
-use std::path::Path;
 use uvm_cli::ColorOption;
 use uvm_cli::Options;
 
@@ -19,7 +16,7 @@ pub struct CommandsOptions {
     flag_path: bool,
     flag_list: bool,
     flag_1: bool,
-    flag_color: ColorOption
+    flag_color: ColorOption,
 }
 
 impl CommandsOptions {
@@ -48,19 +45,16 @@ impl uvm_cli::Options for CommandsOptions {
 
 pub struct UvmCommand {
     stdout: Term,
-    stderr: Term
 }
 
 impl UvmCommand {
     pub fn new() -> UvmCommand {
         UvmCommand {
             stdout: Term::stdout(),
-            stderr: Term::stderr(),
         }
     }
 
-    pub fn exec(&self, options:CommandsOptions) -> io::Result<()>
-    {
+    pub fn exec(&self, options: CommandsOptions) -> io::Result<()> {
         let commands = uvm_cli::find_sub_commands()?;
         let out_style = Style::new().cyan();
         let path_style = Style::new().italic().green();
@@ -69,7 +63,10 @@ impl UvmCommand {
         let path_only = options.path_only();
         let single_column = options.single_column();
 
-        let seperator = match list || !self.stdout.is_term() { true => "\n", false => "  "};
+        let seperator = match list || !self.stdout.is_term() {
+            true => "\n",
+            false => "  ",
+        };
         let output = commands.fold(String::new(), |out, command| {
             let mut new_line = out;
 

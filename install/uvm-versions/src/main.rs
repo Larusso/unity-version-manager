@@ -22,6 +22,6 @@ Options:
 ";
 
 fn main() -> std::io::Result<()> {
-    let options:VersionsOptions = uvm_cli::get_options(USAGE)?;
+    let options: VersionsOptions = uvm_cli::get_options(USAGE)?;
     uvm_versions::UvmCommand::new().exec(options)
 }

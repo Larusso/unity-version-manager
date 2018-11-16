@@ -11,5 +11,5 @@ pub fn update() -> io::Result<()> where
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output()?;
-        Ok(())
+    Ok(())
 }

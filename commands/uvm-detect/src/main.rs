@@ -23,7 +23,7 @@ Options:
 ";
 
 fn main() {
-    let options:DetectOptions = uvm_cli::get_options(USAGE).unwrap();
+    let options: DetectOptions = uvm_cli::get_options(USAGE).unwrap();
     let project_version = uvm_core::dectect_project_version(
         options
             .project_path()

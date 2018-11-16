@@ -4,11 +4,9 @@ extern crate uvm_core;
 
 use console::style;
 use std::env;
-use std::io;
-use std::path::{Path};
+use std::path::Path;
 use std::process;
-use uvm_cli::LaunchOptions;
-use uvm_cli::Options;
+use uvm_cli::{LaunchOptions, Options};
 use uvm_core::Result;
 
 const USAGE: &'static str = "
@@ -44,7 +42,9 @@ fn get_installation(
 
 fn launch(options: LaunchOptions) -> Result<()> {
     let project_path = uvm_core::detect_unity_project_dir(
-        options.project_path().unwrap_or(&env::current_dir().unwrap()),
+        options
+            .project_path()
+            .unwrap_or(&env::current_dir().unwrap()),
         options.recursive(),
     )?;
 
@@ -83,7 +83,7 @@ fn launch(options: LaunchOptions) -> Result<()> {
 }
 
 fn main() {
-    let o:LaunchOptions = uvm_cli::get_options(USAGE).unwrap();
+    let o: LaunchOptions = uvm_cli::get_options(USAGE).unwrap();
 
     launch(o).unwrap_or_else(|err| {
         let message = format!("Unable to launch unity");

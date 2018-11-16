@@ -1,9 +1,9 @@
 use reqwest::Url;
-use unity::version::{Version, VersionType};
 use result::Result;
+use unity::version::{Version, VersionType};
 
-const BASE_URL: &'static str        = "https://download.unity3d.com/download_unity/";
-const BETA_BASE_URL: &'static str   = "https://beta.unity3d.com/download/";
+const BASE_URL: &'static str = "https://download.unity3d.com/download_unity/";
+const BETA_BASE_URL: &'static str = "https://beta.unity3d.com/download/";
 
 #[derive(Debug)]
 pub struct DownloadURL(Url);
@@ -15,8 +15,13 @@ impl DownloadURL {
             _ => Url::parse(BETA_BASE_URL),
         }?;
 
-        let hash = version.version_hash().ok_or_else(|| crate::error::IllegalOperationError::new(&format!("No hash value for version: {} available", version)))?;
-        url = url.join(&format!("{}/",hash))?;
+        let hash = version.version_hash().ok_or_else(|| {
+            crate::error::IllegalOperationError::new(&format!(
+                "No hash value for version: {} available",
+                version
+            ))
+        })?;
+        url = url.join(&format!("{}/", hash))?;
         Ok(DownloadURL(url))
     }
 

@@ -1,14 +1,13 @@
 #[macro_use]
 extern crate serde_derive;
-extern crate uvm_cli;
-extern crate uvm_core;
 extern crate console;
 extern crate log;
+extern crate uvm_cli;
+extern crate uvm_core;
 
-use log::info;
-use log::trace;
 use console::Style;
 use console::Term;
+use log::info;
 use std::io;
 use uvm_cli::ColorOption;
 use uvm_cli::Options;
@@ -20,7 +19,7 @@ pub struct ListOptions {
     flag_verbose: bool,
     flag_debug: bool,
     flag_path: bool,
-    flag_color: ColorOption
+    flag_color: ColorOption,
 }
 
 impl ListOptions {
@@ -53,7 +52,7 @@ impl uvm_cli::Options for ListOptions {
 
 pub struct UvmCommand {
     stdout: Term,
-    stderr: Term
+    stderr: Term,
 }
 
 impl UvmCommand {
@@ -64,8 +63,7 @@ impl UvmCommand {
         }
     }
 
-    pub fn exec(&self, options:ListOptions) -> io::Result<()>
-    {
+    pub fn exec(&self, options: ListOptions) -> io::Result<()> {
         let current_version = uvm_core::current_installation().ok();
         let list_function = if options.all() {
             info!("fetch all installations");
@@ -96,7 +94,8 @@ impl UvmCommand {
                 let mut new_line = out;
 
                 if path_only == false {
-                    new_line += &format!("{}", out_style.apply_to(installation.version().to_string()));
+                    new_line +=
+                        &format!("{}", out_style.apply_to(installation.version().to_string()));
                 }
 
                 if verbose {

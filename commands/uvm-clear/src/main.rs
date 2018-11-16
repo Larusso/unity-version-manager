@@ -1,7 +1,7 @@
 extern crate console;
+extern crate uvm_clear;
 extern crate uvm_cli;
 extern crate uvm_core;
-extern crate uvm_clear;
 
 use uvm_clear::ClearOptions;
 

@@ -1,14 +1,13 @@
 use super::*;
 use std::collections::BTreeMap;
 use std::io;
-use std::path::Path;
-use std::fs::File;
 
-pub fn hash_for_version(version:&Version) -> io::Result<String> {
-    let versions:BTreeMap<Version, String> = serde_yaml::from_str(VERSIONS)
-        .map_err(|err| io::Error::new(io::ErrorKind::NotFound, "Unable to load versions.yml"))?;
+pub fn hash_for_version(version: &Version) -> io::Result<String> {
+    let versions: BTreeMap<Version, String> = serde_yaml::from_str(VERSIONS)
+        .map_err(|_| io::Error::new(io::ErrorKind::NotFound, "Unable to load versions.yml"))?;
 
-    versions.get(version)
+    versions
+        .get(version)
         .map(|s| s.clone())
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Unable to find hash for version"))
 }

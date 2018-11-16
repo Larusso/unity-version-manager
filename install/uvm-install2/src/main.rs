@@ -1,15 +1,14 @@
-#[macro_use]
+extern crate console;
+extern crate flexi_logger;
 extern crate uvm_cli;
 extern crate uvm_install2;
-extern crate flexi_logger;
-extern crate console;
 
 #[macro_use]
 extern crate log;
 
 use console::style;
-use std::process;
 use console::Term;
+use std::process;
 
 const USAGE: &'static str = "
 uvm-install2 - Install specified unity version.
@@ -39,12 +38,13 @@ Arguments:
 
 fn main() -> std::io::Result<()> {
     let stdout = Term::stderr();
-    let options:uvm_install2::Options = uvm_cli::get_options(USAGE)?;
-    uvm_install2::UvmCommand::new().exec(options)
+    let options: uvm_install2::Options = uvm_cli::get_options(USAGE)?;
+    uvm_install2::UvmCommand::new()
+        .exec(options)
         .unwrap_or_else(|err| {
             let message = format!("Failure during installation");
-            stdout.write_line(&format!("{}",style(message).red())).ok();
-            info!("{}", &format!("{}",style(err).red()));
+            stdout.write_line(&format!("{}", style(message).red())).ok();
+            info!("{}", &format!("{}", style(err).red()));
             process::exit(1);
         });
 

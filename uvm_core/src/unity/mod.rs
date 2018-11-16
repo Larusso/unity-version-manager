@@ -1,45 +1,46 @@
-mod installation;
-mod version;
 mod component;
 mod current_installation;
 pub mod hub;
+mod installation;
 pub mod urls;
+mod version;
 
-pub use self::installation::Installation;
 pub use self::component::Component;
-pub use self::version::Version;
+pub use self::current_installation::current_installation;
+pub use self::current_installation::CurrentInstallation;
+pub use self::installation::Installation;
 pub use self::version::manifest::Manifest;
 pub use self::version::manifest::MD5;
 pub use self::version::ParseVersionError;
+pub use self::version::Version;
 pub use self::version::VersionType;
-pub use self::current_installation::CurrentInstallation;
-pub use self::current_installation::current_installation;
 
-use std::fs;
-use std::path::Path;
-use std::convert::From;
-use std::slice::Iter;
-use result::Result;
-use unity::hub::editors::Editors;
 use itertools::Itertools;
+use result::Result;
+use std::convert::From;
+use std::fs;
 use std::io;
+use std::path::Path;
+use std::slice::Iter;
 
 pub struct Installations(Box<Iterator<Item = Installation>>);
 pub struct Versions(Box<Iterator<Item = Version>>);
 
 pub struct InstalledComponents {
     installation: Installation,
-    components: Iter<'static, Component>
+    components: Iter<'static, Component>,
 }
 
 impl Installations {
     fn new(install_location: &Path) -> Result<Installations> {
-        debug!("fetch unity installations from {}", install_location.display());
+        debug!(
+            "fetch unity installations from {}",
+            install_location.display()
+        );
         let read_dir = fs::read_dir(install_location)?;
 
         let iter = read_dir
             .filter_map(|dir_entry| dir_entry.ok())
-            //.filter_map(check_dir_entry)
             .map(|entry| entry.path())
             .map(Installation::new)
             .filter_map(Result::ok);
@@ -53,9 +54,9 @@ impl Installations {
 
 impl From<hub::editors::Editors> for Installations {
     fn from(editors: hub::editors::Editors) -> Self {
-        let iter = editors.into_iter().map(|editor_installation| {
-            Installation::from(editor_installation)
-        });
+        let iter = editors
+            .into_iter()
+            .map(|editor_installation| Installation::from(editor_installation));
         Installations(Box::new(iter))
     }
 }
@@ -78,7 +79,10 @@ impl Iterator for Versions {
 
 impl InstalledComponents {
     pub fn new(installation: Installation) -> InstalledComponents {
-        InstalledComponents { installation: installation, components: Component::iterator() }
+        InstalledComponents {
+            installation: installation,
+            components: Component::iterator(),
+        }
     }
 }
 
@@ -88,8 +92,12 @@ impl Iterator for InstalledComponents {
     fn next(&mut self) -> Option<Self::Item> {
         for c in &mut self.components {
             if c.is_installed(&self.installation.path()) {
-                trace!("found component {:?} installed at {}", &c, &self.installation.path().display());
-                return Some(c.clone())
+                trace!(
+                    "found component {:?} installed at {}",
+                    &c,
+                    &self.installation.path().display()
+                );
+                return Some(c.clone());
             }
         }
         None
@@ -97,18 +105,10 @@ impl Iterator for InstalledComponents {
 }
 
 impl From<Installations> for Versions {
-    fn from(installations:Installations) -> Self {
+    fn from(installations: Installations) -> Self {
         let iter = installations.map(|i| i.version_owned());
         Versions(Box::new(iter))
     }
-}
-
-fn check_dir_entry(entry:fs::DirEntry) -> Option<fs::DirEntry> {
-    let name = entry.file_name();
-    if name.to_str().unwrap_or("").starts_with("Unity-") {
-        return Some(entry);
-    };
-    None
 }
 
 pub fn list_all_installations() -> Result<Installations> {
@@ -121,41 +121,41 @@ pub fn list_all_installations() -> Result<Installations> {
 
 pub fn list_installations() -> Result<Installations> {
     dirs::application_dir()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "unable to locate application_dir").into())
-        .and_then(|application_dir| list_installations_in_dir(&application_dir))
+        .ok_or_else(|| {
+            io::Error::new(io::ErrorKind::NotFound, "unable to locate application_dir").into()
+        }).and_then(|application_dir| list_installations_in_dir(&application_dir))
 }
 
-pub fn list_installations_in_dir(install_location:&Path) -> Result<Installations> {
+pub fn list_installations_in_dir(install_location: &Path) -> Result<Installations> {
     Installations::new(install_location)
 }
 
 #[cfg(test)]
 mod tests {
-    use std::env;
+    use super::*;
+    use plist::serde::serialize_to_xml;
     use std::fs;
+    use std::fs::File;
     use std::path::Path;
     use std::path::PathBuf;
-    use rand;
-    use tempfile::Builder;
     use std::str::FromStr;
-    use std::fs::File;
-    use super::*;
+    use tempfile::Builder;
     use unity::installation::AppInfo;
-    use plist::serde::{deserialize, serialize_to_xml};
 
-    fn create_test_path(base_dir:&PathBuf, version: &str) -> PathBuf {
-
+    fn create_test_path(base_dir: &PathBuf, version: &str) -> PathBuf {
         let path = base_dir.join(format!("Unity-{version}", version = version));
         let mut dir_builder = fs::DirBuilder::new();
         dir_builder.recursive(true);
         dir_builder.create(&path).unwrap();
 
         let info_plist_path = path.join(Path::new("Unity.app/Contents/Info.plist"));
-        dir_builder.create(info_plist_path.parent().unwrap()).unwrap();
+        dir_builder
+            .create(info_plist_path.parent().unwrap())
+            .unwrap();
 
         let info = AppInfo {
             c_f_bundle_version: String::from_str(version).unwrap(),
-            unity_build_number: String::from_str("ssdsdsdd").unwrap()
+            unity_build_number: String::from_str("ssdsdsdd").unwrap(),
         };
         let file = File::create(info_plist_path).unwrap();
         serialize_to_xml(file, &info).unwrap();
@@ -182,10 +182,7 @@ mod tests {
 
     #[test]
     fn list_installations_in_directory_filters_unity_installations() {
-        let test_dir = prepare_unity_installations![
-            "2017.1.2f3",
-            "2017.2.3f4"
-        ];
+        let test_dir = prepare_unity_installations!["2017.1.2f3", "2017.2.3f4"];
 
         let mut builder = Builder::new();
         builder.prefix("some-dir");
@@ -216,10 +213,7 @@ mod tests {
 
     #[test]
     fn installations_can_be_converted_to_versions() {
-        let test_dir = prepare_unity_installations![
-            "2017.1.2f3",
-            "2017.2.3f4"
-        ];
+        let test_dir = prepare_unity_installations!["2017.1.2f3", "2017.2.3f4"];
 
         let installations = Installations::new(test_dir.path()).unwrap();
         let mut subject = installations.versions();
@@ -233,10 +227,7 @@ mod tests {
 
     #[test]
     fn versions_can_be_created_from_installations() {
-        let test_dir = prepare_unity_installations![
-            "2017.1.2f3",
-            "2017.2.3f4"
-        ];
+        let test_dir = prepare_unity_installations!["2017.1.2f3", "2017.2.3f4"];
 
         let installations = Installations::new(test_dir.path()).unwrap();
         let mut subject = Versions::from(installations);

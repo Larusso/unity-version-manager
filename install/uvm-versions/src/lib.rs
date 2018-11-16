@@ -1,20 +1,20 @@
 #[macro_use]
 extern crate serde_derive;
+extern crate console;
+extern crate indicatif;
+extern crate itertools;
 extern crate uvm_cli;
 extern crate uvm_core;
-extern crate console;
-extern crate itertools;
-extern crate indicatif;
 
 use console::Style;
 use console::Term;
-use std::io;
+use indicatif::{ProgressBar, ProgressStyle};
 use itertools::Itertools;
 use std::collections::HashSet;
+use std::io;
 use uvm_cli::ColorOption;
-use uvm_core::unity::VersionType;
 use uvm_core::install;
-use indicatif::{ProgressBar,ProgressStyle};
+use uvm_core::unity::VersionType;
 
 #[derive(Debug, Deserialize)]
 pub struct VersionsOptions {
@@ -29,7 +29,7 @@ pub struct VersionsOptions {
 
 impl VersionsOptions {
     pub fn list_variants(&self) -> HashSet<VersionType> {
-        let mut variants:HashSet<VersionType> = HashSet::with_capacity(3);
+        let mut variants: HashSet<VersionType> = HashSet::with_capacity(3);
 
         if self.flag_alpha || self.flag_all {
             variants.insert(VersionType::Alpha);
@@ -62,7 +62,7 @@ impl uvm_cli::Options for VersionsOptions {
 
 pub struct UvmCommand {
     stdout: Term,
-    stderr: Term
+    stderr: Term,
 }
 
 impl UvmCommand {
@@ -73,12 +73,11 @@ impl UvmCommand {
         }
     }
 
-    fn read_casks_from_std_out(&self, stdout:&Vec<u8>) -> String {
-        return String::from_utf8_lossy(stdout).into_owned()
+    fn read_casks_from_std_out(&self, stdout: &Vec<u8>) -> String {
+        return String::from_utf8_lossy(stdout).into_owned();
     }
 
-    pub fn exec(&self, options:VersionsOptions) -> io::Result<()>
-    {
+    pub fn exec(&self, options: VersionsOptions) -> io::Result<()> {
         let out_style = Style::new().cyan();
 
         let variants = options.list_variants();
@@ -91,19 +90,27 @@ impl UvmCommand {
             .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ ")
             .template("{prefix:.bold.dim} {spinner} {wide_msg}");
         bar.set_style(spinner_style);
-        bar.set_prefix(&format!("search unity versions: {}",format!("{:#}", &variants.iter().format(", "))));
+        bar.set_prefix(&format!(
+            "search unity versions: {}",
+            format!("{:#}", &variants.iter().format(", "))
+        ));
         bar.enable_steady_tick(100);
         bar.tick();
 
-        let output = uvm_core::brew::cask::search(&format!("/unity@.*?({}).*/", &variants.iter().join("|")))
-            .and_then(std::process::Child::wait_with_output)
-            .map(|out| self.read_casks_from_std_out(&out.stdout))?;
+        let output =
+            uvm_core::brew::cask::search(&format!("/unity@.*?({}).*/", &variants.iter().join("|")))
+                .and_then(std::process::Child::wait_with_output)
+                .map(|out| self.read_casks_from_std_out(&out.stdout))?;
 
         bar.finish_and_clear();
 
-        self.stderr.write_line("Available Unity versions to install:")?;
+        self.stderr
+            .write_line("Available Unity versions to install:")?;
         for cask in output.lines().filter(|line| line.starts_with("unity@")) {
-            self.stdout.write_line(&format!("{}", out_style.apply_to(cask.split("@").last().unwrap())))?;
+            self.stdout.write_line(&format!(
+                "{}",
+                out_style.apply_to(cask.split("@").last().unwrap())
+            ))?;
         }
         Ok(())
     }

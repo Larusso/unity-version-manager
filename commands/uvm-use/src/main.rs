@@ -20,7 +20,7 @@ Options:
 ";
 
 fn main() {
-    let options:UseOptions = uvm_cli::get_options(USAGE).unwrap();
+    let options: UseOptions = uvm_cli::get_options(USAGE).unwrap();
     if uvm_core::is_active(options.version()) {
         let message = format!("Version {} already active", options.version());
         eprintln!("{}", style(message).red());
