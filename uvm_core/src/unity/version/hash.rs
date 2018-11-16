@@ -2,6 +2,12 @@ use super::*;
 use std::collections::BTreeMap;
 use std::io;
 
+pub fn all_versions() -> io::Result<impl Iterator<Item = Version>> {
+    let versions: BTreeMap<Version, String> = serde_yaml::from_str(VERSIONS)
+        .map_err(|_| io::Error::new(io::ErrorKind::NotFound, "Unable to load versions.yml"))?;
+    Ok(versions.into_iter().map(|v| v.0))
+}
+
 pub fn hash_for_version(version: &Version) -> io::Result<String> {
     let versions: BTreeMap<Version, String> = serde_yaml::from_str(VERSIONS)
         .map_err(|_| io::Error::new(io::ErrorKind::NotFound, "Unable to load versions.yml"))?;

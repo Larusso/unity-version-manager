@@ -26,6 +26,7 @@ use self::other as sys;
 #[cfg(target_os = "windows")]
 use self::win as sys;
 
+pub use self::hash::all_versions;
 pub use self::sys::read_version_from_path;
 
 #[derive(PartialEq, Eq, Ord, Hash, Debug, Clone)]
