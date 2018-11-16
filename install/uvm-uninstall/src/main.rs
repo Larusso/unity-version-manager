@@ -1,6 +1,13 @@
+extern crate console;
 extern crate uvm_cli;
 extern crate uvm_uninstall;
 
+#[macro_use]
+extern crate log;
+
+use console::style;
+use console::Term;
+use std::process;
 use uvm_uninstall::UninstallOptions;
 
 const USAGE: &'static str = "
@@ -20,11 +27,22 @@ Options:
   --windows         uninstall windows support for editor
   --desktop         uninstall desktop support (linux, windows)
   -v, --verbose     print more output
+  -d, --debug       print debug output
   --color WHEN      Coloring: auto, always, never [default: auto]
   -h, --help        show this help message and exit
 ";
 
 fn main() -> std::io::Result<()> {
+    let stdout = Term::stderr();
     let options: UninstallOptions = uvm_cli::get_options(USAGE)?;
-    uvm_uninstall::UvmCommand::new().exec(options)
+    uvm_uninstall::UvmCommand::new()
+        .exec(options)
+        .unwrap_or_else(|err| {
+            let message = format!("Failure during deinstallation");
+            stdout.write_line(&format!("{}", style(message).red())).ok();
+            info!("{}", &format!("{}", style(err).red()));
+            process::exit(1);
+        });
+
+    stdout.write_line(&format!("{}", style("Finish").green().bold()))
 }

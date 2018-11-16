@@ -112,8 +112,8 @@ mod tests {
     use std::fs;
     use std::fs::File;
     use std::path::Path;
-    use tempfile::Builder;
     use std::str::FromStr;
+    use tempfile::Builder;
 
     fn create_unity_installation(base_dir: &PathBuf, version: &str) -> PathBuf {
         let path = base_dir.join("Unity");

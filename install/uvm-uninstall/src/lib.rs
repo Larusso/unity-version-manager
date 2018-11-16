@@ -8,19 +8,22 @@ extern crate uvm_core;
 use console::style;
 use console::Term;
 use std::collections::HashSet;
+use std::fs::remove_dir_all;
 use std::io;
 use std::io::Write;
 use uvm_cli::ColorOption;
 use uvm_cli::Options;
-use uvm_core::brew;
-use uvm_core::install;
 use uvm_core::install::InstallVariant;
+use uvm_core::result::Result;
+use uvm_core::unity;
+use uvm_core::unity::Component;
 use uvm_core::unity::Version;
 
 #[derive(Debug, Deserialize)]
 pub struct UninstallOptions {
     arg_version: Version,
     flag_verbose: bool,
+    flag_debug: bool,
     flag_android: bool,
     flag_ios: bool,
     flag_webgl: bool,
@@ -77,6 +80,10 @@ impl Options for UninstallOptions {
         self.flag_verbose
     }
 
+    fn debug(&self) -> bool {
+        self.flag_debug
+    }
+
     fn color(&self) -> &ColorOption {
         &self.flag_color
     }
@@ -89,68 +96,65 @@ impl UvmCommand {
         UvmCommand {}
     }
 
-    pub fn exec(&self, options: UninstallOptions) -> io::Result<()> {
+    pub fn exec(&self, options: UninstallOptions) -> Result<()> {
         let mut stderr = Term::stderr();
-        write!(
-            stderr,
-            "{}: {}\n",
-            style("uninstall unity version").green(),
-            options.version().to_string()
-        ).ok();
+        let installation = unity::find_installation(&options.version())?;
+        let installed: HashSet<Component> = installation.installed_components().collect();
 
-        let casks = brew::cask::list()?;
-        let installed: HashSet<brew::cask::Cask> = casks
-            .filter(|cask| cask.contains(&format!("@{}", &options.version().to_string())))
+        let to_uninstall: HashSet<Component> = options
+            .install_variants()
+            .into_iter()
+            .map(|v| v.into())
             .collect();
 
-        let mut to_uninstall = HashSet::new();
-
-        for variant in options.install_variants() {
-            to_uninstall.insert(install::cask_name_for_type_version(
-                variant,
-                &options.version(),
-            ));
-        }
-
-        if options.verbose() {
-            write!(stderr, "{}\n", style("Casks to uninstall:").green()).ok();
-            for c in &to_uninstall {
-                write!(stderr, "{}\n", style(c).cyan()).ok();
-            }
-
-            let mut diff = to_uninstall.difference(&installed).peekable();
-            if let Some(_) = diff.peek() {
-                stderr.write_line("").ok();
+        if to_uninstall.contains(&Component::Editor) {
+            write!(
+                stderr,
+                "{}: {}\n",
+                style("uninstall unity version").green(),
+                options.version()
+            ).ok();
+            remove_dir_all(installation.path())?
+        } else {
+            if options.verbose() {
                 write!(
                     stderr,
-                    "{}\n",
-                    style("Skip variants not installed:").yellow()
+                    "{}: {}\n",
+                    style("uninstall unity components").green(),
+                    options.version()
                 ).ok();
-                for c in diff {
-                    write!(stderr, "{}\n", style(c).yellow().bold()).ok();
+                write!(stderr, "{}\n", style("Components to uninstall:").green()).ok();
+                for c in &to_uninstall {
+                    write!(stderr, "{}\n", style(c).cyan()).ok();
+                }
+
+                let mut diff = to_uninstall.difference(&installed).peekable();
+                if let Some(_) = diff.peek() {
+                    stderr.write_line("").ok();
+                    write!(
+                        stderr,
+                        "{}\n",
+                        style("Skip variants not installed:").yellow()
+                    ).ok();
+                    for c in diff {
+                        write!(stderr, "{}\n", style(c).yellow().bold()).ok();
+                    }
                 }
             }
-        }
 
-        let mut diff = to_uninstall.intersection(&installed).peekable();
-        if let Some(_) = diff.peek() {
-            stderr.write_line("Start Uninstall").ok();
-            let mut child = brew::cask::uninstall(diff)?;
-            let status = child.wait()?;
-
-            if !status.success() {
-                return Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    "Failed to uninstall casks",
-                ));
+            let mut diff = to_uninstall.intersection(&installed).peekable();
+            if let Some(_) = diff.peek() {
+                stderr.write_line("Start Uninstall").ok();
+                for c in diff {
+                    if let Some(p) = c.installpath().map(|l| installation.path().join(l)) {
+                        stderr.write_line(&format!("Remove {}", c)).ok();
+                        remove_dir_all(p)?
+                    }
+                }
+            } else {
+                return Err(io::Error::new(io::ErrorKind::Other, "nothing to uninstall").into());
             }
-        } else {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "Version and all support packages not installed",
-            ));
         }
-
         Ok(())
     }
 }
