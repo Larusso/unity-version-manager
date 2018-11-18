@@ -13,7 +13,6 @@ use itertools::Itertools;
 use std::collections::HashSet;
 use std::io;
 use uvm_cli::ColorOption;
-use uvm_core::install;
 use uvm_core::unity::VersionType;
 
 #[derive(Debug, Deserialize)]
@@ -73,18 +72,10 @@ impl UvmCommand {
         }
     }
 
-    fn read_casks_from_std_out(&self, stdout: &Vec<u8>) -> String {
-        return String::from_utf8_lossy(stdout).into_owned();
-    }
-
     pub fn exec(&self, options: VersionsOptions) -> io::Result<()> {
         let out_style = Style::new().cyan();
 
         let variants = options.list_variants();
-        for variant in options.list_variants() {
-            install::ensure_tap_for_version_type(&variant).unwrap();
-        }
-
         let bar = ProgressBar::new_spinner();
         let spinner_style = ProgressStyle::default_spinner()
             .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ ")
@@ -97,20 +88,16 @@ impl UvmCommand {
         bar.enable_steady_tick(100);
         bar.tick();
 
-        let output =
-            uvm_core::brew::cask::search(&format!("/unity@.*?({}).*/", &variants.iter().join("|")))
-                .and_then(std::process::Child::wait_with_output)
-                .map(|out| self.read_casks_from_std_out(&out.stdout))?;
-
+        let versions = uvm_core::unity::all_versions()?;
         bar.finish_and_clear();
 
         self.stderr
             .write_line("Available Unity versions to install:")?;
-        for cask in output.lines().filter(|line| line.starts_with("unity@")) {
-            self.stdout.write_line(&format!(
-                "{}",
-                out_style.apply_to(cask.split("@").last().unwrap())
-            ))?;
+        for version in versions {
+            if variants.contains(version.release_type()) {
+                self.stdout
+                    .write_line(&format!("{}", out_style.apply_to(version)))?;
+            }
         }
         Ok(())
     }
