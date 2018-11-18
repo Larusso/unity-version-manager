@@ -130,10 +130,25 @@ pub fn list_installations_in_dir(install_location: &Path) -> Result<Installation
     Installations::new(install_location)
 }
 
+pub fn find_installation(version: &Version) -> Result<Installation> {
+    list_all_installations().and_then(|mut installations| {
+        installations
+            .find(|installation| installation.version() == version)
+            .ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!("unable to locate installation with version {}", version),
+                ).into()
+            })
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use plist::serde::serialize_to_xml;
+    use plist::serde::{deserialize, serialize_to_xml};
+    use rand;
+    use std::env;
     use std::fs;
     use std::fs::File;
     use std::path::Path;

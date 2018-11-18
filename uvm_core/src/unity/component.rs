@@ -96,6 +96,27 @@ impl Error for ParseComponentError {
     }
 }
 
+impl fmt::Display for Component {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Component::Editor => write!(f, "editor"),
+            &Component::Mono => write!(f, "mono"),
+            &Component::VisualStudio => write!(f, "visual studio"),
+            &Component::MonoDevelop => write!(f, "mono develop"),
+            &Component::Documentation => write!(f, "documentation"),
+            &Component::StandardAssets => write!(f, "standard assets"),
+            &Component::Android => write!(f, "android"),
+            &Component::Ios => write!(f, "ios"),
+            &Component::TvOs => write!(f, "tvos"),
+            &Component::WebGl => write!(f, "webgl"),
+            &Component::Linux => write!(f, "linux"),
+            &Component::Windows => write!(f, "windows"),
+            &Component::WindowsMono => write!(f, "windows-mono"),
+            _ => write!(f, "unknown"),
+        }
+    }
+}
+
 impl FromStr for Component {
     type Err = ParseComponentError;
 
