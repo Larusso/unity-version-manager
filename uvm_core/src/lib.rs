@@ -55,7 +55,6 @@ macro_rules! cargo_version {
     };
 }
 
-pub mod brew;
 pub mod error;
 pub mod install;
 pub mod result;
