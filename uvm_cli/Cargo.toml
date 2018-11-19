@@ -11,3 +11,4 @@ serde = "1.0"
 serde_derive = "1.0"
 uvm_core = { path = "../uvm_core" }
 console = "0.6.1"
+cli_core = "0.1.0"
