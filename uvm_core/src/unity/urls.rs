@@ -1,12 +1,29 @@
+use std::ops::Deref;
+use std::convert::Into;
 use reqwest::Url;
 use result::Result;
 use unity::version::{Version, VersionType};
 
-const BASE_URL: &'static str = "https://download.unity3d.com/download_unity/";
-const BETA_BASE_URL: &'static str = "https://beta.unity3d.com/download/";
+const BASE_URL: &str = "https://download.unity3d.com/download_unity/";
+const BETA_BASE_URL: &str = "https://beta.unity3d.com/download/";
 
 #[derive(Debug)]
 pub struct DownloadURL(Url);
+
+impl Deref for DownloadURL {
+    type Target = Url;
+
+    fn deref(&self) -> &Url {
+        &self.0
+    }
+}
+
+impl Into<Url> for DownloadURL {
+    fn into(self) -> Url {
+        self.into_url()
+    }
+}
+
 impl DownloadURL {
     pub fn new<V: AsRef<Version>>(version: V) -> Result<DownloadURL> {
         let version = version.as_ref();
@@ -25,17 +42,27 @@ impl DownloadURL {
         Ok(DownloadURL(url))
     }
 
-    pub fn to_url(self) -> Url {
+    pub fn into_url(self) -> Url {
         self.0
-    }
-
-    pub fn join(&self, input: &str) -> Result<Url> {
-        self.0.join(input).map_err(|err| err.into())
     }
 }
 
 #[derive(Debug)]
 pub struct IniUrl(Url);
+
+impl Deref for IniUrl {
+    type Target = Url;
+
+    fn deref(&self) -> &Url {
+        &self.0
+    }
+}
+
+impl Into<Url> for IniUrl {
+    fn into(self) -> Url {
+        self.into_url()
+    }
+}
 
 impl IniUrl {
     #[cfg(any(target_os = "windows", target_os = "macos"))]
@@ -58,7 +85,7 @@ impl IniUrl {
         unimplemented!()
     }
 
-    pub fn to_url(self) -> Url {
+    pub fn into_url(self) -> Url {
         self.0
     }
 }
