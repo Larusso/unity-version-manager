@@ -60,7 +60,7 @@ impl Manifest {
         P: AsRef<Path>,
     {
         let ini_url = IniUrl::new(version)?;
-        let url = ini_url.to_url();
+        let url = ini_url.into_url();
         let body = reqwest::get(url)
             .and_then(|mut response| response.text())
             .map(Self::cleanup_ini_data)?;
