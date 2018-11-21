@@ -29,7 +29,7 @@ use self::win as sys;
 pub use self::hash::all_versions;
 pub use self::sys::read_version_from_path;
 
-#[derive(PartialEq, Eq, Ord, Hash, Debug, Clone)]
+#[derive(PartialEq, Eq, Ord, Hash, Debug, Clone, Copy)]
 pub enum VersionType {
     Alpha,
     Beta,
@@ -157,6 +157,22 @@ impl Version {
 
     pub fn version_hash(&self) -> Option<String> {
         hash::hash_for_version(self).ok()
+    }
+
+    pub fn major(&self) -> u64 {
+        self.base.major
+    }
+
+    pub fn minor(&self) -> u64 {
+        self.base.minor
+    }
+
+    pub fn patch(&self) -> u64 {
+        self.base.patch
+    }
+
+    pub fn revision(&self) -> u64 {
+        self.revision
     }
 }
 

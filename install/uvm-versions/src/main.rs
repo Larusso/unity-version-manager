@@ -11,11 +11,11 @@ Usage:
   uvm-versions (-h | --help)
 
 Options:
-  -a, --all         list all available versions
-  -f, --final       list available final versions
-  -b, --beta        list available beta versions
-  --alpha           list available alpha versions
-  -p, --patch       list available patch versions
+  -a, --all         list all available versions for the selected version types
+  -f, --final       list final versions
+  -b, --beta        list beta versions
+  --alpha           list alpha versions
+  -p, --patch       list patch versions
   -v, --verbose     print more output
   --color WHEN      Coloring: auto, always, never [default: auto]
   -h, --help        show this help message and exit
