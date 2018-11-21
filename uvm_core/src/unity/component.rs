@@ -47,7 +47,8 @@ impl Component {
         COMPONENTS.into_iter()
     }
 
-    pub fn installpath(&self) -> Option<PathBuf> {
+    #[cfg(target_os = "macos")]
+    pub fn installpath(self) -> Option<PathBuf> {
         let path = match self {
             StandardAssets => Some("Standard Assets"),
             Android => Some("PlaybackEngines/AndroidPlayer"),
@@ -63,8 +64,47 @@ impl Component {
         path.map(|p| Path::new(p).to_path_buf())
     }
 
-    pub fn is_installed(&self, unity_install_location: &Path) -> bool {
+    #[cfg(target_os = "windows")]
+    pub fn installpath(self) -> Option<PathBuf> {
+        let path = match self {
+            StandardAssets => Some(r"Editor"),
+            Android => Some(r"Editor"),
+            Ios => Some(r"Editor"),
+            TvOs => Some(r"Editor"),
+            Linux => Some(r"Editor"),
+            Windows => Some(r"Editor"),
+            WindowsMono => Some(r"Editor"),
+            WebGl => Some(r"Editor"),
+            _ => None,
+        };
+
+        path.map(|p| Path::new(p).to_path_buf())
+    }
+
+    #[cfg(target_os = "macos")]
+    pub fn install_location(self) -> Option<PathBuf> {
         self.installpath()
+    }
+
+    #[cfg(target_os = "windows")]
+    pub fn install_location(self) -> Option<PathBuf> {
+        let path = match self {
+            StandardAssets => Some(r"Editor\Standard Assets"),
+            Android => Some(r"Editor\Data\PlaybackEngines\AndroidPlayer"),
+            Ios => Some(r"Editor\Data\PlaybackEngines\iOSSupport"),
+            TvOs => Some(r"Editor\Data\PlaybackEngines\AppleTVSupport"),
+            Linux => Some(r"Editor\Data\PlaybackEngines\LinuxStandaloneSupport"),
+            Windows => Some(r"Editor\Data\PlaybackEngines\windowsstandalonesupport"),
+            WindowsMono => Some(r"Editor\Data\PlaybackEngines\windowsstandalonesupport"),
+            WebGl => Some(r"Editor\Data\PlaybackEngines\WebGLSupport"),
+            _ => None,
+        };
+
+        path.map(|p| Path::new(p).to_path_buf())
+    }
+
+    pub fn is_installed(self, unity_install_location: &Path) -> bool {
+        self.install_location()
             .map(|install_path| unity_install_location.join(install_path))
             .map(|install_path| install_path.exists())
             .unwrap_or(false)
@@ -98,20 +138,20 @@ impl Error for ParseComponentError {
 
 impl fmt::Display for Component {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &Component::Editor => write!(f, "editor"),
-            &Component::Mono => write!(f, "mono"),
-            &Component::VisualStudio => write!(f, "visual studio"),
-            &Component::MonoDevelop => write!(f, "mono develop"),
-            &Component::Documentation => write!(f, "documentation"),
-            &Component::StandardAssets => write!(f, "standard assets"),
-            &Component::Android => write!(f, "android"),
-            &Component::Ios => write!(f, "ios"),
-            &Component::TvOs => write!(f, "tvos"),
-            &Component::WebGl => write!(f, "webgl"),
-            &Component::Linux => write!(f, "linux"),
-            &Component::Windows => write!(f, "windows"),
-            &Component::WindowsMono => write!(f, "windows-mono"),
+        match *self {
+            Component::Editor => write!(f, "editor"),
+            Component::Mono => write!(f, "mono"),
+            Component::VisualStudio => write!(f, "visual studio"),
+            Component::MonoDevelop => write!(f, "mono develop"),
+            Component::Documentation => write!(f, "documentation"),
+            Component::StandardAssets => write!(f, "standard assets"),
+            Component::Android => write!(f, "android"),
+            Component::Ios => write!(f, "ios"),
+            Component::TvOs => write!(f, "tvos"),
+            Component::WebGl => write!(f, "webgl"),
+            Component::Linux => write!(f, "linux"),
+            Component::Windows => write!(f, "windows"),
+            Component::WindowsMono => write!(f, "windows-mono"),
             _ => write!(f, "unknown"),
         }
     }
