@@ -5,7 +5,7 @@ extern crate uvm_core;
 
 use uvm_clear::ClearOptions;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 uvm-clear - Remove the link so you can install a new version without overwriting.
 
 Usage:
@@ -20,5 +20,5 @@ Options:
 
 fn main() {
     let options: ClearOptions = uvm_cli::get_options(USAGE).unwrap();
-    uvm_clear::UvmCommand::new().exec(options).unwrap();
+    uvm_clear::UvmCommand::new().exec(&options).unwrap();
 }

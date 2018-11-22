@@ -3,7 +3,7 @@ extern crate uvm_commands;
 
 use uvm_commands::CommandsOptions;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 uvm-commands - Lists all available sub commands.
 
 Usage:
@@ -21,5 +21,5 @@ Options:
 
 fn main() -> std::io::Result<()> {
     let options: CommandsOptions = uvm_cli::get_options(USAGE)?;
-    uvm_commands::UvmCommand::new().exec(options)
+    uvm_commands::UvmCommand::new().exec(&options)
 }

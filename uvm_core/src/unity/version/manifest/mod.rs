@@ -22,13 +22,13 @@ impl Manifest {
         Self::get_manifest(version)
     }
 
-    pub fn get(&self, component: &Component) -> Option<&ComponentData> {
-        self.components.get(component)
+    pub fn get(&self, component: Component) -> Option<&ComponentData> {
+        self.components.get(&component)
     }
 
-    pub fn url(&self, component: &Component) -> Option<Url> {
+    pub fn url(&self, component: Component) -> Option<Url> {
         self.components
-            .get(component)
+            .get(&component)
             .and_then(|c| self.base_url.join(&c.url).ok())
     }
 
@@ -63,15 +63,14 @@ impl Manifest {
         let url = ini_url.into_url();
         let body = reqwest::get(url)
             .and_then(|mut response| response.text())
-            .map(Self::cleanup_ini_data)?;
+            .map(|s| Self::cleanup_ini_data(&s))?;
         let mut f = File::create(path)?;
         write!(f, "{}", body);
         Ok(())
     }
 
-    fn cleanup_ini_data(ini_data: String) -> String {
+    fn cleanup_ini_data(ini_data: &str) -> String {
         ini_data
-            .as_str()
             .lines()
             .filter(|line| {
                 let line = line.trim();
@@ -116,7 +115,7 @@ mod tests {
             .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
             .unwrap();
         if cache_file.exists() {
-            fs::remove_file(&cache_file);
+            fs::remove_file(&cache_file).unwrap();
         }
         Manifest::load(version).unwrap();
     }
@@ -128,7 +127,7 @@ mod tests {
             .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
             .unwrap();
         if cache_file.exists() {
-            fs::remove_file(&cache_file);
+            fs::remove_file(&cache_file).unwrap();
         }
         assert!(Manifest::load(version).is_err());
     }
@@ -140,7 +139,7 @@ mod tests {
             .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
             .unwrap();
         if cache_file.exists() {
-            fs::remove_file(&cache_file);
+            fs::remove_file(&cache_file).unwrap();
         }
         let m = Manifest::load(version).unwrap();
 
@@ -152,7 +151,7 @@ mod tests {
         #[cfg(not(any(target_os = "windows", target_os = "macos")))]
         let expected_url = "";
 
-        assert_eq!(m.url(&Component::Editor).unwrap().as_str(), expected_url);
+        assert_eq!(m.url(Component::Editor).unwrap().as_str(), expected_url);
     }
 
     #[test]
@@ -162,10 +161,10 @@ mod tests {
             .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
             .unwrap();
         if cache_file.exists() {
-            fs::remove_file(&cache_file);
+            fs::remove_file(&cache_file).unwrap();
         }
 
-        let v = Manifest::load(version).unwrap();
+        Manifest::load(version).unwrap();
         assert!(cache_file.exists());
     }
 
@@ -199,6 +198,6 @@ key=value
 key = value
 key = "value with equals = ssjdd"
 key2=value2"#;
-        assert_eq!(Manifest::cleanup_ini_data(test_ini.into()), expected_ini);
+        assert_eq!(Manifest::cleanup_ini_data(test_ini), expected_ini);
     }
 }

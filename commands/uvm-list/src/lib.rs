@@ -55,6 +55,12 @@ pub struct UvmCommand {
     stderr: Term,
 }
 
+impl Default for UvmCommand {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl UvmCommand {
     pub fn new() -> UvmCommand {
         UvmCommand {
@@ -63,7 +69,7 @@ impl UvmCommand {
         }
     }
 
-    pub fn exec(&self, options: ListOptions) -> io::Result<()> {
+    pub fn exec(&self, options: &ListOptions) -> io::Result<()> {
         let current_version = uvm_core::current_installation().ok();
         let list_function = if options.all() {
             info!("fetch all installations");
@@ -85,7 +91,7 @@ impl UvmCommand {
                 let mut out_style = Style::new().cyan();
                 let mut path_style = Style::new().italic().green();
 
-                if let &Some(ref current) = &current_version {
+                if let Some(ref current) = &current_version {
                     if current == &installation {
                         out_style = out_style.yellow().bold();
                         path_style = path_style.italic().yellow();
@@ -93,7 +99,7 @@ impl UvmCommand {
                 }
                 let mut new_line = out;
 
-                if path_only == false {
+                if !path_only {
                     new_line +=
                         &format!("{}", out_style.apply_to(installation.version().to_string()));
                 }

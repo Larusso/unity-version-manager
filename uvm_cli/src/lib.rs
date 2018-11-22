@@ -1,9 +1,9 @@
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
-extern crate uvm_core;
 extern crate cli_core;
 extern crate console;
+extern crate serde;
+extern crate uvm_core;
 #[macro_use]
 extern crate log;
 extern crate flexi_logger;
@@ -55,9 +55,8 @@ where
         .spawn()?
         .wait()
         .and_then(|s| {
-            s.code().ok_or(io::Error::new(
-                io::ErrorKind::Interrupted,
-                "Process terminated by signal",
-            ))
+            s.code().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::Interrupted, "Process terminated by signal")
+            })
         })
 }

@@ -5,7 +5,7 @@ extern crate uvm_core;
 use std::process;
 use uvm_cli::HelpOptions;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 uvm-help - Prints help page for command.
 
 Usage:

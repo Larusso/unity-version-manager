@@ -7,8 +7,6 @@ use std::{env, fs, io, process};
 use std::os::unix::fs::MetadataExt;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
-#[cfg(windows)]
-use std::os::windows::fs::MetadataExt;
 
 fn find_in_path<F>(dir: &Path, predicate: &F) -> io::Result<PathBuf>
 where
@@ -115,7 +113,7 @@ impl UvmSubCommands {
         let mut iter = find_commands_in_path(base_search_dir).ok();
 
         if let Ok(path) = env::var("PATH") {
-            let paths = path.split(":").map(|s| Path::new(s));
+            let paths = path.split(':').map(|s| Path::new(s));
             for path in paths {
                 if let Ok(sub_commands) = find_commands_in_path(path) {
                     iter = match iter {
@@ -127,7 +125,7 @@ impl UvmSubCommands {
         }
 
         if let Some(i) = iter {
-            let m = i.map(|path| UvmSubCommand(path));
+            let m = i.map(UvmSubCommand);
             Ok(UvmSubCommands(Box::new(m)))
         } else {
             Err(io::Error::new(io::ErrorKind::NotFound, "not Found"))

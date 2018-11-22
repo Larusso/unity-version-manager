@@ -1,22 +1,16 @@
 use super::*;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 extern crate core;
 extern crate libc;
 extern crate winapi;
 
 use self::winapi::ctypes::c_void;
-use self::winapi::ctypes::wchar_t;
 use self::winapi::shared::basetsd::SIZE_T;
 use self::winapi::shared::minwindef::BYTE;
 use self::winapi::shared::minwindef::DWORD;
 use self::winapi::shared::minwindef::PUINT;
 use self::winapi::shared::ntdef::CHAR;
-use self::winapi::shared::ntdef::NULL;
-use self::winapi::um::memoryapi::VirtualAlloc;
-use self::winapi::um::winnt::LPCSTR;
-use self::winapi::um::winnt::MEM_COMMIT;
-use self::winapi::um::winnt::PAGE_READWRITE;
 use self::winapi::um::winver;
 use crate::error::UvmError;
 use crate::result::Result;
@@ -25,7 +19,6 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io;
 use std::mem;
-use std::os::raw::c_char;
 
 pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
     let path = path.as_ref();
@@ -111,8 +104,7 @@ fn win_query_version_value(
             return Err(WinVersionError::new("failed to fetch version info size"));
         }
 
-        let mut data =
-            libc::malloc(mem::size_of::<BYTE>() * (version_size as SIZE_T)) as *mut c_void;
+        let data = libc::malloc(mem::size_of::<BYTE>() * (version_size as SIZE_T)) as *mut c_void;
         if data.is_null() {
             return Err(WinVersionError::new(
                 "failed to allocate memory for version data",
@@ -150,14 +142,14 @@ fn win_query_version_value(
         let result = CStr::from_ptr(pv_unity_version_ptr as *const i8);
         let version = result
             .to_str()
-            .map(|string| String::from(string))
+            .map(String::from)
             .map(|result| {
                 debug!(
                     "version info result from query {:?}: {}",
                     query_string, &result
                 );
                 result
-            }).map_err(|err| WinVersionError::new("Unable to create UTF8 string"));
+            }).map_err(|_err| WinVersionError::new("Unable to create UTF8 string"));
 
         libc::free(data as *mut libc::c_void);
         version

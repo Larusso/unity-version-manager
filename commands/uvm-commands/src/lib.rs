@@ -47,6 +47,12 @@ pub struct UvmCommand {
     stdout: Term,
 }
 
+impl Default for UvmCommand {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl UvmCommand {
     pub fn new() -> UvmCommand {
         UvmCommand {
@@ -54,7 +60,7 @@ impl UvmCommand {
         }
     }
 
-    pub fn exec(&self, options: CommandsOptions) -> io::Result<()> {
+    pub fn exec(&self, options: &CommandsOptions) -> io::Result<()> {
         let commands = uvm_cli::find_sub_commands()?;
         let out_style = Style::new().cyan();
         let path_style = Style::new().italic().green();
@@ -63,9 +69,10 @@ impl UvmCommand {
         let path_only = options.path_only();
         let single_column = options.single_column();
 
-        let seperator = match list || !self.stdout.is_term() {
-            true => "\n",
-            false => "  ",
+        let seperator = if list || !self.stdout.is_term() {
+            "\n"
+        } else {
+            "  "
         };
         let output = commands.fold(String::new(), |out, command| {
             let mut new_line = out;

@@ -71,7 +71,7 @@ impl UninstallOptions {
             variants.insert(InstallVariant::Windows);
             variants.insert(InstallVariant::Linux);
         }
-        return variants;
+        variants
     }
 }
 
@@ -89,6 +89,7 @@ impl Options for UninstallOptions {
     }
 }
 
+#[derive(Default)]
 pub struct UvmCommand {}
 
 impl UvmCommand {
@@ -96,7 +97,7 @@ impl UvmCommand {
         UvmCommand {}
     }
 
-    pub fn exec(&self, options: UninstallOptions) -> Result<()> {
+    pub fn exec(&self, options: &UninstallOptions) -> Result<()> {
         let mut stderr = Term::stderr();
         let installation = unity::find_installation(&options.version())?;
         let installed: HashSet<Component> = installation.installed_components().collect();
@@ -108,42 +109,38 @@ impl UvmCommand {
             .collect();
 
         if to_uninstall.contains(&Component::Editor) {
-            write!(
+            writeln!(
                 stderr,
-                "{}: {}\n",
+                "{}: {}",
                 style("uninstall unity version").green(),
                 options.version()
             ).ok();
             remove_dir_all(installation.path())?
         } else {
             if options.verbose() {
-                write!(
+                writeln!(
                     stderr,
-                    "{}: {}\n",
+                    "{}: {}",
                     style("uninstall unity components").green(),
                     options.version()
                 ).ok();
-                write!(stderr, "{}\n", style("Components to uninstall:").green()).ok();
+                writeln!(stderr, "{}", style("Components to uninstall:").green()).ok();
                 for c in &to_uninstall {
-                    write!(stderr, "{}\n", style(c).cyan()).ok();
+                    writeln!(stderr, "{}", style(c).cyan()).ok();
                 }
 
                 let mut diff = to_uninstall.difference(&installed).peekable();
-                if let Some(_) = diff.peek() {
+                if diff.peek().is_some() {
                     stderr.write_line("").ok();
-                    write!(
-                        stderr,
-                        "{}\n",
-                        style("Skip variants not installed:").yellow()
-                    ).ok();
+                    writeln!(stderr, "{}", style("Skip variants not installed:").yellow()).ok();
                     for c in diff {
-                        write!(stderr, "{}\n", style(c).yellow().bold()).ok();
+                        writeln!(stderr, "{}", style(c).yellow().bold()).ok();
                     }
                 }
             }
 
             let mut diff = to_uninstall.intersection(&installed).peekable();
-            if let Some(_) = diff.peek() {
+            if diff.peek().is_some() {
                 stderr.write_line("Start Uninstall").ok();
                 for c in diff {
                     if let Some(p) = c.installpath().map(|l| installation.path().join(l)) {

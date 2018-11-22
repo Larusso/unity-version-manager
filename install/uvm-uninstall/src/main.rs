@@ -10,7 +10,7 @@ use console::Term;
 use std::process;
 use uvm_uninstall::UninstallOptions;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 uvm-uninstall - Uninstall specified unity version.
 
 Usage:
@@ -36,9 +36,9 @@ fn main() -> std::io::Result<()> {
     let stdout = Term::stderr();
     let options: UninstallOptions = uvm_cli::get_options(USAGE)?;
     uvm_uninstall::UvmCommand::new()
-        .exec(options)
+        .exec(&options)
         .unwrap_or_else(|err| {
-            let message = format!("Failure during deinstallation");
+            let message = "Failure during deinstallation";
             stdout.write_line(&format!("{}", style(message).red())).ok();
             info!("{}", &format!("{}", style(err).red()));
             process::exit(1);

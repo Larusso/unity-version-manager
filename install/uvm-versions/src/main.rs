@@ -3,7 +3,7 @@ extern crate uvm_versions;
 
 use uvm_versions::VersionsOptions;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 uvm-versions - List available Unity versions to install.
 
 Usage:
@@ -23,5 +23,5 @@ Options:
 
 fn main() -> std::io::Result<()> {
     let options: VersionsOptions = uvm_cli::get_options(USAGE)?;
-    uvm_versions::UvmCommand::new().exec(options)
+    uvm_versions::UvmCommand::new().exec(&options)
 }

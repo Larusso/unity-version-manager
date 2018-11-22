@@ -7,7 +7,7 @@ use std::env;
 use std::process;
 use uvm_cli::DetectOptions;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 uvm-detect - Find which version of unity was used to generate a project.
 
 Usage:

@@ -14,11 +14,11 @@ pub fn hash_for_version(version: &Version) -> io::Result<String> {
 
     versions
         .get(version)
-        .map(|s| s.clone())
+        .cloned()
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Unable to find hash for version"))
 }
 
-const VERSIONS: &'static str = "
+const VERSIONS: &str = "
 5.4.5f1: 68943b6c8c42
 5.5.0f3: 38b4efef76f0
 5.5.1f1: 88d00a7498cd

@@ -10,7 +10,7 @@ use console::style;
 use console::Term;
 use std::process;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 uvm-install - Install specified unity version.
 
 Usage:
@@ -40,9 +40,9 @@ fn main() -> std::io::Result<()> {
     let stdout = Term::stderr();
     let options: uvm_install::Options = uvm_cli::get_options(USAGE)?;
     uvm_install::UvmCommand::new()
-        .exec(options)
+        .exec(&options)
         .unwrap_or_else(|err| {
-            let message = format!("Failure during installation");
+            let message = "Failure during installation";
             stdout.write_line(&format!("{}", style(message).red())).ok();
             info!("{}", &format!("{}", style(err).red()));
             process::exit(1);
