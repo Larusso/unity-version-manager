@@ -1,11 +1,14 @@
 #[macro_use]
 extern crate serde_derive;
+extern crate serde;
 extern crate console;
 extern crate indicatif;
 extern crate itertools;
 extern crate uvm_cli;
 extern crate uvm_core;
+extern crate regex;
 
+use std::str::FromStr;
 use console::Style;
 use console::Term;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -15,9 +18,15 @@ use std::io;
 use uvm_cli::ColorOption;
 use uvm_core::unity::Version;
 use uvm_core::unity::VersionType;
+use regex::Regex;
+use std::result;
+use serde::{Deserialize, Deserializer};
 
 #[derive(Debug, Deserialize)]
 pub struct VersionsOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(deserialize_with = "deserialize_regex")]
+    arg_pattern: Option<Regex>,
     flag_verbose: bool,
     flag_alpha: bool,
     flag_beta: bool,
@@ -25,6 +34,16 @@ pub struct VersionsOptions {
     flag_patch: bool,
     flag_all: bool,
     flag_color: ColorOption,
+}
+
+fn deserialize_regex<'de,D>(deserializer: D) -> result::Result<Option<Regex>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    Regex::from_str(&s)
+    .map(Some)
+    .map_err(serde::de::Error::custom)
 }
 
 impl VersionsOptions {
@@ -63,6 +82,10 @@ impl VersionsOptions {
     pub fn filter_versions(&self) -> bool {
         !self.flag_all
     }
+
+    pub fn pattern(&self) -> &Option<Regex> {
+        &self.arg_pattern
+    }
 }
 
 impl uvm_cli::Options for VersionsOptions {
@@ -94,6 +117,15 @@ impl UvmCommand {
         }
     }
 
+    fn no_versions_message(&self, options: &VersionsOptions) -> String {
+        let variants = options.list_variants();
+        let base_message = format!("no versions found in `{:#}`", &variants.iter().format(", "));
+        match options.pattern() {
+            Some(p) => format!("{} matching the pattern {:?}", base_message, p),
+            None => base_message,
+        }
+    }
+
     fn out_message(&self, options: &VersionsOptions) -> String {
         let variants = options.list_variants();
         let variants_format = match options.list_variants().len() {
@@ -101,16 +133,22 @@ impl UvmCommand {
             _ => format!("{:#} ", &variants.iter().format(", ")),
         };
 
-        if options.filter_versions() {
-            format!("Latest {}versions to install:", variants_format)
+        let base_message = if options.filter_versions() {
+            format!("Latest {}versions to install", variants_format)
         } else {
-            format!("All available {}versions to install:", variants_format)
+            format!("All available {}versions to install", variants_format)
+        };
+
+        match options.pattern() {
+            Some(p) => format!("{} matching the pattern `{:?}`:", base_message, p),
+            None => format!("{}:", base_message),
         }
     }
 
     pub fn exec(&self, options: &VersionsOptions) -> io::Result<()> {
         let out_style = Style::new().cyan();
         let message_style = Style::new().green().bold();
+        let warning_style = Style::new().yellow().bold();
 
         let variants = options.list_variants();
         let progress = ProgressBar::new_spinner();
@@ -171,17 +209,40 @@ impl UvmCommand {
             versions_filter
                 .into_iter()
                 .flat_map(|(_major, types)| types.into_iter().map(|(_t, version)| version))
+                .filter_map(|version| {
+                    match options.pattern() {
+                        Some(p) if p.is_match(&version.to_string()) => Some(version),
+                        Some(_) => None,
+                        None => Some(version),
+                    }
+                })
                 .collect()
         } else {
-            versions.collect()
+            versions
+            .filter_map(|version| {
+                match options.pattern() {
+                    Some(p) if p.is_match(&version.to_string()) => Some(version),
+                    Some(_) => None,
+                    None => Some(version),
+                }
+            })
+            .collect()
         };
 
         progress.finish_and_clear();
 
-        self.stderr.write_line(&format!(
-            "{}",
-            message_style.apply_to(self.out_message(&options))
-        ))?;
+        if versions.is_empty() {
+            self.stderr.write_line(&format!(
+                "{}",
+                warning_style.apply_to(self.no_versions_message(&options))
+            ))?;
+        } else {
+            self.stderr.write_line(&format!(
+                "{}",
+                message_style.apply_to(self.out_message(&options))
+            ))?;
+        }
+
         for version in versions {
             if variants.contains(version.release_type()) {
                 self.stdout
