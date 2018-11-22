@@ -108,10 +108,10 @@ pub fn download_installer(variant: InstallVariant, version: &Version) -> ::resul
     let manifest = Manifest::load(version.to_owned())?;
     let component: Component = variant.into();
     let component_url = manifest
-        .url(&component)
+        .url(component)
         .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Failed to fetch installer url"))?;
     let component_data = manifest
-        .get(&component)
+        .get(component)
         .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Failed to fetch component data"))?;
 
     let installer_dir = paths::cache_dir()
@@ -125,15 +125,13 @@ pub fn download_installer(variant: InstallVariant, version: &Version) -> ::resul
     let file_name = component_url.as_str().rsplit('/').next().unwrap();
 
     let temp_file_name = format!("{}.part", file_name);
-    let lock_file_name = format!("{}.lock", file_name);
 
     trace!("ensure installer cache dir");
     fs::DirBuilder::new()
         .recursive(true)
         .create(&installer_dir)?;
 
-    let lock_file = installer_dir.join(lock_file_name);
-    lock_process!(lock_file);
+    lock_process!(installer_dir.join(format!("{}.lock", file_name)));
 
     let installer_path = installer_dir.join(file_name);
     if installer_path.exists() {

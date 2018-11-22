@@ -26,6 +26,7 @@ use uvm_core::unity::hub;
 use uvm_core::unity::hub::editors::{EditorInstallation, Editors};
 use uvm_core::unity::hub::paths;
 use uvm_core::unity::{Component, Installation, Version};
+#[cfg(unix)]
 use uvm_core::utils;
 
 #[derive(Debug, Deserialize)]
@@ -76,13 +77,13 @@ impl Options {
 
             let check_version = Version::from_str("2018.0.0b0").unwrap();
             if (self.flag_windows || self.flag_desktop || self.flag_all)
-                && self.version() >= &check_version
+                && self.version() >= check_version.as_ref()
             {
                 variants.insert(InstallVariant::WindowsMono);
             }
 
             if (self.flag_windows || self.flag_desktop || self.flag_all)
-                && self.version() < &check_version
+                && self.version() < check_version.as_ref()
             {
                 variants.insert(InstallVariant::Windows);
             }
@@ -127,6 +128,12 @@ pub struct UvmCommand {
 
 type EditorInstallLock = Mutex<Option<io::Result<()>>>;
 
+impl Default for UvmCommand {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl UvmCommand {
     pub fn new() -> UvmCommand {
         UvmCommand {
@@ -156,8 +163,8 @@ impl UvmCommand {
     }
 
     fn install(
-        install_object: InstallObject,
-        pb: ProgressBar,
+        install_object: &InstallObject,
+        pb: &ProgressBar,
         editor_installed_lock: Arc<(EditorInstallLock, Condvar)>,
     ) -> io::Result<()> {
         pb.set_message(&format!(
@@ -201,7 +208,7 @@ impl UvmCommand {
             }
 
             if let Some(ref is_installed) = *is_installed {
-                if let Err(_) = is_installed {
+                if is_installed.is_err() {
                     debug!(
                         "editor installation error. Abort installation of {}",
                         &install_object.variant
@@ -277,7 +284,7 @@ impl UvmCommand {
             })
     }
 
-    pub fn exec(&self, options: Options) -> io::Result<()> {
+    pub fn exec(&self, options: &Options) -> io::Result<()> {
         let version = options.version();
         self.stderr
             .write_line(&format!(
@@ -288,11 +295,9 @@ impl UvmCommand {
         let locks_dir = paths::locks_dir().ok_or_else(|| {
             io::Error::new(io::ErrorKind::NotFound, "Unable to locate locks directory.")
         })?;
-        fs::DirBuilder::new().recursive(true).create(&locks_dir)?;
 
-        let lock_file_name = format!("{}.lock", &version);
-        let lock_file = locks_dir.join(lock_file_name);
-        lock_process!(lock_file);
+        fs::DirBuilder::new().recursive(true).create(&locks_dir)?;
+        lock_process!(locks_dir.join(format!("{}.lock", &version)));
 
         let mut editor_installation: Option<EditorInstallation> = None;
         let base_dir = if let Some(ref destination) = options.destination() {
@@ -397,7 +402,7 @@ impl UvmCommand {
             }
 
             let mut intersection = to_install.intersection(&installed).peekable();
-            if let Some(_) = intersection.peek() {
+            if intersection.peek().is_some() {
                 info!(
                     "{}",
                     style("Skip variants already installed:").green().bold()
@@ -409,7 +414,7 @@ impl UvmCommand {
         }
 
         let mut diff = to_install.difference(&installed).cloned().peekable();
-        if let None = diff.peek() {
+        if diff.peek().is_none() {
             self.stderr
                 .write_line(&format!("{}", style("Nothing to install").green()))
                 .ok();
@@ -417,7 +422,7 @@ impl UvmCommand {
         }
 
         let multi_progress = MultiProgress::new();
-        multi_progress.set_draw_target(UvmCommand::progress_draw_target(&options));
+        multi_progress.set_draw_target(UvmCommand::progress_draw_target(options));
         let sty = ProgressStyle::default_bar()
             .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
             .template("{prefix:.bold.dim>15} {spinner} {wide_msg}");
@@ -438,7 +443,7 @@ impl UvmCommand {
             editor_installing |= install_object.variant == InstallVariant::Editor;
             counter += 1;
             threads.push(thread::spawn(move || {
-                UvmCommand::install(install_object, pb, editor_installed_lock_c)
+                UvmCommand::install(&install_object, &pb, editor_installed_lock_c)
             }));
         }
 
@@ -473,7 +478,7 @@ impl UvmCommand {
         //write new unity hub editor installation
         if let Some(installation) = editor_installation {
             let mut _editors = Editors::load().and_then(|mut editors| {
-                editors.add(installation);
+                editors.add(&installation);
                 editors.flush()?;
                 Ok(())
             });

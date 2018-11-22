@@ -125,15 +125,18 @@ fn find_payload(dir: &PathBuf) -> io::Result<PathBuf> {
                 )
             }).map(|entry| entry.path())
             .and_then(|path| Ok(path.join("Payload")))
-            .and_then(|path| match path.exists() {
-                true => Ok(path),
-                false => Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    format!(
-                        "can't locate Payload directory in extracted installer at {}",
-                        &dir.display()
-                    ),
-                )),
+            .and_then(|path| {
+                if path.exists() {
+                    Ok(path)
+                } else {
+                    Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        format!(
+                            "can't locate Payload directory in extracted installer at {}",
+                            &dir.display()
+                        ),
+                    ))
+                }
             })
     })
 }

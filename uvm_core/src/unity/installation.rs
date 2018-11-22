@@ -1,6 +1,6 @@
 use result;
 use std::cmp::Ordering;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use unity::version;
 use unity::InstalledComponents;
 use unity::Version;
@@ -24,7 +24,7 @@ pub trait UnityInstallation: Eq + Ord {
 
     #[cfg(target_os = "macos")]
     fn location(&self) -> PathBuf {
-        return self.path().join("Unity.app");
+        self.path().join("Unity.app")
     }
 
     #[cfg(target_os = "windows")]
@@ -67,10 +67,11 @@ impl PartialOrd for Installation {
 }
 
 impl Installation {
-    pub fn new(path: PathBuf) -> result::Result<Installation> {
+    pub fn new<P: AsRef<Path>>(path: P) -> result::Result<Installation> {
+        let path = path.as_ref();
         version::read_version_from_path(&path).map(|version| Installation {
-            version: version,
-            path: path.clone(),
+            version,
+            path: path.to_path_buf(),
         })
     }
 
@@ -151,7 +152,7 @@ mod tests {
 
     #[test]
     fn create_installtion_from_path() {
-        let (t, path) = prepare_unity_installation!("2017.1.2f5");
+        let (_t, path) = prepare_unity_installation!("2017.1.2f5");
         let subject = Installation::new(path).unwrap();
 
         assert_eq!(subject.version.to_string(), "2017.1.2f5");
@@ -166,7 +167,7 @@ mod tests {
 
         #[test]
         fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
-            let (t , path) = prepare_unity_installation!(s);
+            let (_t, path) = prepare_unity_installation!(s);
             Installation::new(path).unwrap();
         }
     }

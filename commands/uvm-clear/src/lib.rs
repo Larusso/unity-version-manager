@@ -34,7 +34,13 @@ pub struct UvmCommand {
     stderr: Term,
 }
 
-const UNITY_CURRENT_LOCATION: &'static str = "/Applications/Unity";
+const UNITY_CURRENT_LOCATION: &str = "/Applications/Unity";
+
+impl Default for UvmCommand {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl UvmCommand {
     pub fn new() -> UvmCommand {
@@ -44,7 +50,7 @@ impl UvmCommand {
         }
     }
 
-    pub fn exec(&self, options: ClearOptions) -> uvm_core::Result<()> {
+    pub fn exec(&self, options: &ClearOptions) -> uvm_core::Result<()> {
         let active_path = Path::new(UNITY_CURRENT_LOCATION);
         if !active_path.exists() {
             return Err(UvmError::IoError(io::Error::new(

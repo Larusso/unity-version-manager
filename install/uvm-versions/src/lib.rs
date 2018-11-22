@@ -53,8 +53,7 @@ impl VersionsOptions {
             variants.insert(VersionType::Patch);
             variants.insert(VersionType::Final);
         }
-
-        return variants;
+        variants
     }
 
     fn has_variant_flags(&self) -> bool {
@@ -81,6 +80,12 @@ pub struct UvmCommand {
     stderr: Term,
 }
 
+impl Default for UvmCommand {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl UvmCommand {
     pub fn new() -> UvmCommand {
         UvmCommand {
@@ -103,22 +108,22 @@ impl UvmCommand {
         }
     }
 
-    pub fn exec(&self, options: VersionsOptions) -> io::Result<()> {
+    pub fn exec(&self, options: &VersionsOptions) -> io::Result<()> {
         let out_style = Style::new().cyan();
         let message_style = Style::new().green().bold();
 
         let variants = options.list_variants();
-        let bar = ProgressBar::new_spinner();
+        let progress = ProgressBar::new_spinner();
         let spinner_style = ProgressStyle::default_spinner()
             .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ ")
             .template("{prefix:.bold.dim} {spinner} {wide_msg}");
-        bar.set_style(spinner_style);
-        bar.set_prefix(&format!(
+        progress.set_style(spinner_style);
+        progress.set_prefix(&format!(
             "search unity versions: {}",
             format!("{:#}", &variants.iter().format(", "))
         ));
-        bar.enable_steady_tick(100);
-        bar.tick();
+        progress.enable_steady_tick(100);
+        progress.tick();
 
         let versions = uvm_core::unity::all_versions()?;
         let versions: Vec<Version> = if options.filter_versions() {
@@ -150,7 +155,7 @@ impl UvmCommand {
                             versions.into_iter().fold(type_map, |mut map, version| {
                                 let t = *version.release_type();
                                 let needs_update = match map.get(&t) {
-                                    Some(v) if v > &version => false,
+                                    Some(v) if v > version.as_ref() => false,
                                     _ => true,
                                 };
 
@@ -171,7 +176,7 @@ impl UvmCommand {
             versions.collect()
         };
 
-        bar.finish_and_clear();
+        progress.finish_and_clear();
 
         self.stderr.write_line(&format!(
             "{}",

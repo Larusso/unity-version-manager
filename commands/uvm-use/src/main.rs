@@ -6,7 +6,7 @@ use console::style;
 use std::process;
 use uvm_cli::UseOptions;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 uvm-use - Use specific version of unity.
 
 Usage:
@@ -28,7 +28,7 @@ fn main() {
     }
 
     uvm_core::find_installation(&options.version())
-        .and_then(uvm_core::activate)
+        .and_then(|installation| uvm_core::activate(&installation))
         .unwrap_or_else(|err| {
             eprintln!("{}", style(err).red());
             process::exit(1);

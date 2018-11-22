@@ -43,6 +43,12 @@ pub struct UvmCommand {
     stderr: Term,
 }
 
+impl Default for UvmCommand {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl UvmCommand {
     pub fn new() -> UvmCommand {
         UvmCommand {
@@ -50,7 +56,7 @@ impl UvmCommand {
         }
     }
 
-    pub fn exec(&self, options: Options) -> io::Result<()> {
+    pub fn exec(&self, options: &Options) -> io::Result<()> {
         install::install_editor(options.installer(), options.destination())?;
         self.stderr
             .write_line(&format!("{}", style("success").green().bold()))

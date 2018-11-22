@@ -43,7 +43,7 @@ impl PartialOrd for VersionType {
     }
 }
 
-#[derive(Eq, Debug, Clone, Hash)]
+#[derive(Eq, Debug, Clone, Hash, PartialEq, PartialOrd)]
 pub struct Version {
     base: semver::Version,
     release_type: VersionType,
@@ -57,20 +57,6 @@ impl Ord for Version {
             .cmp(&other.base)
             .then(self.release_type.cmp(&other.release_type))
             .then(self.revision.cmp(&other.revision))
-    }
-}
-
-impl PartialOrd for Version {
-    fn partial_cmp(&self, other: &Version) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for Version {
-    fn eq(&self, other: &Version) -> bool {
-        (self.release_type == other.release_type)
-            && (self.base == other.base)
-            && (self.revision == other.revision)
     }
 }
 
@@ -105,7 +91,7 @@ impl Version {
         let base = semver::Version::new(major, minor, patch);
         Version {
             base,
-            release_type: release_type,
+            release_type,
             revision,
             hash: None,
         }
@@ -186,18 +172,18 @@ impl From<(u64, u64, u64, u64)> for Version {
 impl fmt::Display for VersionType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if f.alternate() {
-            match self {
-                &VersionType::Final => write!(f, "final"),
-                &VersionType::Patch => write!(f, "patch"),
-                &VersionType::Beta => write!(f, "beta"),
-                &VersionType::Alpha => write!(f, "alpha"),
+            match *self {
+                VersionType::Final => write!(f, "final"),
+                VersionType::Patch => write!(f, "patch"),
+                VersionType::Beta => write!(f, "beta"),
+                VersionType::Alpha => write!(f, "alpha"),
             }
         } else {
-            match self {
-                &VersionType::Final => write!(f, "f"),
-                &VersionType::Patch => write!(f, "p"),
-                &VersionType::Beta => write!(f, "b"),
-                &VersionType::Alpha => write!(f, "a"),
+            match *self {
+                VersionType::Final => write!(f, "f"),
+                VersionType::Patch => write!(f, "p"),
+                VersionType::Beta => write!(f, "b"),
+                VersionType::Alpha => write!(f, "a"),
             }
         }
     }
@@ -412,13 +398,13 @@ mod tests {
 
     #[test]
     fn fetch_hash_for_known_version() {
-        let mut version = Version::f(2017, 1, 0, 2);
+        let version = Version::f(2017, 1, 0, 2);
         assert_eq!(version.version_hash(), Some(String::from("66e9e4bfc850")));
     }
 
     #[test]
     fn fetch_hash_for_unknown_version_yields_none() {
-        let mut version = Version::f(2080, 2, 0, 2);
+        let version = Version::f(2080, 2, 0, 2);
         assert_eq!(version.version_hash(), None);
     }
 

@@ -3,7 +3,7 @@ extern crate uvm_list;
 
 use uvm_list::ListOptions;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 uvm-list - List installed unity versions.
 
 Usage:
@@ -22,5 +22,5 @@ Options:
 
 fn main() {
     let options: ListOptions = uvm_cli::get_options(USAGE).unwrap();
-    uvm_list::UvmCommand::new().exec(options).unwrap();
+    uvm_list::UvmCommand::new().exec(&options).unwrap();
 }

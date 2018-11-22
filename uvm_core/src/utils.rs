@@ -21,6 +21,6 @@ pub fn lock_process_or_wait<'a>(lock_file: &'a File) -> io::Result<ExclusiveSlic
 }
 
 #[cfg(windows)]
-pub fn lock_process_or_wait(lock_file: File) -> io::Result<()> {
+pub fn lock_process_or_wait(_: &File) -> io::Result<()> {
     Ok(())
 }

@@ -73,7 +73,7 @@ impl Editors {
         Editors { map }
     }
 
-    pub fn add(&mut self, editor: EditorInstallation) -> Option<EditorInstallation> {
+    pub fn add(&mut self, editor: &EditorInstallation) -> Option<EditorInstallation> {
         self.map.insert(editor.version.clone(), editor.clone())
     }
 
@@ -115,7 +115,7 @@ impl IntoIterator for Editors {
     fn into_iter(self) -> Self::IntoIter {
         self.map
             .values()
-            .map(|installation| installation.clone())
+            .cloned()
             .collect::<Vec<Self::Item>>()
             .into_iter()
     }
@@ -142,8 +142,8 @@ impl UnityInstallation for EditorInstallation {
 impl EditorInstallation {
     pub fn new(version: unity::Version, location: PathBuf) -> EditorInstallation {
         EditorInstallation {
-            version: version,
-            location: location,
+            version,
+            location,
             manual: true,
         }
     }
@@ -215,7 +215,7 @@ mod tests {
         let v = unity::Version::new(2018, 2, 5, unity::VersionType::Final, 1);
         let p = Path::new("/Applications/Unity-2018.2.5f1");
         assert_eq!(
-            editors.get(&v).unwrap(),
+            &editors[&v],
             &EditorInstallation {
                 version: v,
                 location: p.to_path_buf(),

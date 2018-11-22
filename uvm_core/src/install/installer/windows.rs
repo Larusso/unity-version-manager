@@ -1,6 +1,3 @@
-use log::Level::Trace;
-use std::ffi::OsStr;
-use std::fs;
 use std::io;
 use std::io::Write as IoWrite;
 use std::path::PathBuf;
@@ -34,7 +31,7 @@ fn install_from_exe(installer: &PathBuf, destination: &PathBuf) -> io::Result<()
         install_helper.path().display()
     );
     {
-        let mut script = install_helper.as_file_mut();
+        let script = install_helper.as_file_mut();
         let install_command = format!(
             r#"CALL "{}" /S /D="{}""#,
             installer.display(),

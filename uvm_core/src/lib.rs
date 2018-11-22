@@ -89,15 +89,17 @@ pub fn is_active(version: &Version) -> bool {
 
 pub fn find_installation(version: &Version) -> Result<Installation> {
     let mut installations = list_all_installations()?;
-    installations.find(|i| i.version() == version).ok_or(
-        io::Error::new(
-            io::ErrorKind::NotFound,
-            format!("Unable to find Unity version {}", version),
-        ).into(),
-    )
+    installations
+        .find(|i| i.version() == version)
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("Unable to find Unity version {}", version),
+            ).into()
+        })
 }
 
-pub fn activate(ref installation: Installation) -> Result<()> {
+pub fn activate(installation: &Installation) -> Result<()> {
     let active_path = Path::new("/Applications/Unity");
     if active_path.exists() {
         fs::remove_file(active_path)?;
@@ -116,15 +118,16 @@ fn get_project_version<P: AsRef<Path>>(base_dir: P) -> io::Result<PathBuf> {
         .as_ref()
         .join("ProjectSettings")
         .join("ProjectVersion.txt");
-    match project_version.exists() {
-        true => Ok(project_version),
-        false => Err(io::Error::new(
+    if project_version.exists() {
+        Ok(project_version)
+    } else {
+        Err(io::Error::new(
             io::ErrorKind::NotFound,
             format!(
                 "directory {} is not a Unity project",
                 base_dir.as_ref().display()
             ),
-        )),
+        ))
     }
 }
 

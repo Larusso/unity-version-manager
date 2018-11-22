@@ -55,9 +55,7 @@ impl Installations {
 
 impl From<hub::editors::Editors> for Installations {
     fn from(editors: hub::editors::Editors) -> Self {
-        let iter = editors
-            .into_iter()
-            .map(|editor_installation| Installation::from(editor_installation));
+        let iter = editors.into_iter().map(Installation::from);
         Installations(Box::new(iter))
     }
 }
@@ -81,7 +79,7 @@ impl Iterator for Versions {
 impl InstalledComponents {
     pub fn new(installation: Installation) -> InstalledComponents {
         InstalledComponents {
-            installation: installation,
+            installation,
             components: Component::iterator(),
         }
     }
@@ -98,7 +96,7 @@ impl Iterator for InstalledComponents {
                     &c,
                     &self.installation.path().display()
                 );
-                return Some(c.clone());
+                return Some(*c);
             }
         }
         None
@@ -147,9 +145,7 @@ pub fn find_installation(version: &Version) -> Result<Installation> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use plist::serde::{deserialize, serialize_to_xml};
-    use rand;
-    use std::env;
+    use plist::serde::serialize_to_xml;
     use std::fs;
     use std::fs::File;
     use std::path::Path;
@@ -188,9 +184,11 @@ mod tests {
                                 .suffix("_in_directory")
                                 .tempdir()
                                 .unwrap();
-                $(
-                    create_test_path(&test_dir.path().to_path_buf(), $input);
-                )*
+                {
+                    $(
+                        create_test_path(&test_dir.path().to_path_buf(), $input);
+                    )*
+                }
                 test_dir
             }
         };
@@ -204,11 +202,11 @@ mod tests {
         builder.prefix("some-dir");
         builder.rand_bytes(5);
 
-        let temp_dir1 = builder.tempdir_in(&test_dir).unwrap();
-        let temp_dir2 = builder.tempdir_in(&test_dir).unwrap();
-        let temp_dir3 = builder.tempdir_in(&test_dir).unwrap();
+        let _temp_dir1 = builder.tempdir_in(&test_dir).unwrap();
+        let _temp_dir2 = builder.tempdir_in(&test_dir).unwrap();
+        let _temp_dir3 = builder.tempdir_in(&test_dir).unwrap();
 
-        let mut subject = Installations::new(test_dir.path()).unwrap();
+        let subject = Installations::new(test_dir.path()).unwrap();
 
         let r1 = Version::from_str("2017.1.2f3").unwrap();
         let r2 = Version::from_str("2017.2.3f4").unwrap();
@@ -232,7 +230,7 @@ mod tests {
         let test_dir = prepare_unity_installations!["2017.1.2f3", "2017.2.3f4"];
 
         let installations = Installations::new(test_dir.path()).unwrap();
-        let mut subject = installations.versions();
+        let subject = installations.versions();
 
         let r1 = Version::from_str("2017.1.2f3").unwrap();
         let r2 = Version::from_str("2017.2.3f4").unwrap();
@@ -246,7 +244,7 @@ mod tests {
         let test_dir = prepare_unity_installations!["2017.1.2f3", "2017.2.3f4"];
 
         let installations = Installations::new(test_dir.path()).unwrap();
-        let mut subject = Versions::from(installations);
+        let subject = Versions::from(installations);
 
         let r1 = Version::from_str("2017.1.2f3").unwrap();
         let r2 = Version::from_str("2017.2.3f4").unwrap();

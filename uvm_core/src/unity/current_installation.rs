@@ -1,12 +1,13 @@
 use result::Result;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use unity::Installation;
 
 pub type CurrentInstallation = Installation;
-const UNITY_CURRENT_LOCATION: &'static str = "/Applications/Unity";
+const UNITY_CURRENT_LOCATION: &str = "/Applications/Unity";
 
 impl CurrentInstallation {
-    fn current(path: PathBuf) -> Result<Installation> {
+    fn current<P: AsRef<Path>>(path: P) -> Result<Installation> {
+        let path = path.as_ref();
         let linked_file = path.read_link()?;
         CurrentInstallation::new(linked_file)
     }

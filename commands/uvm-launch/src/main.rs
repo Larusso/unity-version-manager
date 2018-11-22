@@ -9,7 +9,7 @@ use std::process;
 use uvm_cli::{LaunchOptions, Options};
 use uvm_core::Result;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 uvm-launch - Launch the current active version of unity.
 
 Usage:
@@ -40,7 +40,7 @@ fn get_installation(
     uvm_core::current_installation()
 }
 
-fn launch(options: LaunchOptions) -> Result<()> {
+fn launch(options: &LaunchOptions) -> Result<()> {
     let project_path = uvm_core::detect_unity_project_dir(
         options
             .project_path()
@@ -85,8 +85,8 @@ fn launch(options: LaunchOptions) -> Result<()> {
 fn main() {
     let o: LaunchOptions = uvm_cli::get_options(USAGE).unwrap();
 
-    launch(o).unwrap_or_else(|err| {
-        let message = format!("Unable to launch unity");
+    launch(&o).unwrap_or_else(|err| {
+        let message = "Unable to launch unity";
         eprintln!("{}", style(message).red());
         eprintln!("{}", style(err).red());
         process::exit(1);

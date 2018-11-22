@@ -1,7 +1,7 @@
-use std::ops::Deref;
-use std::convert::Into;
 use reqwest::Url;
 use result::Result;
+use std::convert::Into;
+use std::ops::Deref;
 use unity::version::{Version, VersionType};
 
 const BASE_URL: &str = "https://download.unity3d.com/download_unity/";

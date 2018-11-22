@@ -3,7 +3,7 @@ extern crate uvm_current;
 
 use uvm_current::CurrentOptions;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 uvm-current - Prints current activated version of unity.
 
 Usage:
@@ -19,5 +19,5 @@ Options:
 
 fn main() {
     let options: CurrentOptions = uvm_cli::get_options(USAGE).unwrap();
-    uvm_current::UvmCommand::new().exec(options).unwrap();
+    uvm_current::UvmCommand::new().exec(&options).unwrap();
 }
