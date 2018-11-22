@@ -7,8 +7,11 @@ const USAGE: &str = "
 uvm-versions - List available Unity versions to install.
 
 Usage:
-  uvm-versions [options]
+  uvm-versions [options] [<pattern>]
   uvm-versions (-h | --help)
+
+Arguments:
+  pattern           a regex pattern to filter the result
 
 Options:
   -a, --all         list all available versions for the selected version types
