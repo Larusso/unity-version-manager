@@ -1,11 +1,65 @@
 use super::*;
 use std::collections::BTreeMap;
+use std::fs;
 use std::io;
+use std::path::PathBuf;
+use unity::hub::paths;
 
 pub fn all_versions() -> io::Result<impl Iterator<Item = Version>> {
-    let versions: BTreeMap<Version, String> = serde_yaml::from_str(VERSIONS)
-        .map_err(|_| io::Error::new(io::ErrorKind::NotFound, "Unable to load versions.yml"))?;
-    Ok(versions.into_iter().map(|v| v.0))
+    let url = reqwest::Url::parse("https://unity-versions-service.herokuapp.com/").unwrap();
+    let url = url
+        .join("versions/")
+        .map_err(|_| io::Error::new(io::ErrorKind::Other, "Unable to create URL"))?;
+
+    let versions: BTreeMap<Version, String> = reqwest::get(url)
+        .and_then(|mut response| response.json())
+        .map_err(|_| io::Error::new(io::ErrorKind::Other, "Unable to load content"))?;
+
+    Ok(versions.into_iter().map(|(version, _)| version))
+}
+
+fn hash_from_service(version: &Version) -> io::Result<String> {
+    debug!("fetch hash for version {} from versions service", version);
+    let url = reqwest::Url::parse("https://unity-versions-service.herokuapp.com/").unwrap();
+    let url = url
+        .join("versions/")
+        .and_then(|url| url.join(&format!("{}/", version)))
+        .and_then(|url| url.join("hash"))
+        .map_err(|_| io::Error::new(io::ErrorKind::Other, "Unable to create URL"))?;
+
+    let hash: String = reqwest::get(url)
+        .and_then(|mut response| response.json())
+        .map_err(|_| io::Error::new(io::ErrorKind::Other, "Unable to load content"))?;
+    debug!("loaded hash {}", &hash);
+    Ok(hash)
+}
+
+fn hash_from_cache(version: &Version) -> io::Result<String> {
+    use std::io::Read;
+    debug!("fetch hash for version {} from cache", version);
+    let path = cache_file(version)?;
+    let mut file = fs::File::open(&path)?;
+    let mut hash = String::new();
+    file.read_to_string(&mut hash)?;
+    Ok(hash)
+}
+
+fn cache_file(version: &Version) -> io::Result<PathBuf> {
+    paths::hash_cache_dir()
+        .map(|p| p.join(&format!("{}.hash", version)))
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Unable to fetch cache dir"))
+}
+
+fn cache_hash<H: AsRef<str>>(hash: H, version: &Version) -> io::Result<()> {
+    use std::fs::DirBuilder;
+    use std::io::Write;
+    let hash = hash.as_ref();
+    let path = cache_file(version)?;
+    DirBuilder::new()
+        .recursive(true)
+        .create(&path.parent().unwrap())?;
+    let mut file = fs::File::create(&path)?;
+    file.write_all(hash.as_bytes())
 }
 
 pub fn hash_for_version(version: &Version) -> io::Result<String> {
@@ -16,6 +70,19 @@ pub fn hash_for_version(version: &Version) -> io::Result<String> {
         .get(version)
         .cloned()
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Unable to find hash for version"))
+        .or_else(|_| {
+            debug!("hash for version {} not available in memory", version);
+            hash_from_cache(version)
+        }).or_else(|_| {
+            debug!("hash for version {} not available in cache", version);
+            hash_from_service(version).and_then(|hash| {
+                cache_hash(&hash, version).unwrap_or_else(|err| {
+                    warn!("unable to cache hash {} for version {}", &hash, version);
+                    warn!("error: {}", err.description());
+                });
+                Ok(hash)
+            })
+        })
 }
 
 const VERSIONS: &str = "

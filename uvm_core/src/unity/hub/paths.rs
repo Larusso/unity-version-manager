@@ -44,6 +44,10 @@ pub fn locks_dir() -> Option<PathBuf> {
     cache_dir().map(|path| path.join("locks"))
 }
 
+pub fn hash_cache_dir() -> Option<PathBuf> {
+    cache_dir().map(|path| path.join("versions"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

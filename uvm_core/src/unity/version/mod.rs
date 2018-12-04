@@ -141,8 +141,8 @@ impl Version {
         &self.release_type
     }
 
-    pub fn version_hash(&self) -> Option<String> {
-        hash::hash_for_version(self).ok()
+    pub fn version_hash(&self) -> std::io::Result<String> {
+        hash::hash_for_version(self)
     }
 
     pub fn major(&self) -> u64 {
@@ -399,13 +399,13 @@ mod tests {
     #[test]
     fn fetch_hash_for_known_version() {
         let version = Version::f(2017, 1, 0, 2);
-        assert_eq!(version.version_hash(), Some(String::from("66e9e4bfc850")));
+        assert_eq!(version.version_hash().unwrap(), String::from("66e9e4bfc850"));
     }
 
     #[test]
     fn fetch_hash_for_unknown_version_yields_none() {
         let version = Version::f(2080, 2, 0, 2);
-        assert_eq!(version.version_hash(), None);
+        assert!(version.version_hash().is_err());
     }
 
     proptest! {

@@ -26,13 +26,16 @@ impl Into<Url> for DownloadURL {
 
 impl DownloadURL {
     pub fn new<V: AsRef<Version>>(version: V) -> Result<DownloadURL> {
+        use std::error::Error;
+
         let version = version.as_ref();
         let mut url = match version.release_type() {
             VersionType::Final => Url::parse(BASE_URL),
             _ => Url::parse(BETA_BASE_URL),
         }?;
 
-        let hash = version.version_hash().ok_or_else(|| {
+        let hash = version.version_hash().map_err(|err| {
+            warn!("{}", err.description());
             crate::error::IllegalOperationError::new(&format!(
                 "No hash value for version: {} available",
                 version
