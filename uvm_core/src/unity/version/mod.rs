@@ -2,7 +2,7 @@ use regex::Regex;
 use semver;
 use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
 use std::cmp::Ordering;
-use std::convert::{AsRef, From};
+use std::convert::{AsMut, AsRef, From};
 use std::error::Error;
 use std::fmt;
 use std::result;
@@ -203,6 +203,12 @@ impl fmt::Display for Version {
 
 impl AsRef<Version> for Version {
     fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsMut<Version> for Version {
+    fn as_mut(&mut self) -> &mut Self {
         self
     }
 }
