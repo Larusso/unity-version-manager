@@ -1,6 +1,11 @@
 extern crate uvm_cli;
 extern crate uvm_versions;
+#[macro_use]
+extern crate log;
+extern crate console;
 
+use console::style;
+use std::process;
 use uvm_versions::VersionsOptions;
 
 const USAGE: &str = "
@@ -20,11 +25,20 @@ Options:
   --alpha           list alpha versions
   -p, --patch       list patch versions
   -v, --verbose     print more output
+  -d, --debug       print debug output
   --color WHEN      Coloring: auto, always, never [default: auto]
   -h, --help        show this help message and exit
 ";
 
 fn main() -> std::io::Result<()> {
     let options: VersionsOptions = uvm_cli::get_options(USAGE)?;
-    uvm_versions::UvmCommand::new().exec(&options)
+    uvm_versions::UvmCommand::new()
+        .exec(&options)
+        .unwrap_or_else(|err| {
+            let message = "Failure listing available versions";
+            eprintln!("{}", style(message).red());
+            info!("{}", &format!("{}", style(err).red()));
+            process::exit(1);
+        });
+    Ok(())
 }

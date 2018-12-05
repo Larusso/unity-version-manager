@@ -1,26 +1,28 @@
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 extern crate console;
 extern crate indicatif;
 extern crate itertools;
+extern crate regex;
+extern crate serde;
 extern crate uvm_cli;
 extern crate uvm_core;
-extern crate regex;
+#[macro_use]
+extern crate log;
 
-use std::str::FromStr;
 use console::Style;
 use console::Term;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
 use itertools::Itertools;
+use regex::Regex;
+use serde::{Deserialize, Deserializer};
 use std::collections::{HashMap, HashSet};
 use std::io;
+use std::result;
+use std::str::FromStr;
 use uvm_cli::ColorOption;
 use uvm_core::unity::Version;
 use uvm_core::unity::VersionType;
-use regex::Regex;
-use std::result;
-use serde::{Deserialize, Deserializer};
 
 #[derive(Debug, Deserialize)]
 pub struct VersionsOptions {
@@ -28,6 +30,7 @@ pub struct VersionsOptions {
     #[serde(deserialize_with = "deserialize_regex")]
     arg_pattern: Option<Regex>,
     flag_verbose: bool,
+    flag_debug: bool,
     flag_alpha: bool,
     flag_beta: bool,
     flag_final: bool,
@@ -36,14 +39,18 @@ pub struct VersionsOptions {
     flag_color: ColorOption,
 }
 
-fn deserialize_regex<'de,D>(deserializer: D) -> result::Result<Option<Regex>, D::Error>
+fn deserialize_regex<'de, D>(deserializer: D) -> result::Result<Option<Regex>, D::Error>
 where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    Regex::from_str(&s)
-    .map(Some)
-    .map_err(serde::de::Error::custom)
+    if s.is_empty() {
+        Ok(None)
+    } else {
+        Regex::from_str(&s)
+            .map(Some)
+            .map_err(serde::de::Error::custom)
+    }
 }
 
 impl VersionsOptions {
@@ -96,6 +103,10 @@ impl uvm_cli::Options for VersionsOptions {
     fn color(&self) -> &ColorOption {
         &self.flag_color
     }
+
+    fn debug(&self) -> bool {
+        self.flag_debug
+    }
 }
 
 pub struct UvmCommand {
@@ -109,11 +120,28 @@ impl Default for UvmCommand {
     }
 }
 
+type MajorVersion = u64;
+type VersionTypeMap = HashMap<VersionType, Version>;
+type MajorVersionTypeMap = HashMap<MajorVersion, VersionTypeMap>;
+type VersionSet = HashSet<Version>;
+type MajorVersionMap = HashMap<MajorVersion, VersionSet>;
+
 impl UvmCommand {
     pub fn new() -> UvmCommand {
         UvmCommand {
             stdout: Term::stdout(),
             stderr: Term::stderr(),
+        }
+    }
+
+    fn progress_draw_target<T>(options: &T) -> ProgressDrawTarget
+    where
+        T: uvm_cli::Options,
+    {
+        if options.debug() {
+            ProgressDrawTarget::hidden()
+        } else {
+            ProgressDrawTarget::stderr()
         }
     }
 
@@ -145,6 +173,62 @@ impl UvmCommand {
         }
     }
 
+    fn major_versions_map<I>(&self, versions: I) -> MajorVersionMap
+    where
+        I: Iterator<Item = Version>,
+    {
+        let version_type: MajorVersionMap = MajorVersionMap::with_capacity(10);
+        versions.fold(version_type, |mut version_type_map, version| {
+            use std::collections::hash_map::Entry::*;
+            match version_type_map.entry(version.major()) {
+                Occupied(mut entry) => {
+                    entry.get_mut().insert(version);
+                }
+                Vacant(entry) => {
+                    let mut versions: VersionSet = VersionSet::with_capacity(1);
+                    entry.insert(versions);
+                }
+            };
+            version_type_map
+        })
+    }
+
+    fn major_release_type_map<I>(&self, versions: I) -> MajorVersionTypeMap
+    where
+        I: Iterator<Item = (MajorVersion, VersionSet)>,
+    {
+        let versions_filter: MajorVersionTypeMap = MajorVersionTypeMap::with_capacity(10);
+        versions.fold(versions_filter, |mut filter, (major, versions)| {
+            use std::collections::hash_map::Entry::*;
+            let type_map: VersionTypeMap = VersionTypeMap::new();
+            let type_map = versions.into_iter().fold(type_map, |mut map, mut version| {
+                match map.entry(*version.release_type()) {
+                    Occupied(mut entry) => {
+                        let v = entry.get_mut();
+                        if v < version.as_mut() {
+                            *v = version;
+                        }
+                    }
+                    Vacant(entry) => {
+                        entry.insert(version);
+                    }
+                }
+                map
+            });
+            filter.insert(major, type_map);
+            filter
+        })
+    }
+
+    fn filter_versions<I>(&self, versions: I) -> impl Iterator<Item = Version>
+    where
+        I: Iterator<Item = Version>,
+    {
+        let version_type = self.major_versions_map(versions).into_iter();
+        let versions_filter = self.major_release_type_map(version_type).into_iter();
+        versions_filter.flat_map(|(_major, types)| types.into_iter().map(|(_t, version)| version))
+    }
+
     pub fn exec(&self, options: &VersionsOptions) -> io::Result<()> {
         let out_style = Style::new().cyan();
         let message_style = Style::new().green().bold();
@@ -156,77 +240,29 @@ impl UvmCommand {
             .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ ")
             .template("{prefix:.bold.dim} {spinner} {wide_msg}");
         progress.set_style(spinner_style);
+        progress.set_draw_target(UvmCommand::progress_draw_target(options));
         progress.set_prefix(&format!(
             "search unity versions: {}",
             format!("{:#}", &variants.iter().format(", "))
         ));
         progress.enable_steady_tick(100);
         progress.tick();
-
+        debug!("fetch versions list");
         let versions = uvm_core::unity::all_versions()?;
         let versions: Vec<Version> = if options.filter_versions() {
-            let version_type: HashMap<u64, HashSet<Version>> = HashMap::with_capacity(10);
-            let version_type = versions.fold(version_type, |mut version_type_map, version| {
-                let major = version.major();
-                let mut versions: HashSet<Version> = HashSet::with_capacity(1);
-                versions.insert(version);
-
-                if let Some(old_versions) = version_type_map.insert(major, versions) {
-                    let mut versions = version_type_map.get_mut(&major).unwrap();
-                    for v in old_versions {
-                        versions.insert(v);
-                    }
-                }
-
-                version_type_map
-            });
-
-            let mut versions_filter: HashMap<u64, HashMap<VersionType, Version>> =
-                HashMap::with_capacity(10);
-            let versions_filter =
-                version_type
-                    .into_iter()
-                    .fold(versions_filter, |mut filter, (major, versions)| {
-                        let type_map: HashMap<VersionType, Version> = HashMap::new();
-                        filter.insert(
-                            major,
-                            versions.into_iter().fold(type_map, |mut map, version| {
-                                let t = *version.release_type();
-                                let needs_update = match map.get(&t) {
-                                    Some(v) if v > version.as_ref() => false,
-                                    _ => true,
-                                };
-
-                                if needs_update {
-                                    map.insert(t, version);
-                                }
-                                map
-                            }),
-                        );
-                        filter
-                    });
-
-            versions_filter
-                .into_iter()
-                .flat_map(|(_major, types)| types.into_iter().map(|(_t, version)| version))
-                .filter_map(|version| {
-                    match options.pattern() {
-                        Some(p) if p.is_match(&version.to_string()) => Some(version),
-                        Some(_) => None,
-                        None => Some(version),
-                    }
-                })
-                .collect()
-        } else {
-            versions
-            .filter_map(|version| {
-                match options.pattern() {
+            self.filter_versions(versions)
+                .filter_map(|version| match options.pattern() {
                     Some(p) if p.is_match(&version.to_string()) => Some(version),
                     Some(_) => None,
                     None => Some(version),
-                }
-            })
-            .collect()
+                }).collect()
+        } else {
+            versions
+                .filter_map(|version| match options.pattern() {
+                    Some(p) if p.is_match(&version.to_string()) => Some(version),
+                    Some(_) => None,
+                    None => Some(version),
+                }).collect()
         };
 
         progress.finish_and_clear();
@@ -250,5 +286,128 @@ impl UvmCommand {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn filters_highest_versions() {
+        let command = UvmCommand::new();
+        let versions = vec![
+            Version::f(2017, 1, 1, 0),
+            Version::f(2017, 2, 1, 0),
+            Version::f(2017, 3, 1, 0),
+        ];
+
+        let filtered: Vec<Version> = command.filter_versions(versions.into_iter()).collect();
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0], Version::f(2017, 3, 1, 0));
+    }
+
+    #[test]
+    fn filters_highest_major_versions() {
+        let command = UvmCommand::new();
+        let versions = vec![
+            Version::f(2017, 1, 1, 0),
+            Version::f(2017, 2, 1, 0),
+            Version::f(2017, 3, 1, 0),
+            Version::f(2018, 1, 1, 0),
+            Version::f(2018, 2, 1, 0),
+            Version::f(2018, 3, 1, 0),
+        ];
+
+        let filtered: Vec<Version> = command.filter_versions(versions.into_iter()).collect();
+        assert_eq!(filtered.len(), 2);
+        assert!(filtered.contains(&Version::f(2017, 3, 1, 0)));
+        assert!(filtered.contains(&Version::f(2018, 3, 1, 0)));
+    }
+
+    #[test]
+    fn filters_highest_from_each_release_type() {
+        let command = UvmCommand::new();
+        let versions = vec![
+            Version::f(2017, 1, 1, 0),
+            Version::f(2017, 2, 1, 0),
+            Version::f(2017, 3, 1, 0),
+            Version::b(2017, 1, 1, 0),
+            Version::b(2017, 2, 1, 0),
+            Version::b(2017, 3, 1, 0),
+            Version::p(2017, 1, 1, 0),
+            Version::p(2017, 2, 1, 0),
+            Version::p(2017, 3, 1, 0),
+            Version::a(2017, 1, 1, 0),
+            Version::a(2017, 2, 1, 0),
+            Version::a(2017, 3, 1, 0),
+        ];
+
+        let filtered: Vec<Version> = command.filter_versions(versions.into_iter()).collect();
+        assert_eq!(filtered.len(), 4);
+        assert!(filtered.contains(&Version::a(2017, 3, 1, 0)));
+        assert!(filtered.contains(&Version::b(2017, 3, 1, 0)));
+        assert!(filtered.contains(&Version::p(2017, 3, 1, 0)));
+        assert!(filtered.contains(&Version::f(2017, 3, 1, 0)));
+    }
+
+    #[test]
+    fn filters_highest_from_major_and_each_release_type() {
+        let command = UvmCommand::new();
+        let versions = vec![
+            Version::f(2017, 1, 1, 0),
+            Version::f(2017, 2, 1, 0),
+            Version::f(2017, 3, 1, 0),
+            Version::b(2017, 1, 1, 0),
+            Version::b(2017, 2, 1, 0),
+            Version::b(2017, 3, 1, 0),
+            Version::p(2017, 1, 1, 0),
+            Version::p(2017, 2, 1, 0),
+            Version::p(2017, 3, 1, 0),
+            Version::a(2017, 1, 1, 0),
+            Version::a(2017, 2, 1, 0),
+            Version::a(2017, 3, 1, 0),
+            Version::f(2018, 1, 1, 0),
+            Version::f(2018, 2, 1, 0),
+            Version::f(2018, 3, 1, 0),
+            Version::b(2018, 1, 1, 0),
+            Version::b(2018, 2, 1, 0),
+            Version::b(2018, 3, 1, 0),
+            Version::p(2018, 1, 1, 0),
+            Version::p(2018, 2, 1, 0),
+            Version::p(2018, 3, 1, 0),
+            Version::a(2018, 1, 1, 0),
+            Version::a(2018, 2, 1, 0),
+            Version::a(2018, 3, 1, 0),
+            Version::f(2019, 1, 1, 0),
+            Version::f(2019, 2, 1, 0),
+            Version::f(2019, 3, 1, 0),
+            Version::b(2019, 1, 1, 0),
+            Version::b(2019, 2, 1, 0),
+            Version::b(2019, 3, 1, 0),
+            Version::p(2019, 1, 1, 0),
+            Version::p(2019, 2, 1, 0),
+            Version::p(2019, 3, 1, 0),
+            Version::a(2019, 1, 1, 0),
+            Version::a(2019, 2, 1, 0),
+            Version::a(2019, 3, 1, 0),
+        ];
+
+        let filtered: Vec<Version> = command.filter_versions(versions.into_iter()).collect();
+        assert_eq!(filtered.len(), 12);
+        assert!(filtered.contains(&Version::a(2017, 3, 1, 0)));
+        assert!(filtered.contains(&Version::b(2017, 3, 1, 0)));
+        assert!(filtered.contains(&Version::p(2017, 3, 1, 0)));
+        assert!(filtered.contains(&Version::f(2017, 3, 1, 0)));
+
+        assert!(filtered.contains(&Version::a(2018, 3, 1, 0)));
+        assert!(filtered.contains(&Version::b(2018, 3, 1, 0)));
+        assert!(filtered.contains(&Version::p(2018, 3, 1, 0)));
+        assert!(filtered.contains(&Version::f(2018, 3, 1, 0)));
+
+        assert!(filtered.contains(&Version::a(2019, 3, 1, 0)));
+        assert!(filtered.contains(&Version::b(2019, 3, 1, 0)));
+        assert!(filtered.contains(&Version::p(2019, 3, 1, 0)));
+        assert!(filtered.contains(&Version::f(2019, 3, 1, 0)));
     }
 }
