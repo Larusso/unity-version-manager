@@ -76,7 +76,7 @@ impl UvmCommand {
             uvm_core::list_all_installations
         } else if options.use_hub() {
             info!("fetch installations from unity hub");
-            uvm_core::unity::hub::list_installations
+            uvm_core::list_hub_installations
         } else {
             info!("fetch installations from uvm");
             uvm_core::list_installations

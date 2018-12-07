@@ -1,6 +1,4 @@
 use super::*;
-use crate::error::UvmError;
-use crate::result::Result;
 use plist::serde::deserialize;
 use std::convert::AsRef;
 use std::fs::File;
@@ -17,22 +15,21 @@ pub struct AppInfo {
 pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
     let path = path.as_ref();
     if !path.exists() {
-        return Err(UvmError::IoError(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            format!("Provided Path does not exist. {}", path.display()),
-        )));
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("Provided Path does not exist. {}", path.display(),),
+        )
+        .into());
     }
+
     if path.is_dir() {
         //check for the `Unity.app` package
         let info_plist_path = path.join("Unity.app/Contents/Info.plist");
-        let file = File::open(info_plist_path)?;
-        let info: AppInfo = deserialize(file)?;
+        let file = File::open(info_plist_path).chain_err(|| "unable to open Info.plist")?;
+        let info: AppInfo = deserialize(file).chain_err(|| "unable to read Info.plist")?;
         let version = Version::from_str(&info.c_f_bundle_version)?;
-        Ok(version)
-    } else {
-        Err(UvmError::IoError(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Provided Path is not a Unity installation.",
-        )))
+        return Ok(version)
     }
+
+    Err(UvmVersionErrorKind::NotAUnityInstalltion(path.display().to_string()).into())
 }

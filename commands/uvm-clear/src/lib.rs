@@ -3,15 +3,32 @@ extern crate serde_derive;
 extern crate console;
 extern crate uvm_cli;
 extern crate uvm_core;
+#[macro_use]
+extern crate error_chain;
 
 use console::style;
 use console::Term;
 use std::fs;
-use std::io;
 use std::path::Path;
 use uvm_cli::ColorOption;
 use uvm_cli::Options;
-use uvm_core::error::UvmError;
+
+mod error {
+    use uvm_core::error::{UvmError, UvmErrorKind};
+
+    error_chain! {
+        foreign_links {
+            Fmt(::std::fmt::Error);
+            Io(::std::io::Error);
+        }
+
+        links {
+            Uvm(UvmError, UvmErrorKind);
+        }
+    }
+}
+
+use self::error::*;
 
 #[derive(Debug, Deserialize)]
 pub struct ClearOptions {
@@ -50,13 +67,10 @@ impl UvmCommand {
         }
     }
 
-    pub fn exec(&self, options: &ClearOptions) -> uvm_core::Result<()> {
+    pub fn exec(&self, options: &ClearOptions) -> Result<()> {
         let active_path = Path::new(UNITY_CURRENT_LOCATION);
         if !active_path.exists() {
-            return Err(UvmError::IoError(io::Error::new(
-                io::ErrorKind::NotFound,
-                "No active unity version",
-            )));
+            return Err("No active unity version".into());
         }
 
         if options.verbose() {
@@ -68,12 +82,7 @@ impl UvmCommand {
             ))?;
         }
 
-        fs::remove_file(active_path).map_err(|_| {
-            UvmError::IoError(io::Error::new(
-                io::ErrorKind::Other,
-                "Failed to clear active version",
-            ))
-        })?;
+        fs::remove_file(active_path).chain_err(|| "Failed to clear active version")?;
         self.stdout
             .write_line(&format!("{}", style("success").green()))?;
         Ok(())

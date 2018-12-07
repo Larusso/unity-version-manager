@@ -73,10 +73,7 @@ enum CheckSumResult {
     NotEqual,
 }
 
-fn verify_checksum<P: AsRef<Path>>(
-    path: P,
-    check_sum: Option<MD5>,
-) -> ::result::Result<CheckSumResult> {
+fn verify_checksum<P: AsRef<Path>>(path: P, check_sum: Option<MD5>) -> Result<CheckSumResult> {
     let path = path.as_ref();
     if path.exists() {
         debug!("installer already downloaded at {}", path.display());
@@ -100,12 +97,32 @@ fn verify_checksum<P: AsRef<Path>>(
     Ok(CheckSumResult::NoFile)
 }
 
-pub fn download_installer(variant: InstallVariant, version: &Version) -> ::result::Result<PathBuf> {
+error_chain! {
+    types {
+        UvmInstallError, UvmInstallErrorKind, ResultExt, Result;
+    }
+
+    foreign_links {
+        Fmt(::std::fmt::Error);
+        Io(::std::io::Error);
+        NetworkError(::reqwest::Error);
+    }
+
+    errors {
+        ChecksumVerificationFailed {
+            description("checksum verification failed")
+        }
+        ManifestLoadFailed
+    }
+}
+
+pub fn download_installer(variant: InstallVariant, version: &Version) -> Result<PathBuf> {
     debug!(
         "download installer for variant: {} and version: {}",
         variant, version
     );
-    let manifest = Manifest::load(version.to_owned())?;
+    let manifest = Manifest::load(version.to_owned())
+        .map_err(|err| UvmInstallError::with_chain(err, UvmInstallErrorKind::ManifestLoadFailed))?;
     let component: Component = variant.into();
     let component_url = manifest
         .url(component)

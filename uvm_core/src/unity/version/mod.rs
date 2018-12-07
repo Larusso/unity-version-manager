@@ -3,7 +3,6 @@ use semver;
 use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
 use std::cmp::Ordering;
 use std::convert::{AsMut, AsRef, From};
-use std::error::Error;
 use std::fmt;
 use std::result;
 use std::str::FromStr;
@@ -213,35 +212,26 @@ impl AsMut<Version> for Version {
     }
 }
 
-#[derive(Debug)]
-pub struct ParseVersionError {
-    message: String,
-}
+error_chain! {
+    types {
+        UvmVersionError, UvmVersionErrorKind, ResultExt, Result;
+    }
 
-impl ParseVersionError {
-    fn new(message: &str) -> ParseVersionError {
-        ParseVersionError {
-            message: String::from(message),
+    foreign_links {
+        Fmt(::std::fmt::Error);
+        Io(::std::io::Error);
+    }
+
+    errors {
+        NotAUnityInstalltion(path: String) {
+            description("path is not a unity installtion"),
+            display("Provided Path: '{}' is not a Unity installation.", path),
         }
     }
 }
 
-impl fmt::Display for ParseVersionError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ParseVersionError")
-    }
-}
-
-impl Error for ParseVersionError {
-    fn description(&self) -> &str {
-        &self.message[..]
-    }
-}
-
-pub type Result<T> = result::Result<T, ParseVersionError>;
-
 impl FromStr for Version {
-    type Err = ParseVersionError;
+    type Err = UvmVersionError;
 
     fn from_str(s: &str) -> Result<Self> {
         let version_pattern =
@@ -269,9 +259,7 @@ impl FromStr for Version {
                     hash: None,
                 })
             }
-            None => Err(ParseVersionError::new(
-                "Failed to match version pattern to input",
-            )),
+            None => bail!("Failed to match version pattern to input"),
         }
     }
 }

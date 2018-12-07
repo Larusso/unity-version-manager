@@ -1,10 +1,8 @@
-use error::UvmError;
-use result::Result;
+use super::*;
 use serde_json;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
-use std::io;
 use std::io::Write;
 use std::iter::{IntoIterator, Iterator};
 use std::path::PathBuf;
@@ -21,23 +19,29 @@ pub struct Editors {
 
 impl Editors {
     pub fn load() -> Result<Editors> {
-        let path = paths::editors_config_path().ok_or_else(|| {
-            UvmError::IoError(io::Error::new(
-                io::ErrorKind::NotFound,
-                "Unable to find path for unity hub editors.json",
-            ))
-        })?;
+        let path = paths::editors_config_path()
+            .ok_or_else(|| (UvmHubErrorKind::ConfigDirectoryNotFound))?;
 
-        let map = if path.exists() {
+        let map: HashMap<unity::Version, EditorInstallation> = if path.exists() {
             debug!("load hub editors from file: {}", path.display());
-            let file = File::open(path)?;
-            let editors: HashMap<unity::Version, EditorInstallation> =
-                serde_json::from_reader(file)?;
-            editors
+            File::open(path)
+                .map_err(|err| {
+                    UvmHubError::with_chain(
+                        err,
+                        UvmHubErrorKind::ReadConfigError("editors.json".to_string()),
+                    )
+                })
+                .and_then(|f| {
+                    serde_json::from_reader(f).map_err(|err| {
+                        UvmHubError::with_chain(
+                            err,
+                            UvmHubErrorKind::ReadConfigError("editors.json".to_string()),
+                        )
+                    })
+                })?
         } else {
             debug!("hub editors file doesn't exist return empty map");
-            let editors: HashMap<unity::Version, EditorInstallation> = HashMap::new();
-            editors
+            HashMap::new()
         };
         Ok(Editors::create(map))
     }
@@ -86,25 +90,27 @@ impl Editors {
     }
 
     pub fn flush(&self) -> Result<()> {
-        let config_path = paths::config_path().ok_or_else(|| {
-            UvmError::IoError(io::Error::new(
-                io::ErrorKind::NotFound,
-                "Unable to find path for unity hub editors.json",
-            ))
-        })?;
+        let config_path =
+            paths::config_path().ok_or_else(|| (UvmHubErrorKind::ConfigDirectoryNotFound))?;
 
-        let path = paths::editors_config_path().ok_or_else(|| {
-            UvmError::IoError(io::Error::new(
-                io::ErrorKind::NotFound,
-                "Unable to find path for unity hub editors.json",
-            ))
-        })?;
+        let path = paths::editors_config_path()
+            .ok_or_else(|| UvmHubErrorKind::ConfigNotFound("editors.json".to_string()))?;
 
         fs::create_dir_all(config_path)?;
         let mut file = File::create(path)?;
-        let j = serde_json::to_string(&self.map)?;
-        write!(file, "{}", &j);
-        Ok(())
+
+        let j = serde_json::to_string(&self.map).map_err(|err| {
+            UvmHubError::with_chain(
+                err,
+                UvmHubErrorKind::WriteConfigError("editors.json".to_string()),
+            )
+        })?;
+        write!(file, "{}", &j).map_err(|err| {
+            UvmHubError::with_chain(
+                err,
+                UvmHubErrorKind::WriteConfigError("editors.json".to_string()),
+            )
+        })
     }
 }
 

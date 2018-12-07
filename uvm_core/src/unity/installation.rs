@@ -1,4 +1,4 @@
-use result;
+use error::*;
 use std::cmp::Ordering;
 use std::path::{Path, PathBuf};
 use unity::version;
@@ -67,12 +67,14 @@ impl PartialOrd for Installation {
 }
 
 impl Installation {
-    pub fn new<P: AsRef<Path>>(path: P) -> result::Result<Installation> {
+    pub fn new<P: AsRef<Path>>(path: P) -> Result<Installation> {
         let path = path.as_ref();
-        version::read_version_from_path(&path).map(|version| Installation {
-            version,
-            path: path.to_path_buf(),
-        })
+        version::read_version_from_path(&path)
+            .map(|version| Installation {
+                version,
+                path: path.to_path_buf(),
+            })
+            .map_err(|err| err.into())
     }
 
     //TODO remove clone()

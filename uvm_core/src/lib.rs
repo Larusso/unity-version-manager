@@ -1,3 +1,4 @@
+#![recursion_limit = "1024"]
 #[cfg(unix)]
 extern crate cluFlock;
 extern crate md5;
@@ -22,6 +23,9 @@ extern crate tempfile;
 extern crate serde_derive;
 extern crate dirs;
 extern crate itertools;
+
+#[macro_use]
+extern crate error_chain;
 
 pub mod utils;
 
@@ -57,12 +61,12 @@ macro_rules! cargo_version {
 
 pub mod error;
 pub mod install;
-pub mod result;
 pub mod unity;
 
-pub use self::result::Result;
+pub use self::error::*;
 pub use self::unity::current_installation;
 pub use self::unity::list_all_installations;
+pub use self::unity::list_hub_installations;
 pub use self::unity::list_installations;
 pub use self::unity::CurrentInstallation;
 pub use self::unity::Installation;

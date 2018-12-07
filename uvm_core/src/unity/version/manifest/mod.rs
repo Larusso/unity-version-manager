@@ -1,5 +1,5 @@
+use error::*;
 use reqwest::Url;
-use result::Result;
 use serde_ini;
 use std::collections::HashMap;
 use std::fs::{DirBuilder, File};
@@ -7,8 +7,7 @@ use std::io::{self, Write};
 use std::path::Path;
 use unity::hub::paths;
 use unity::urls::{DownloadURL, IniUrl};
-use unity::Component;
-use unity::Version;
+use unity::{Component, Version};
 
 #[derive(Debug)]
 pub struct Manifest {
@@ -46,7 +45,8 @@ impl Manifest {
         }
         let base_url = DownloadURL::new(&version)?;
         let manifest = File::open(manifest_path)?;
-        let components: HashMap<Component, ComponentData> = serde_ini::from_read(manifest)?;
+        let components: HashMap<Component, ComponentData> =
+            serde_ini::from_read(manifest).chain_err(|| UvmErrorKind::ManifestReadError)?;
         Ok(Manifest {
             version,
             base_url,
@@ -65,7 +65,7 @@ impl Manifest {
             .and_then(|mut response| response.text())
             .map(|s| Self::cleanup_ini_data(&s))?;
         let mut f = File::create(path)?;
-        write!(f, "{}", body);
+        write!(f, "{}", body)?;
         Ok(())
     }
 

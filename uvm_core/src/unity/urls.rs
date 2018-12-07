@@ -1,5 +1,5 @@
+use error::*;
 use reqwest::Url;
-use result::Result;
 use std::convert::Into;
 use std::ops::Deref;
 use unity::version::{Version, VersionType};
@@ -27,21 +27,23 @@ impl Into<Url> for DownloadURL {
 impl DownloadURL {
     pub fn new<V: AsRef<Version>>(version: V) -> Result<DownloadURL> {
         use std::error::Error;
-
         let version = version.as_ref();
         let mut url = match version.release_type() {
             VersionType::Final => Url::parse(BASE_URL),
             _ => Url::parse(BETA_BASE_URL),
-        }?;
+        }
+        .map_err(|err| UvmError::with_chain(err, "failed to parse download url"))?;
 
         let hash = version.version_hash().map_err(|err| {
             warn!("{}", err.description());
-            crate::error::IllegalOperationError::new(&format!(
-                "No hash value for version: {} available",
-                version
-            ))
+            UvmError::with_chain(
+                err,
+                format!("No hash value for version: {} available", version),
+            )
         })?;
-        url = url.join(&format!("{}/", hash))?;
+        url = url
+            .join(&format!("{}/", hash))
+            .map_err(|err| UvmError::with_chain(err, "failed to parse hash url"))?;
         Ok(DownloadURL(url))
     }
 
@@ -79,7 +81,9 @@ impl IniUrl {
             "win"
         };
 
-        let url = download_url.join(&format!("unity-{}-{}.ini", version.to_string(), os))?;
+        let url = download_url
+            .join(&format!("unity-{}-{}.ini", version.to_string(), os))
+            .map_err(|err| UvmError::with_chain(err, "failed to parse ini url"))?;
         Ok(IniUrl(url))
     }
 
