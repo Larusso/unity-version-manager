@@ -1,4 +1,5 @@
-use result::Result;
+use error::*;
+
 use std::path::Path;
 use unity::Installation;
 

@@ -5,7 +5,38 @@ use std::io;
 use unity;
 //
 
-pub fn list_installations() -> unity::Result<unity::Installations> {
+error_chain! {
+    types {
+        UvmHubError, UvmHubErrorKind, ResultExt, Result;
+    }
+
+    foreign_links {
+        Fmt(::std::fmt::Error);
+        Io(::std::io::Error);
+    }
+
+    errors {
+        ConfigNotFound(config_name: String) {
+            description("unity hub config missing"),
+            display("unity hub config: '{}' is missing", config_name)
+        }
+
+        ConfigDirectoryNotFound {
+            description("unity hub config directory missing")
+        }
+
+        ReadConfigError(config_name: String) {
+            description("error reading unity hub config"),
+            display("error reading unity hub config: '{}'", config_name)
+        }
+        WriteConfigError(config_name: String) {
+            description("error writing unity hub config"),
+            display("error writing unity hub config: '{}'", config_name)
+        }
+    }
+}
+
+pub fn list_installations() -> Result<unity::Installations> {
     let install_path = paths::install_path()
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "install path not found"))?;
     debug!("unity hub install path: {}", install_path.display());

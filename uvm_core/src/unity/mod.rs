@@ -12,12 +12,12 @@ pub use self::installation::Installation;
 pub use self::version::all_versions;
 pub use self::version::manifest::Manifest;
 pub use self::version::manifest::MD5;
-pub use self::version::ParseVersionError;
 pub use self::version::Version;
 pub use self::version::VersionType;
+pub use self::version::{UvmVersionError, UvmVersionErrorKind};
 
+use error::*;
 use itertools::Itertools;
-use result::Result;
 use std::convert::From;
 use std::fs;
 use std::io;
@@ -122,7 +122,12 @@ pub fn list_installations() -> Result<Installations> {
     dirs::application_dir()
         .ok_or_else(|| {
             io::Error::new(io::ErrorKind::NotFound, "unable to locate application_dir").into()
-        }).and_then(|application_dir| list_installations_in_dir(&application_dir))
+        })
+        .and_then(|application_dir| list_installations_in_dir(&application_dir))
+}
+
+pub fn list_hub_installations() -> Result<Installations> {
+    hub::list_installations().map_err(|err| err.into())
 }
 
 pub fn list_installations_in_dir(install_location: &Path) -> Result<Installations> {

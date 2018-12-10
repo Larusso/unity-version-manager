@@ -12,9 +12,8 @@ use self::winapi::shared::minwindef::DWORD;
 use self::winapi::shared::minwindef::PUINT;
 use self::winapi::shared::ntdef::CHAR;
 use self::winapi::um::winver;
-use crate::error::UvmError;
-use crate::result::Result;
 use std::convert::AsRef;
+use std::error::Error;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io;
@@ -25,11 +24,11 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
     debug!("read_version_from_path: {}", path.display());
 
     if !path.exists() {
-        trace!("path does not exist: {}", path.display());
-        return Err(UvmError::IoError(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            format!("Provided Path does not exist. {}", path.display()),
-        )));
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("Provided Path does not exist. {}", path.display(),),
+        )
+        .into());
     }
 
     if path.is_dir() {
@@ -44,9 +43,10 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
             let version_string = win_query_version_value(
                 &executable_path,
                 r"\StringFileInfo\040904b0\Unity Version",
-            ).map_err(|err| {
+            )
+            .map_err(|err| {
                 debug!("{}", err.to_string());
-                ParseVersionError::new(&err.to_string())
+                UvmVersionError::with_chain(err, "failed to fetch Unity version")
             })?;
             //let company_name = win_query_version_value(&path,r"\StringFileInfo\040904b0\CompanyName");
             let version_parts: Vec<&str> = version_string.as_str().split('_').collect();
@@ -55,10 +55,7 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
         }
     }
 
-    Err(UvmError::IoError(io::Error::new(
-        io::ErrorKind::InvalidInput,
-        "Provided Path is not a Unity installation.",
-    )))
+    Err(UvmVersionErrorKind::NotAUnityInstalltion(path.display().to_string()).into())
 }
 
 #[derive(Debug)]
