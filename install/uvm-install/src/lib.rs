@@ -335,7 +335,12 @@ impl UvmCommand {
             if let Some(variants) = options.install_variants() {
                 for variant in variants {
                     let component: Component = variant.into();
-                    let variant_destination = component.installpath();
+                    //fix better
+                    let variant_destination = if cfg![windows] {
+                        Some(base_dir.to_path_buf())
+                    } else {
+                        component.installpath()
+                    };
                     let installation_data = InstallObject {
                         version: options.version().to_owned(),
                         variant: component.into(),

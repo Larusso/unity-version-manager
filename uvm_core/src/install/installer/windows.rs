@@ -33,7 +33,7 @@ fn install_from_exe(installer: &PathBuf, destination: &PathBuf) -> io::Result<()
     {
         let script = install_helper.as_file_mut();
         let install_command = format!(
-            r#"CALL "{}" /S /D="{}""#,
+            r#"CALL "{}" /S /D={}"#,
             installer.display(),
             destination.display()
         );

@@ -66,19 +66,7 @@ impl Component {
 
     #[cfg(target_os = "windows")]
     pub fn installpath(self) -> Option<PathBuf> {
-        let path = match self {
-            StandardAssets => Some(r"Editor"),
-            Android => Some(r"Editor"),
-            Ios => Some(r"Editor"),
-            TvOs => Some(r"Editor"),
-            Linux => Some(r"Editor"),
-            Windows => Some(r"Editor"),
-            WindowsMono => Some(r"Editor"),
-            WebGl => Some(r"Editor"),
-            _ => None,
-        };
-
-        path.map(|p| Path::new(p).to_path_buf())
+        None
     }
 
     #[cfg(target_os = "macos")]
@@ -94,8 +82,8 @@ impl Component {
             Ios => Some(r"Editor\Data\PlaybackEngines\iOSSupport"),
             TvOs => Some(r"Editor\Data\PlaybackEngines\AppleTVSupport"),
             Linux => Some(r"Editor\Data\PlaybackEngines\LinuxStandaloneSupport"),
-            Windows => Some(r"Editor\Data\PlaybackEngines\windowsstandalonesupport"),
-            WindowsMono => Some(r"Editor\Data\PlaybackEngines\windowsstandalonesupport"),
+            //Windows => Some(r"Editor\Data\PlaybackEngines\windowsstandalonesupport"),
+            //WindowsMono => Some(r"Editor\Data\PlaybackEngines\windowsstandalonesupport"),
             WebGl => Some(r"Editor\Data\PlaybackEngines\WebGLSupport"),
             _ => None,
         };
