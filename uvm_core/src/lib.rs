@@ -21,7 +21,7 @@ extern crate rand;
 extern crate tempfile;
 #[macro_use]
 extern crate serde_derive;
-extern crate dirs_2 as dirs;
+extern crate dirs_2;
 extern crate itertools;
 
 #[macro_use]

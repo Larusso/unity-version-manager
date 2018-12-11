@@ -119,7 +119,7 @@ pub fn list_all_installations() -> Result<Installations> {
 }
 
 pub fn list_installations() -> Result<Installations> {
-    dirs::application_dir()
+    dirs_2::application_dir()
         .ok_or_else(|| {
             io::Error::new(io::ErrorKind::NotFound, "unable to locate application_dir").into()
         })
