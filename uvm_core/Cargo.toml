@@ -1,6 +1,6 @@
 [package]
 name = "uvm_core"
-version = "0.0.1"
+version = "0.1.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "The core functionality for the unity version manager commandline client."
 repository = "https://github.com/Larusso/unity-version-manager"
@@ -10,6 +10,7 @@ categories = ["development-tools"]
 license = "Apache-2.0"
 [badges]
 travis-ci = { repository = "Larusso/unity-version-manager", branch = "master" }
+appveyor = { repository = "Larusso/unity-version-manager", branch = "master", service = "github" }
 maintenance = { status = "experimental" }
 
 [dependencies]
@@ -21,7 +22,7 @@ serde_yaml = "0.8.7"
 serde_ini = "0.1.3"
 log = "0.4.5"
 plist = "0.3.0"
-dirs = { git = 'https://github.com/Larusso/dirs-rs.git' }
+dirs-2 = "1.1.0"
 itertools = "0.7.8"
 semver = "0.9.0"
 reqwest = "0.9.4"
