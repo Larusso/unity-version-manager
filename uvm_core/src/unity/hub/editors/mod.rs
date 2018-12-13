@@ -198,7 +198,14 @@ pub mod editor_value_location {
         S: Serializer,
     {
         let mut seq = serializer.serialize_seq(Some(1))?;
+
+        #[cfg(target_os = "windows")]
+        seq.serialize_element(&location.join("Editors/Unity.exe"))?;
+        #[cfg(target_os = "macos")]
         seq.serialize_element(&location.join("Unity.app"))?;
+        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+        seq.serialize_element(&location)?;
+
         seq.end()
     }
 }
@@ -220,6 +227,34 @@ mod tests {
 
         let v = unity::Version::new(2018, 2, 5, unity::VersionType::Final, 1);
         let p = Path::new("/Applications/Unity-2018.2.5f1");
+        assert_eq!(
+            &editors[&v],
+            &EditorInstallation {
+                version: v,
+                location: p.to_path_buf(),
+                manual: true
+            }
+        );
+    }
+}
+
+#[cfg(all(test, target_os = "windows"))]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    #[test]
+    fn parse_editors() {
+        let data = r#"{
+                        "2018.2.5f1": { "version": "2018.2.5f1", "location": ["C:\\Program Files\\Unity-2018.2.5f1\\Editor\\Unity.exe"], "manual": true },
+                        "2017.1.0f3": { "version": "2017.1.0f3", "location": ["C:\\Program Files\\Unity-2017.1.0f3\\Editor\\Unity.exe"], "manual": true }
+                  }"#;
+
+        let editors: HashMap<unity::Version, EditorInstallation> =
+            serde_json::from_str(data).unwrap();
+
+        let v = unity::Version::new(2018, 2, 5, unity::VersionType::Final, 1);
+        let p = Path::new("C:\\Program Files\\Unity-2018.2.5f1");
         assert_eq!(
             &editors[&v],
             &EditorInstallation {
