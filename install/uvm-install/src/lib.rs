@@ -33,6 +33,9 @@ use uvm_core::utils;
 pub struct Options {
     arg_version: Version,
     arg_destination: Option<PathBuf>,
+    #[serde(default)]
+    flag_verify: bool,
+    flag_no_verify: bool,
     flag_verbose: bool,
     flag_debug: bool,
     flag_android: bool,
@@ -96,8 +99,12 @@ impl Options {
         None
     }
 
-    fn destination(&self) -> &Option<PathBuf> {
+    pub fn destination(&self) -> &Option<PathBuf> {
         &self.arg_destination
+    }
+
+    pub fn skip_verification(&self) -> bool {
+        !self.flag_verify && self.flag_no_verify
     }
 }
 
@@ -119,6 +126,7 @@ impl uvm_cli::Options for Options {
 struct InstallObject {
     version: Version,
     variant: InstallVariant,
+    verify: bool,
     destination: Option<PathBuf>,
 }
 
@@ -172,8 +180,11 @@ impl UvmCommand {
             &install_object.variant,
             style("download installer").dim()
         ));
-        let installer =
-            install::download_installer(install_object.variant.clone(), &install_object.version)
+
+        let mut installer_loader = install::Loader::new(install_object.variant.clone(), install_object.version.clone());
+        installer_loader.verify_installer(install_object.verify);
+
+        let installer = installer_loader.download()
                 .map_err(|error| {
                     debug!("error loading installer: {}", style(&error).red());
                     pb.finish_with_message(&format!(
@@ -329,6 +340,7 @@ impl UvmCommand {
                 version: options.version().to_owned(),
                 variant: InstallVariant::Editor,
                 destination: Some(base_dir.to_path_buf()),
+                verify: !options.skip_verification(),
             };
             to_install.insert(installation_data);
 
@@ -345,6 +357,7 @@ impl UvmCommand {
                         version: options.version().to_owned(),
                         variant: component.into(),
                         destination: variant_destination.map(|d| base_dir.join(d)),
+                        verify: !options.skip_verification(),
                     };
                     to_install.insert(installation_data);
                 }
@@ -371,6 +384,7 @@ impl UvmCommand {
                         version: options.version().to_owned(),
                         variant: component.into(),
                         destination: variant_destination.map(|d| base_dir.join(d)),
+                        verify: !options.skip_verification(),
                     };
                     to_install.insert(installation_data);
                 }
@@ -383,6 +397,7 @@ impl UvmCommand {
                         version: options.version().to_owned(),
                         variant: component.into(),
                         destination: variant_destination.map(|d| base_dir.join(d)),
+                        verify: !options.skip_verification(),
                     };
                     installed.insert(installation_data);
                 }
