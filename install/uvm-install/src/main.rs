@@ -26,6 +26,8 @@ Options:
   --linux           install linux support for editor
   --windows         install windows support for editor
   --desktop         install desktop support (linux, windows)
+  --verify          verify installer
+  --no-verify       skip installer verification
   -v, --verbose     print more output
   -d, --debug       print debug output
   --color WHEN      Coloring: auto, always, never [default: auto]
@@ -39,6 +41,7 @@ Arguments:
 fn main() -> std::io::Result<()> {
     let stdout = Term::stderr();
     let options: uvm_install::Options = uvm_cli::get_options(USAGE)?;
+
     uvm_install::UvmCommand::new()
         .exec(&options)
         .unwrap_or_else(|err| {
