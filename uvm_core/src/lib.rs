@@ -28,6 +28,7 @@ extern crate itertools;
 extern crate error_chain;
 
 pub mod utils;
+pub mod progress;
 
 #[macro_export]
 #[cfg(unix)]
