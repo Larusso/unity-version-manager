@@ -31,6 +31,18 @@ impl Manifest {
             .and_then(|c| self.base_url.join(&c.url).ok())
     }
 
+    pub fn size(&self, component: Component) -> Option<u64> {
+        self.components
+            .get(&component)
+            .map(|c| {
+                if cfg![windows] {
+                    c.size * 1024
+                } else {
+                    c.size
+                }
+            })
+    }
+
     fn get_manifest(version: Version) -> Result<Manifest> {
         let cache_dir = paths::cache_dir().ok_or_else(|| {
             io::Error::new(io::ErrorKind::Other, "Unable to fetch cache directory")

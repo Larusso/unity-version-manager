@@ -9,6 +9,8 @@ use std::path::Path;
 use std::path::PathBuf;
 use unity::hub::paths;
 use unity::{Component, Manifest, Version, MD5};
+use ::progress::ProgressHandler;
+use std::io::Read;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
 enum CheckSumResult {
@@ -19,24 +21,43 @@ enum CheckSumResult {
     Skipped,
 }
 
-pub struct Loader {
+struct DownloadProgress<'a, R, P> {
+    pub inner: R,
+    pub progress_handle: &'a Box<P>,
+}
+
+impl<'a, R: Read, P: 'a + ProgressHandler + ?Sized> Read for DownloadProgress<'a, R, &P> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.inner.read(buf).map(|n| {
+            self.progress_handle.inc(n as u64);
+            n
+        })
+    }
+}
+
+pub struct Loader<'a> {
     variant: InstallVariant,
     version: Version,
     verify: bool,
+    progress_handle: Option<Box<&'a ProgressHandler>>
 }
 
-impl Loader {
-    pub fn new(variant: InstallVariant, version: Version) -> Loader {
+impl<'a> Loader<'a> {
+    pub fn new(variant: InstallVariant, version: Version) -> Loader<'a> {
         Loader {
             variant,
             version,
             verify: true,
+            progress_handle: None
         }
     }
 
-    pub fn verify_installer(&mut self, verify: bool) -> &mut Self {
+    pub fn verify_installer(&mut self, verify: bool) {
         self.verify = verify;
-        self
+    }
+
+    pub fn set_progress_handle<P: 'a + ProgressHandler>(&mut self, progress_handle: &'a P) {
+        self.progress_handle = Some(Box::new(progress_handle));
     }
 
     pub fn download(&self) -> Result<PathBuf> {
@@ -54,6 +75,13 @@ impl Loader {
         let component_data = manifest.get(component).ok_or_else(|| {
             io::Error::new(io::ErrorKind::Other, "Failed to fetch component data")
         })?;
+
+        // set total size in progress
+        if let Some(ref p) = self.progress_handle {
+            if let Some(size) = manifest.size(component) {
+                p.set_length(size);
+            }
+        }
 
         let installer_dir = paths::cache_dir()
             .map(|c| c.join(&format!("installer/{}", self.version)))
@@ -79,6 +107,9 @@ impl Loader {
             debug!("found installer at {}", installer_path.display());
             let r = self.verify_checksum(&installer_path, component_data.md5)?;
             if CheckSumResult::Equal == r || CheckSumResult::Skipped == r {
+                if let Some(ref p) = self.progress_handle {
+                    p.finish();
+                }
                 return Ok(installer_path);
             } else {
                 fs::remove_file(&installer_path)?;
@@ -95,6 +126,11 @@ impl Loader {
         } else {
             0
         };
+
+        // set total size in progress
+        if let Some(ref p) = self.progress_handle {
+            p.inc(start_range);
+        }
 
         debug!("request installer with offset {}", start_range);
 
@@ -126,8 +162,18 @@ impl Loader {
             .create(true)
             .write(true)
             .open(&temp_file)?;
-        let mut source = response;
-        let _ = io::copy(&mut source, &mut dest)?;
+
+        if let Some(ref p) = self.progress_handle {
+            let mut source = DownloadProgress {
+                progress_handle: p,
+                inner: response,
+            };
+
+            let _ = io::copy(&mut source, &mut dest)?;
+        } else {
+            let mut source = response;
+            let _ = io::copy(&mut source, &mut dest)?;
+        }
 
         fs::rename(&temp_file, &installer_path)?;
 

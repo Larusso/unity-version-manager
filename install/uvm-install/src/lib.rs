@@ -11,7 +11,7 @@ extern crate uvm_core;
 extern crate log;
 
 use console::{style, Term};
-use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
+use indicatif::{ProgressDrawTarget, ProgressStyle};
 use std::collections::HashSet;
 use std::fs;
 use std::io;
@@ -28,6 +28,9 @@ use uvm_core::unity::hub::paths;
 use uvm_core::unity::{Component, Installation, Version};
 #[cfg(unix)]
 use uvm_core::utils;
+
+mod progress;
+use self::progress::{MultiProgress, ProgressBar};
 
 #[derive(Debug, Deserialize)]
 pub struct Options {
@@ -175,28 +178,34 @@ impl UvmCommand {
         pb: &ProgressBar,
         editor_installed_lock: Arc<(EditorInstallLock, Condvar)>,
     ) -> io::Result<()> {
-        pb.set_message(&format!(
-            "[{}] {}",
-            &install_object.variant,
-            style("download installer").dim()
-        ));
+        pb.set_message(&format!("{}", style("download installer").yellow()));
 
-        let mut installer_loader = install::Loader::new(install_object.variant.clone(), install_object.version.clone());
+        let mut installer_loader = install::Loader::new(
+            install_object.variant.clone(),
+            install_object.version.clone(),
+        );
+        let sty = ProgressStyle::default_bar()
+            .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
+            .progress_chars("=>-")
+            .template("{prefix:<20} {spinner} {msg:<20} [{bar:28.yellow/green}] {percent:>3}%");
+
+        pb.set_style(sty);
+
+        installer_loader.set_progress_handle(pb);
         installer_loader.verify_installer(install_object.verify);
 
-        let installer = installer_loader.download()
-                .map_err(|error| {
-                    debug!("error loading installer: {}", style(&error).red());
-                    pb.finish_with_message(&format!(
-                        "[{}] {}",
-                        &install_object.variant,
-                        style("error").red().bold()
-                    ));
-                    io::Error::new(
-                        io::ErrorKind::Other,
-                        format!("Failed to fetch installer url \n{}", error.to_string()),
-                    )
-                })?;
+        let installer = installer_loader.download().map_err(|error| {
+            debug!("error loading installer: {}", style(&error).red());
+            pb.finish_with_message(&format!("{}", style("error").red().bold()));
+            io::Error::new(
+                io::ErrorKind::Other,
+                format!("Failed to fetch installer url \n{}", error.to_string()),
+            )
+        })?;
+        let sty = ProgressStyle::default_bar()
+            .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
+            .template("{prefix:<20} {spinner} {msg:<20}");
+        pb.set_style(sty);
 
         debug!("installer location: {}", &installer.display());
 
@@ -206,11 +215,7 @@ impl UvmCommand {
             let mut is_installed = lock.lock().unwrap();
             // As long as the value inside the `Mutex` is false, we wait.
             while (*is_installed).is_none() {
-                pb.set_message(&format!(
-                    "[{}] {}",
-                    &install_object.variant,
-                    style("waiting").dim()
-                ));
+                pb.set_message(&format!("{}", style("waiting").white().dim()));
                 debug!(
                     "waiting for editor to finish installation of {}",
                     &install_object.variant
@@ -224,11 +229,7 @@ impl UvmCommand {
                         "editor installation error. Abort installation of {}",
                         &install_object.variant
                     );
-                    pb.finish_with_message(&format!(
-                        "[{}] {}",
-                        &install_object.variant,
-                        style("editor failed").red().bold()
-                    ));
+                    pb.finish_with_message(&format!("{}", style("editor failed").red().bold()));
                     return Err(io::Error::new(
                         io::ErrorKind::Other,
                         format!(
@@ -249,11 +250,7 @@ impl UvmCommand {
             io::Error::new(io::ErrorKind::Other, "Missing installtion destination")
         })?;
 
-        pb.set_message(&format!(
-            "[{}] {}",
-            &install_object.variant,
-            style("installing").dim()
-        ));
+        pb.set_message(&format!("{}", style("installing").yellow()));
         debug!(
             "install {} to {}",
             &install_object.variant,
@@ -267,26 +264,19 @@ impl UvmCommand {
         install_f(&installer, &destination)
             .map(|result| {
                 debug!("installation finished {}.", &install_object.variant);
-                pb.finish_with_message(&format!(
-                    "[{}] {}",
-                    &install_object.variant,
-                    style("done").green().bold()
-                ));
+                pb.finish_with_message(&format!("{}", style("done").green().bold()));
                 if install_object.variant == InstallVariant::Editor {
                     UvmCommand::set_editor_install_lock(&editor_installed_lock, Ok(()));
                 }
                 result
-            }).map_err(|error| {
+            })
+            .map_err(|error| {
                 debug!(
                     "failed to install {}. Error: {}",
                     &install_object.variant,
                     style(&error).red()
                 );
-                pb.finish_with_message(&format!(
-                    "[{}] {}",
-                    &install_object.variant,
-                    style("failed").red().bold()
-                ));
+                pb.finish_with_message(&format!("{}", style("failed").red().bold()));
                 if install_object.variant == InstallVariant::Editor {
                     let error = io::Error::new(io::ErrorKind::Other, "failed to install edit");
                     UvmCommand::set_editor_install_lock(&editor_installed_lock, Err(error));
@@ -302,7 +292,8 @@ impl UvmCommand {
                 "{}: {}",
                 style("install unity version").green(),
                 version.to_string()
-            )).ok();
+            ))
+            .ok();
         let locks_dir = paths::locks_dir().ok_or_else(|| {
             io::Error::new(io::ErrorKind::NotFound, "Unable to locate locks directory.")
         })?;
@@ -450,7 +441,7 @@ impl UvmCommand {
         multi_progress.set_draw_target(UvmCommand::progress_draw_target(options));
         let sty = ProgressStyle::default_bar()
             .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
-            .template("{prefix:.bold.dim>15} {spinner} {wide_msg}");
+            .template("{prefix:<20.bold.dim} {spinner} {msg:<20.green}");
 
         let mut threads: Vec<thread::JoinHandle<io::Result<()>>> = Vec::new();
         let editor_installed_lock = Arc::new((Mutex::new(None), Condvar::new()));
@@ -459,11 +450,15 @@ impl UvmCommand {
         let mut counter = 1;
 
         for install_object in diff {
-            let pb = multi_progress.add(ProgressBar::new(1));
+            let pb = multi_progress.add(indicatif::ProgressBar::new(1));
             pb.set_style(sty.clone());
             pb.enable_steady_tick(100);
+            pb.set_draw_delta(0);
             pb.tick();
-            pb.set_prefix(&format!("{}/{}", counter, size));
+            pb.set_prefix(&format!(
+                "{}/{} [{}]",
+                counter, size, install_object.variant
+            ));
             let editor_installed_lock_c = editor_installed_lock.clone();
             editor_installing |= install_object.variant == InstallVariant::Editor;
             counter += 1;
@@ -487,7 +482,8 @@ impl UvmCommand {
                     io::ErrorKind::Other,
                     "Install thread failed",
                 )),
-            }).fold(Ok(()), |acc, r| {
+            })
+            .fold(Ok(()), |acc, r| {
                 if let Err(x) = r {
                     if let Err(y) = acc {
                         return Err(io::Error::new(
