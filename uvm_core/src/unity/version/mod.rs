@@ -326,6 +326,24 @@ impl FromStr for Version {
     }
 }
 
+impl FromStr for VersionType {
+    type Err = UvmVersionError;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "f" => Ok(VersionType::Final),
+            "p" => Ok(VersionType::Patch),
+            "b" => Ok(VersionType::Beta),
+            "a" => Ok(VersionType::Alpha),
+            "final" => Ok(VersionType::Final),
+            "patch" => Ok(VersionType::Patch),
+            "beta" => Ok(VersionType::Beta),
+            "alpha" => Ok(VersionType::Alpha),
+            _ => bail!("Failed to match version type"), 
+        }
+    }
+}
+
 impl From<Installation> for Version {
     fn from(item: Installation) -> Self {
         item.version_owned()
