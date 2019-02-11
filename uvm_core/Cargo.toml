@@ -1,6 +1,6 @@
 [package]
 name = "uvm_core"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "The core functionality for the unity version manager commandline client."
 repository = "https://github.com/Larusso/unity-version-manager"
@@ -31,7 +31,7 @@ md-5 = { version = "0.8.0", features = ["std"] }
 hex-serde = "0.1.0"
 error-chain = "0.12.0"
 [target.'cfg(unix)'.dependencies]
-cluFlock = "0.1.5"
+cluFlock = "=0.1.5"
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["winver","memoryapi"] }
 libc = "0.2.43"
