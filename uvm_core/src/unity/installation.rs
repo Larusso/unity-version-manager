@@ -94,8 +94,24 @@ impl Installation {
         &self.path
     }
 
+    #[cfg(target_os = "windows")]
+    pub fn location(&self) -> PathBuf {
+        self.path().join("Editor/Unity.exe")
+    }
+
+    #[cfg(target_os = "macos")]
+    pub fn location(&self) -> PathBuf {
+        self.path().join("Unity.app")
+    }
+
+    #[cfg(target_os = "windows")]
     pub fn exec_path(&self) -> PathBuf {
-        self.path.join("Unity.app/Contents/MacOS/Unity")
+        self.location()
+    }
+
+    #[cfg(target_os = "macos")]
+    pub fn exec_path(&self) -> PathBuf {
+        self.path().join("Unity.app/Contents/MacOS/Unity")
     }
 }
 
