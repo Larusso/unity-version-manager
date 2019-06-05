@@ -66,9 +66,59 @@ impl PartialOrd for Installation {
     }
 }
 
+#[cfg(target_os = "macos")]
+fn adjust_path(path:&Path) -> Option<&Path> {
+    // if the path points to a file it could be the executable
+    if path.is_file() {
+        if let Some(name) = path.file_name() {
+            if name == "Unity" {
+                path.parent()
+                    .and_then(|path| path.parent())
+                    .and_then(|path| path.parent())
+                    .and_then(|path| path.parent())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn adjust_path(path:&Path) -> Option<&Path> {
+    if path.is_file() {
+        if let Some(name) = path.file_name() {
+            if name == "Unity.exe" {
+                path.parent()
+                    .and_then(|path| path.parent())
+                    .and_then(|path| path.parent())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+fn adjust_path(path:&Path) -> Option<&Path> {
+    None
+}
+
 impl Installation {
     pub fn new<P: AsRef<Path>>(path: P) -> Result<Installation> {
         let path = path.as_ref();
+        let path = if let Some(p) = adjust_path(path) {
+            p
+        } else {
+            path
+        };
         version::read_version_from_path(&path)
             .map(|version| Installation {
                 version,
@@ -141,8 +191,13 @@ mod tests {
         dir_builder.create(&path).unwrap();
 
         let info_plist_path = path.join("Unity.app/Contents/Info.plist");
+        let exec_path = path.join("Unity.app/Contents/MacOS/Unity");
         dir_builder
             .create(info_plist_path.parent().unwrap())
+            .unwrap();
+
+        dir_builder
+            .create(exec_path.parent().unwrap())
             .unwrap();
 
         let info = AppInfo {
@@ -151,6 +206,8 @@ mod tests {
         };
 
         let file = File::create(info_plist_path).unwrap();
+        File::create(exec_path).unwrap();
+
         serialize_to_xml(file, &info).unwrap();
 
         path
@@ -172,6 +229,15 @@ mod tests {
     fn create_installtion_from_path() {
         let (_t, path) = prepare_unity_installation!("2017.1.2f5");
         let subject = Installation::new(path).unwrap();
+
+        assert_eq!(subject.version.to_string(), "2017.1.2f5");
+    }
+
+    #[test]
+    fn create_installation_from_executable_path() {
+        let(_t, path) = prepare_unity_installation!("2017.1.2f5");
+        let installation = Installation::new(path).unwrap();
+        let subject = Installation::new(installation.exec_path()).unwrap();
 
         assert_eq!(subject.version.to_string(), "2017.1.2f5");
     }
