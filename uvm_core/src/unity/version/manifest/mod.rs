@@ -62,7 +62,10 @@ impl Manifest {
         let cache_dir = paths::cache_dir().ok_or_else(|| {
             io::Error::new(io::ErrorKind::Other, "Unable to fetch cache directory")
         })?;
-        DirBuilder::new().recursive(true).create(&cache_dir)?;
+
+        DirBuilder::new().recursive(true).create(&cache_dir).map_err(|err| {
+            io::Error::new(io::ErrorKind::Other, format!("Unable to create cache directory at {}", cache_dir.display()))
+        })?;
 
         let version_string = version.to_string();
         let manifest_path = cache_dir.join(&format!("{}_manifest.ini", version_string));
@@ -158,7 +161,7 @@ pub struct ComponentData {
 #[serde(transparent)]
 pub struct MD5(#[serde(with = "hex_serde")] pub [u8; 16]);
 
-#[cfg(any(target_os = "windows", target_os = "macos"))]
+#[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -167,9 +170,8 @@ mod tests {
 
     #[cfg(target_os = "macos")]
     #[test]
-    fn fetch_metedata_for_known_unity_version_does_not_fail() {
-        //2018.2.5f1: 3071d1717b71
-        let version = Version::f(2018, 2, 5, 1);
+    fn fetch_metadata_for_known_unity_version_does_not_fail() {
+        let version = Version::f(2019, 1, 6, 1);
         let cache_file = paths::cache_dir()
             .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
             .unwrap();
@@ -195,30 +197,32 @@ mod tests {
     #[cfg(target_os = "macos")]
     #[test]
     fn can_retrieve_download_url_for_component() {
-        let version = Version::f(2017, 3, 0, 2);
+        let version = Version::f(2019, 1, 6, 1);
         let cache_file = paths::cache_dir()
             .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
-            .unwrap();
+            .expect("to retrieve cache file path");
         if cache_file.exists() {
-            fs::remove_file(&cache_file).unwrap();
+            fs::remove_file(&cache_file).expect("delete cache file");
         }
-        let m = Manifest::load(version).unwrap();
+        let m = Manifest::load(version).expect("manifest can be loaded");
 
         #[cfg(target_os = "macos")]
         let expected_url =
-            "https://download.unity3d.com/download_unity/d3a5469e8c44/MacEditorInstaller/Unity.pkg";
+            "https://download.unity3d.com/download_unity/f2970305fe1c/MacEditorInstaller/Unity.pkg";
         #[cfg(target_os = "windows")]
-        let expected_url = "https://download.unity3d.com/download_unity/d3a5469e8c44/Windows64EditorInstaller/UnitySetup64.exe";
-        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+        let expected_url = "https://download.unity3d.com/download_unity/f2970305fe1c/Windows64EditorInstaller/UnitySetup64.exe";
+        #[cfg(target_os = "linux")]
+        let expected_url = "https://download.unity3d.com/download_unity/f2970305fe1c/LinuxEditorInstaller/Unity.tar.xz";
+        #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
         let expected_url = "";
 
-        assert_eq!(m.url(Component::Editor).unwrap().as_str(), expected_url);
+        assert_eq!(m.url(Component::Editor).expect("fetch component url").as_str(), expected_url);
     }
 
     #[cfg(target_os = "macos")]
     #[test]
     fn saves_meta_file_to_cache_dir() {
-        let version = Version::f(2017, 4, 9, 1);
+        let version = Version::f(2019, 1, 7, 1);
         let cache_file = paths::cache_dir()
             .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
             .unwrap();

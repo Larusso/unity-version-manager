@@ -12,7 +12,6 @@ sudo: required
 env:
   global:
     - CRATE_NAME=uvm
-    - RUST_LOG='reqwest=debug'
 
 matrix:
   # TODO These are all the build jobs. Adjust as necessary. Comment out what you
@@ -37,7 +36,7 @@ matrix:
     # - env: TARGET=x86_64-apple-ios DISABLE_TESTS=1
     #   os: osx
     #
-    # # Linux
+    # Linux
     # - env: TARGET=aarch64-unknown-linux-gnu
     # - env: TARGET=arm-unknown-linux-gnueabi
     # - env: TARGET=armv7-unknown-linux-gnueabihf
@@ -51,7 +50,7 @@ matrix:
     # - env: TARGET=powerpc64-unknown-linux-gnu
     # - env: TARGET=powerpc64le-unknown-linux-gnu
     # - env: TARGET=s390x-unknown-linux-gnu DISABLE_TESTS=1
-    # - env: TARGET=x86_64-unknown-linux-gnu
+    - env: TARGET=x86_64-unknown-linux-gnu
     # - env: TARGET=x86_64-unknown-linux-musl
 
     # OSX
@@ -119,12 +118,6 @@ cache:
 before_cache:
   # Travis can't cache files that are not readable by "others"
   - travis_wait chmod -R a+r $HOME/.cargo
-
-branches:
-  only:
-    # release tags
-    - /^v\d+\.\d+\.\d+.*$/
-    - master
 
 notifications:
   email:

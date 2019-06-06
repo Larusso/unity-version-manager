@@ -247,7 +247,7 @@ impl UvmCommand {
         }
 
         let destination = install_object.clone().destination.ok_or_else(|| {
-            io::Error::new(io::ErrorKind::Other, "Missing installtion destination")
+            io::Error::new(io::ErrorKind::Other, "Missing installation destination")
         })?;
 
         pb.set_message(&format!("{}", style("installing").yellow()));

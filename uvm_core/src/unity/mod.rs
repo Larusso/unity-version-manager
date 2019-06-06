@@ -48,6 +48,10 @@ impl Installations {
         Ok(Installations(Box::new(iter)))
     }
 
+    fn empty() -> Installations {
+        Installations(Box::new(::std::iter::empty()))
+    }
+
     pub fn versions(self) -> Versions {
         self.into()
     }
@@ -119,11 +123,35 @@ pub fn list_all_installations() -> Result<Installations> {
 }
 
 pub fn list_installations() -> Result<Installations> {
-    dirs_2::application_dir()
-        .ok_or_else(|| {
-            io::Error::new(io::ErrorKind::NotFound, "unable to locate application_dir").into()
+    #[cfg(any(target_os = "windows", target_os = "macos"))]
+    let application_path = dirs_2::application_dir();
+
+    #[cfg(target_os = "linux")]
+    let application_path = dirs_2::executable_dir();
+
+    application_path.ok_or_else(|| {
+        io::Error::new(io::ErrorKind::NotFound, "unable to locate application_dir").into()
+    })
+    .and_then(|application_dir| {
+        list_installations_in_dir(&application_dir)
+        .or_else(|err| {
+            match err {
+                UvmError(UvmErrorKind::Io(ref io_error),_) => {
+                    io_error.raw_os_error()
+                        .and_then(|error| {
+                            match error {
+                                2 => {
+                                    warn!("{}", io_error);
+                                    Some(Installations::empty())
+                                },
+                                _ => None
+                            }
+                        })
+                },
+                _ => None
+            }.ok_or_else(|| err)
         })
-        .and_then(|application_dir| list_installations_in_dir(&application_dir))
+    })
 }
 
 pub fn list_hub_installations() -> Result<Installations> {
@@ -229,6 +257,11 @@ mod tests {
         let test_dir = prepare_unity_installations![];
         assert!(Installations::new(test_dir.path()).is_ok());
     }
+
+    // #[test]
+    // fn list_installations_returns_empty_iterator_when_dir_does_not_exist() {
+    //     assert_eq!(list_installations().unwrap().count(), 0);
+    // }
 
     #[test]
     fn installations_can_be_converted_to_versions() {

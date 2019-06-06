@@ -11,7 +11,7 @@ This tool allows to install and manage multiple unity versions on a system from 
 [![Latest Release](https://img.shields.io/github/release/Larusso/unity-version-manager.svg)](https://github.com/Larusso/unity-version-manager/releases/latest)
 ![macOS-supported](https://img.shields.io/badge/macOS-supported-brightgreen.svg)
 ![windows-experimental](https://img.shields.io/badge/windows-experimental-blue.svg)
-![linux-unsupported](https://img.shields.io/badge/linux-unsupported-red.svg)
+![linux-experimental](https://img.shields.io/badge/linux-experimental-blue.svg)
 
 
 Installation
