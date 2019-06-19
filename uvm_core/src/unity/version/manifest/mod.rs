@@ -1,13 +1,28 @@
 use error::*;
+use reqwest::header;
 use reqwest::Url;
 use serde_ini;
 use std::collections::HashMap;
 use std::fs::{DirBuilder, File};
 use std::io::{self, Write};
 use std::path::Path;
+use std::time::Duration;
+use unity::{Component, Version};
 use unity::hub::paths;
 use unity::urls::{DownloadURL, IniUrl};
-use unity::{Component, Version};
+
+lazy_static! {
+    static ref CLIENT: reqwest::Client = {
+        let mut headers = header::HeaderMap::new();
+        headers.insert(header::USER_AGENT, header::HeaderValue::from_static("uvm"));
+        reqwest::Client::builder()
+            .gzip(true)
+            .default_headers(headers)
+            .timeout(Duration::from_secs(10))
+            .build()
+            .expect("Create http client")
+    };
+}
 
 #[derive(Debug)]
 pub struct Manifest {
@@ -53,32 +68,63 @@ impl Manifest {
         let manifest_path = cache_dir.join(&format!("{}_manifest.ini", version_string));
 
         if !manifest_path.exists() {
-            Self::download_manifest(&version, manifest_path.to_path_buf())?;
+            Self::download_manifest(&version, manifest_path.to_path_buf())
+        } else {
+            let base_url = DownloadURL::new(&version)?;
+            let manifest = File::open(manifest_path)?;
+            let components: HashMap<Component, ComponentData> =
+                serde_ini::from_read(manifest).chain_err(|| UvmErrorKind::ManifestReadError)?;
+            Ok(Manifest {
+                version,
+                base_url,
+                components,
+            })
         }
-        let base_url = DownloadURL::new(&version)?;
-        let manifest = File::open(manifest_path)?;
-        let components: HashMap<Component, ComponentData> =
-            serde_ini::from_read(manifest).chain_err(|| UvmErrorKind::ManifestReadError)?;
-        Ok(Manifest {
-            version,
-            base_url,
-            components,
-        })
     }
 
-    fn download_manifest<V, P>(version: V, path: P) -> Result<()>
+    fn download_manifest<V, P>(version: V, path: P) -> Result<Manifest>
     where
         V: AsRef<Version>,
         P: AsRef<Path>,
     {
+        let version = version.as_ref();
         let ini_url = IniUrl::new(version)?;
         let url = ini_url.into_url();
-        let body = reqwest::get(url)
-            .and_then(|mut response| response.text())
-            .map(|s| Self::cleanup_ini_data(&s))?;
-        let mut f = File::create(path)?;
-        write!(f, "{}", body)?;
-        Ok(())
+        debug!("Manifest URL {}", &url);
+
+        let client = &CLIENT;
+        let request = client.get(url).build()?;
+
+        debug!("Manifest Request:");
+        debug!("{:?}", request);
+        let mut response = client.execute(request)?;
+
+        debug!("Manifest Repsonse:");
+        debug!("{:?}", response);
+
+        if !response.status().is_success() {
+            trace!("{}", response.text()?);
+            return Err(io::Error::new(io::ErrorKind::Other, format!("Unable to load manifest. Status: {}", response.status())).into());
+        }
+
+        let body = response.text()?;
+        let body = Self::cleanup_ini_data(&body);
+
+        let components: HashMap<Component, ComponentData> =
+            serde_ini::from_str(&body).chain_err(|| UvmErrorKind::ManifestReadError)?;
+        let base_url = DownloadURL::new(version)?;
+
+        File::create(path.as_ref()).and_then(|mut f| write!(f, "{}", body))
+        .unwrap_or_else(|err| {
+            warn!("Error while creating the manifest cache file for {}", path.as_ref().display());
+            warn!("{}", err);
+        });
+
+        Ok(Manifest {
+            version: version.to_owned(),
+            base_url,
+            components,
+        })
     }
 
     fn cleanup_ini_data(ini_data: &str) -> String {
