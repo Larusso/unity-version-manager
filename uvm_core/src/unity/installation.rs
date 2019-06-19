@@ -92,9 +92,7 @@ fn adjust_path(path:&Path) -> Option<&Path> {
     if path.is_file() {
         if let Some(name) = path.file_name() {
             if name == "Unity.exe" {
-                path.parent()
-                    .and_then(|path| path.parent())
-                    .and_then(|path| path.parent())
+                path.parent().and_then(|path| path.parent())
             } else {
                 None
             }
