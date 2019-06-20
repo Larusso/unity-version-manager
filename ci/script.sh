@@ -16,8 +16,8 @@ main() {
         return
     fi
 
-    $cargo test --target $TARGET
-    $cargo test --target $TARGET --release
+    $cargo test --target $TARGET --release -- --nocapture
+    $cargo test --target $TARGET -- --nocapture
 
     $cargo run --target $TARGET --bin uvm -- --help
     $cargo run --target $TARGET --bin uvm --release -- --help

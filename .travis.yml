@@ -12,6 +12,7 @@ sudo: required
 env:
   global:
     - CRATE_NAME=uvm
+    - RUST_LOG='warning, uvm_core=trace'
 
 matrix:
   # TODO These are all the build jobs. Adjust as necessary. Comment out what you

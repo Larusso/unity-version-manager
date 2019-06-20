@@ -76,15 +76,8 @@ impl Manifest {
         let body = reqwest::get(url)
             .and_then(|mut response| response.text())
             .map(|s| Self::cleanup_ini_data(&s))?;
-        let mut f = File::create(path.as_ref())?;
+        let mut f = File::create(path)?;
         write!(f, "{}", body)?;
-        {
-            use std::io::Read;
-            let mut s = String::new();
-            let mut f = File::open(path).unwrap();
-            f.read_to_string(&mut s).unwrap();
-            assert_eq!(s, body);
-        }
         Ok(())
     }
 
