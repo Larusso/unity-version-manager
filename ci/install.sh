@@ -6,7 +6,7 @@ main() {
         target=x86_64-unknown-linux-musl
         sort=sort
     elif [ $TRAVIS_OS_NAME = windows ]; then
-        target=x86_64-x86_64-pc-windows-msvc
+        target=x86_64-pc-windows-gnu
         sort=sort
     else
         target=x86_64-apple-darwin
@@ -33,18 +33,7 @@ main() {
             ;;
     esac
 
-    # This fetches latest stable release
-    local tag=$(git ls-remote --tags --refs --exit-code https://github.com/japaric/cross \
-                       | cut -d/ -f3 \
-                       | grep -E '^v[0.1.0-9.]+$' \
-                       | $sort --version-sort \
-                       | tail -n1)
-    curl -LSfs https://japaric.github.io/trust/install.sh | \
-        sh -s -- \
-           --force \
-           --git japaric/cross \
-           --tag $tag \
-           --target $target
+    cargo install --force cross
 }
 
 main
