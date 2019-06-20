@@ -75,9 +75,16 @@ impl Manifest {
         let url = ini_url.into_url();
         let body = reqwest::get(url)
             .and_then(|mut response| response.text())
-            .map(|s| s.to_string())?; //  Self::cleanup_ini_data(&s))?;
-        let mut f = File::create(path)?;
+            .map(|s| Self::cleanup_ini_data(&s))?;
+        let mut f = File::create(path.as_ref())?;
         write!(f, "{}", body)?;
+        {
+            use std::io::Read;
+            let mut s = String::new();
+            let mut f = File::open(path).unwrap();
+            f.read_to_string(&mut s).unwrap();
+            assert_eq!(s, body);
+        }
         Ok(())
     }
 
@@ -191,25 +198,25 @@ mod tests {
         Manifest::download_manifest(version, &path).unwrap();
         assert!(path.exists());
     }
-//
-//     #[test]
-//     fn cleanup_ini_data_removes_junk_lines() {
-//         let test_ini = r#"[Section1]
-// key=value
-// [Section2]
-// line which is not a section
-// key = value
-// line which is not a section or key=value
-// line which is not a section or key = value
-// key = "value with equals = ssjdd"
-// key2=value2"#;
-//
-//         let expected_ini = r#"[Section1]
-// key=value
-// [Section2]
-// key = value
-// key = "value with equals = ssjdd"
-// key2=value2"#;
-//         assert_eq!(Manifest::cleanup_ini_data(test_ini), expected_ini);
-//     }
+
+    #[test]
+    fn cleanup_ini_data_removes_junk_lines() {
+        let test_ini = r#"[Section1]
+key=value
+[Section2]
+line which is not a section
+key = value
+line which is not a section or key=value
+line which is not a section or key = value
+key = "value with equals = ssjdd"
+key2=value2"#;
+
+        let expected_ini = r#"[Section1]
+key=value
+[Section2]
+key = value
+key = "value with equals = ssjdd"
+key2=value2"#;
+        assert_eq!(Manifest::cleanup_ini_data(test_ini), expected_ini);
+    }
 }
