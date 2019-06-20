@@ -9,6 +9,15 @@ main() {
       cargo=cross
     fi
 
+    case $TARGET in
+        x86_64-pc-windows-gnu)
+            export PATH=$PATH:C:\msys64\mingw64\bin
+            ;;
+        i686-pc-windows-gnu)
+            export PATH=$PATH:C:\msys64\mingw32\bin
+            ;;
+    esac
+
     $cargo build --target $TARGET
     $cargo build --target $TARGET --release
 

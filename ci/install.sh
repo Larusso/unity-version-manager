@@ -4,6 +4,8 @@ main() {
     local target=
     if [ $TRAVIS_OS_NAME = linux ] || [ $TRAVIS_OS_NAME = osx ]; then
         cargo install --force cross
+    else
+        rustup target install $TARGET
     fi
 
     # Builds for iOS are done on OSX, but require the specific target to be
