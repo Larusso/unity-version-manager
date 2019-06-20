@@ -2,15 +2,8 @@ set -ex
 
 main() {
     local target=
-    if [ $TRAVIS_OS_NAME = linux ]; then
-        target=x86_64-unknown-linux-musl
-        sort=sort
-    elif [ $TRAVIS_OS_NAME = windows ]; then
-        target=x86_64-pc-windows-gnu
-        sort=sort
-    else
-        target=x86_64-apple-darwin
-        sort=gsort  # for `sort --sort-version`, from brew's coreutils.
+    if [ $TRAVIS_OS_NAME = linux ] || [ $TRAVIS_OS_NAME = osx ]; then
+        cargo install --force cross
     fi
 
     # Builds for iOS are done on OSX, but require the specific target to be
@@ -32,8 +25,6 @@ main() {
             rustup target install x86_64-apple-ios
             ;;
     esac
-
-    cargo install --force cross
 }
 
 main
