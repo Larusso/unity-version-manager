@@ -53,32 +53,48 @@ impl Manifest {
         let manifest_path = cache_dir.join(&format!("{}_manifest.ini", version_string));
 
         if !manifest_path.exists() {
-            Self::download_manifest(&version, manifest_path.to_path_buf())?;
+            Self::download_manifest(&version, manifest_path.to_path_buf())
+        } else {
+            let base_url = DownloadURL::new(&version)?;
+            let manifest = File::open(manifest_path)?;
+            let components: HashMap<Component, ComponentData> =
+                serde_ini::from_read(manifest).chain_err(|| UvmErrorKind::ManifestReadError)?;
+            Ok(Manifest {
+                version,
+                base_url,
+                components,
+            })
         }
-        let base_url = DownloadURL::new(&version)?;
-        let manifest = File::open(manifest_path)?;
-        let components: HashMap<Component, ComponentData> =
-            serde_ini::from_read(manifest).chain_err(|| UvmErrorKind::ManifestReadError)?;
-        Ok(Manifest {
-            version,
-            base_url,
-            components,
-        })
     }
 
-    fn download_manifest<V, P>(version: V, path: P) -> Result<()>
+    fn download_manifest<V, P>(version: V, path: P) -> Result<Manifest>
     where
         V: AsRef<Version>,
         P: AsRef<Path>,
     {
+        let version = version.as_ref();
         let ini_url = IniUrl::new(version)?;
         let url = ini_url.into_url();
         let body = reqwest::get(url)
             .and_then(|mut response| response.text())
             .map(|s| Self::cleanup_ini_data(&s))?;
-        let mut f = File::create(path)?;
-        write!(f, "{}", body)?;
-        Ok(())
+        let components: HashMap<Component, ComponentData> =
+            serde_ini::from_str(&body).chain_err(|| UvmErrorKind::ManifestReadError)?;
+        let base_url = DownloadURL::new(version)?;
+
+        //create cache file and save content
+        //this is optional now
+        File::create(path.as_ref()).and_then(|mut f| write!(f, "{}", body))
+        .unwrap_or_else(|err| {
+            warn!("Error while creating the manifest cache file for {}", path.as_ref().display());
+            warn!("{}", err);
+        });
+
+        Ok(Manifest {
+            version: version.to_owned(),
+            base_url,
+            components,
+        })
     }
 
     fn cleanup_ini_data(ini_data: &str) -> String {
