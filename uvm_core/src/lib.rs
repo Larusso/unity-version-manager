@@ -11,7 +11,8 @@ extern crate serde_json;
 extern crate serde_yaml;
 #[macro_use]
 extern crate log;
-
+#[macro_use]
+extern crate lazy_static;
 #[cfg(test)]
 #[macro_use]
 extern crate proptest;
