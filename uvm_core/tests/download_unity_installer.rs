@@ -1,4 +1,4 @@
-extern crate uvm_core;
+
 use uvm_core::install;
 use uvm_core::unity;
 

@@ -1,5 +1,5 @@
-extern crate uvm_cli;
-extern crate uvm_list;
+use uvm_cli;
+use uvm_list;
 
 use uvm_list::ListOptions;
 

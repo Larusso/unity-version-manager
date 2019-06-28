@@ -1,7 +1,7 @@
-extern crate console;
-extern crate flexi_logger;
-extern crate uvm_cli;
-extern crate uvm_install;
+
+
+use uvm_cli;
+use uvm_install;
 
 #[macro_use]
 extern crate log;

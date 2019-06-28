@@ -1,12 +1,12 @@
 #[macro_use]
 extern crate serde_derive;
-extern crate console;
-extern crate indicatif;
-extern crate itertools;
-extern crate regex;
-extern crate serde;
-extern crate uvm_cli;
-extern crate uvm_core;
+
+
+
+
+use serde;
+use uvm_cli;
+use uvm_core;
 #[macro_use]
 extern crate log;
 
@@ -185,7 +185,7 @@ impl UvmCommand {
                     entry.get_mut().insert(version);
                 }
                 Vacant(entry) => {
-                    let mut versions: VersionSet = VersionSet::with_capacity(1);
+                    let versions: VersionSet = VersionSet::with_capacity(1);
                     entry.insert(versions);
                 }
             };

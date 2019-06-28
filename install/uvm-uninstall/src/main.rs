@@ -1,6 +1,6 @@
-extern crate console;
-extern crate uvm_cli;
-extern crate uvm_uninstall;
+
+use uvm_cli;
+use uvm_uninstall;
 
 #[macro_use]
 extern crate log;

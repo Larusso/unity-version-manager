@@ -1,7 +1,7 @@
-use error::*;
+use crate::error::*;
 
 use std::path::Path;
-use unity::Installation;
+use crate::unity::Installation;
 
 pub type CurrentInstallation = Installation;
 const UNITY_CURRENT_LOCATION: &str = "/Applications/Unity";
@@ -30,7 +30,7 @@ mod tests {
     use std::path::PathBuf;
     use std::str::FromStr;
     use tempfile::Builder;
-    use unity::installation::AppInfo;
+    use crate::unity::installation::AppInfo;
 
     fn create_test_path(base_dir: &PathBuf, version: &str) -> PathBuf {
         let path = base_dir.join(format!("Unity-{version}", version = version));

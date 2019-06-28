@@ -1,14 +1,13 @@
 #![recursion_limit = "1024"]
-#[cfg(unix)]
-extern crate cluFlock;
-extern crate md5;
-extern crate regex;
-extern crate reqwest;
-extern crate semver;
-extern crate serde;
-extern crate serde_ini;
-extern crate serde_json;
-extern crate serde_yaml;
+
+
+
+
+
+
+
+
+
 #[cfg(target_os = "linux")]
 extern crate unzip;
 
@@ -19,14 +18,13 @@ extern crate lazy_static;
 #[cfg(test)]
 #[macro_use]
 extern crate proptest;
-extern crate plist;
-#[cfg(test)]
-extern crate rand;
-extern crate tempfile;
+
+
+
 #[macro_use]
 extern crate serde_derive;
-extern crate dirs_2;
-extern crate itertools;
+
+
 
 #[macro_use]
 extern crate error_chain;
@@ -39,7 +37,7 @@ pub mod progress;
 macro_rules! lock_process {
     ($lock_path:expr) => {
         let lock_file = fs::File::create($lock_path)?;
-        let _lock = ::utils::lock_process_or_wait(&lock_file)?;
+        let _lock = crate::utils::lock_process_or_wait(&lock_file)?;
     };
 }
 

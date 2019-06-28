@@ -1,8 +1,8 @@
-use error::*;
+use crate::error::*;
 use reqwest::Url;
 use std::convert::Into;
 use std::ops::Deref;
-use unity::version::{Version, VersionType};
+use crate::unity::version::{Version, VersionType};
 
 const BASE_URL: &str = "https://download.unity3d.com/download_unity/";
 const BETA_BASE_URL: &str = "https://beta.unity3d.com/download/";

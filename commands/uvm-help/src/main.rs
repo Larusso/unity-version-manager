@@ -1,6 +1,6 @@
-extern crate console;
-extern crate uvm_cli;
-extern crate uvm_core;
+
+use uvm_cli;
+
 
 use std::process;
 use uvm_cli::HelpOptions;

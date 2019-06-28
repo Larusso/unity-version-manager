@@ -1,8 +1,8 @@
-extern crate uvm_cli;
-extern crate uvm_versions;
+use uvm_cli;
+use uvm_versions;
 #[macro_use]
 extern crate log;
-extern crate console;
+
 
 use console::style;
 use std::process;

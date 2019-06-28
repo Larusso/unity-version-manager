@@ -2,7 +2,7 @@ pub mod editors;
 pub mod paths;
 
 use std::io;
-use unity;
+use crate::unity;
 //
 
 error_chain! {

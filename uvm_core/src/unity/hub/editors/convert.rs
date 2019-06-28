@@ -1,6 +1,6 @@
 use super::*;
 use std::convert::From;
-use unity::Installation;
+use crate::unity::Installation;
 
 const INSTALLATION_BINARY: &str = "Unity.app";
 

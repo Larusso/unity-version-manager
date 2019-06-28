@@ -24,7 +24,7 @@ pub enum UnityPlatform {
 }
 
 impl Display for UnityPlatform {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let raw = format!("{:?}", self).to_lowercase();
         write!(f, "{}", raw)
     }

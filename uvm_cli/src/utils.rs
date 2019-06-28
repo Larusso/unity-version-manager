@@ -56,7 +56,7 @@ fn check_file(entry: &fs::DirEntry) -> io::Result<bool> {
     Ok(!metadata.is_dir() && file_name.starts_with("uvm-") && file_name.ends_with(".exe"))
 }
 
-pub fn find_commands_in_path(dir: &Path) -> io::Result<Box<Iterator<Item = PathBuf>>> {
+pub fn find_commands_in_path(dir: &Path) -> io::Result<Box<dyn Iterator<Item = PathBuf>>> {
     let result = dir
         .read_dir()?
         .filter_map(io::Result::ok)
@@ -104,7 +104,7 @@ pub fn sub_command_path(command_name: &str) -> io::Result<PathBuf> {
     ))
 }
 
-pub struct UvmSubCommands(Box<Iterator<Item = UvmSubCommand>>);
+pub struct UvmSubCommands(Box<dyn Iterator<Item = UvmSubCommand>>);
 
 impl UvmSubCommands {
     fn new() -> io::Result<UvmSubCommands> {

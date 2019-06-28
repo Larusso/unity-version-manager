@@ -1,5 +1,5 @@
-use install::error::{Result, UvmInstallError, UvmInstallErrorKind};
-use install::InstallVariant;
+use crate::install::error::{Result, UvmInstallError, UvmInstallErrorKind};
+use crate::install::InstallVariant;
 use md5::{Digest, Md5};
 use reqwest::header::{RANGE, USER_AGENT};
 use reqwest::StatusCode;
@@ -7,9 +7,9 @@ use std::fs;
 use std::io;
 use std::path::Path;
 use std::path::PathBuf;
-use unity::hub::paths;
-use unity::{Component, Manifest, Version, MD5};
-use ::progress::ProgressHandler;
+use crate::unity::hub::paths;
+use crate::unity::{Component, Manifest, Version, MD5};
+use crate::progress::ProgressHandler;
 use std::io::Read;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
@@ -39,7 +39,7 @@ pub struct Loader<'a> {
     variant: InstallVariant,
     version: Version,
     verify: bool,
-    progress_handle: Option<Box<&'a ProgressHandler>>
+    progress_handle: Option<Box<&'a dyn ProgressHandler>>
 }
 
 impl<'a> Loader<'a> {
