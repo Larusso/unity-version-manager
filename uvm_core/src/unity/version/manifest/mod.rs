@@ -165,6 +165,7 @@ mod tests {
     use std::fs;
     use tempfile;
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn fetch_metedata_for_known_unity_version_does_not_fail() {
         //2018.2.5f1: 3071d1717b71
@@ -178,6 +179,7 @@ mod tests {
         Manifest::load(version).unwrap();
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn fetch_metedata_for_unknown_unity_version_fails() {
         let version = Version::f(2030, 1, 1, 1);
@@ -190,6 +192,7 @@ mod tests {
         assert!(Manifest::load(version).is_err());
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn can_retrieve_download_url_for_component() {
         let version = Version::f(2017, 3, 0, 2);
@@ -212,6 +215,7 @@ mod tests {
         assert_eq!(m.url(Component::Editor).unwrap().as_str(), expected_url);
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn saves_meta_file_to_cache_dir() {
         let version = Version::f(2017, 4, 9, 1);
@@ -226,6 +230,7 @@ mod tests {
         assert!(cache_file.exists());
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn downloads_manifest_to_local_path() {
         let tempdir = tempfile::tempdir().unwrap();

@@ -12,6 +12,7 @@ sudo: required
 env:
   global:
     - CRATE_NAME=uvm
+    - RUST_LOG='reqwest=debug'
 
 matrix:
   # TODO These are all the build jobs. Adjust as necessary. Comment out what you
@@ -65,19 +66,17 @@ matrix:
     # - env: TARGET=x86_64-unknown-netbsd DISABLE_TESTS=1
 
     # Windows
-    #- env: TARGET=x86_64-pc-windows-gnu
-
-    # Bare metal
-    # These targets don't support std and as such are likely not suitable for
-    # most crates.
-    # - env: TARGET=thumbv6m-none-eabi
-    # - env: TARGET=thumbv7em-none-eabi
-    # - env: TARGET=thumbv7em-none-eabihf
-    # - env: TARGET=thumbv7m-none-eabi
+    - env: TARGET=x86_64-pc-windows-msvc
+      os: windows
+    - env: TARGET=i686-pc-windows-msvc
+      os: windows
 
     # Testing other channels
     - env: TARGET=x86_64-apple-darwin
       os: osx
+      rust: nightly
+    - env: TARGET=x86_64-pc-windows-msvc
+      os: windows
       rust: nightly
 
 before_install:
@@ -114,10 +113,12 @@ deploy:
   provider: releases
   skip_cleanup: true
 
-cache: cargo
+cache:
+  timeout: 1000
+  cargo: true
 before_cache:
   # Travis can't cache files that are not readable by "others"
-  - chmod -R a+r $HOME/.cargo
+  - travis_wait chmod -R a+r $HOME/.cargo
 
 branches:
   only:
