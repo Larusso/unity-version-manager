@@ -13,17 +13,21 @@ pub mod manifest;
 
 #[cfg(target_os = "macos")]
 mod mac;
-#[cfg(not(any(target_os = "windows", target_os = "macos")))]
-mod other;
 #[cfg(target_os = "windows")]
 mod win;
+#[cfg(target_os = "linux")]
+mod linux;
+#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+mod other;
 
 #[cfg(target_os = "macos")]
 use self::mac as sys;
-#[cfg(not(any(target_os = "windows", target_os = "macos")))]
-use self::other as sys;
 #[cfg(target_os = "windows")]
 use self::win as sys;
+#[cfg(target_os = "linux")]
+use self::linux as sys;
+#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+use self::other as sys;
 
 pub use self::hash::all_versions;
 pub use self::sys::read_version_from_path;
@@ -226,6 +230,16 @@ error_chain! {
         NotAUnityInstalltion(path: String) {
             description("path is not a unity installtion"),
             display("Provided Path: '{}' is not a Unity installation.", path),
+        }
+
+        FailedToReadVersion(path: String) {
+            description("unable to read version from path"),
+            display("Unable to read version from path: '{}'.", path),
+        }
+
+        IllegalOperation(t: String) {
+            description("illegal operation"),
+            display("illegal operation: '{}'", t),
         }
     }
 }

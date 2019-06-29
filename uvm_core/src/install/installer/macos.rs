@@ -7,6 +7,20 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
 pub fn install_editor(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
+    _install_editor(installer, destination)
+    .map_err(|err| {
+        if destination.exists() {
+            debug!("Delete destination directory after failure {}", destination.display());
+            fs::remove_dir_all(destination).unwrap_or_else(|err| {
+                error!("Failed to cleanup destination {}", destination.display());
+                error!("{}", err);
+            })
+        }
+        err
+    })
+}
+
+fn _install_editor(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
     debug!(
         "install editor to destination: {} with installer: {}",
         destination.display(),
@@ -31,6 +45,20 @@ pub fn install_editor(installer: &PathBuf, destination: &PathBuf) -> io::Result<
 }
 
 pub fn install_module(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
+    _install_module(installer, destination)
+    .map_err(|err| {
+        if destination.exists() {
+            debug!("Delete destination directory after failure {}", destination.display());
+            fs::remove_dir_all(destination).unwrap_or_else(|err| {
+                error!("Failed to cleanup destination {}", destination.display());
+                error!("{}", err);
+            })
+        }
+        err
+    })
+}
+
+fn _install_module(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
     debug!(
         "install component {} to {}",
         &installer.display(),

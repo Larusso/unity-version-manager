@@ -2,8 +2,11 @@ use std::fs::File;
 use std::path::PathBuf;
 
 pub fn default_install_path() -> Option<PathBuf> {
-    dirs_2::application_dir()
-        .map(|path| path.join(["Unity", "Hub", "Editor"].iter().collect::<PathBuf>()))
+    #[cfg(any(target_os = "windows", target_os = "macos"))]
+    let application_path = dirs_2::application_dir();
+    #[cfg(target_os = "linux")]
+    let application_path = dirs_2::home_dir();
+    application_path.map(|path| path.join(["Unity", "Hub", "Editor"].iter().collect::<PathBuf>()))
 }
 
 pub fn install_path() -> Option<PathBuf> {
@@ -21,7 +24,11 @@ pub fn install_path() -> Option<PathBuf> {
 }
 
 pub fn config_path() -> Option<PathBuf> {
-    dirs_2::data_dir().map(|path| path.join("UnityHub"))
+    #[cfg(any(target_os = "windows", target_os = "macos"))]
+    return dirs_2::data_dir().map(|path| path.join("UnityHub"));
+
+    #[cfg(target_os = "linux")]
+    return dirs_2::config_dir().map(|path| path.join("UnityHub"));
 }
 
 pub fn editors_config_path() -> Option<PathBuf> {

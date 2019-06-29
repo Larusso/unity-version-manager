@@ -180,7 +180,7 @@ pub mod editor_value_location {
         let location = Path::new(&path)
             .parent()
             .and_then(|location| {
-                if cfg!(target_os = "windows") {
+                if cfg!(target_os = "windows") || cfg!(target_os = "linux") {
                     return location.parent();
                 }
                 Some(location)
@@ -200,33 +200,56 @@ pub mod editor_value_location {
         let mut seq = serializer.serialize_seq(Some(1))?;
 
         #[cfg(target_os = "windows")]
-        seq.serialize_element(&location.join("Editors/Unity.exe"))?;
+        seq.serialize_element(&location.join("Editors\\Unity.exe"))?;
+        #[cfg(target_os = "linux")]
+        seq.serialize_element(&location.join("Editors/Unity"))?;
         #[cfg(target_os = "macos")]
         seq.serialize_element(&location.join("Unity.app"))?;
-        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+        #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
         seq.serialize_element(&location)?;
 
         seq.end()
     }
 }
 
-#[cfg(all(test, target_os = "macos"))]
+
 mod tests {
     use super::*;
     use std::path::Path;
 
     #[test]
     fn parse_editors() {
+
+        #[cfg(target_os = "macos")]
         let data = r#"{
                         "2018.2.5f1": { "version": "2018.2.5f1", "location": ["/Applications/Unity-2018.2.5f1/Unity.app"], "manual": true },
                         "2017.1.0f3": { "version": "2017.1.0f3", "location": ["/Applications/Unity-2017.1.0f3/Unity.app"], "manual": true }
+                  }"#;
+
+        #[cfg(target_os = "windows")]
+        let data = r#"{
+                      "2018.2.5f1": { "version": "2018.2.5f1", "location": ["C:\\Program Files\\Unity-2018.2.5f1\\Editor\\Unity.exe"], "manual": true },
+                      "2017.1.0f3": { "version": "2017.1.0f3", "location": ["C:\\Program Files\\Unity-2017.1.0f3\\Editor\\Unity.exe"], "manual": true }
+                }"#;
+
+        #[cfg(target_os = "linux")]
+        let data = r#"{
+                        "2018.2.5f1": { "version": "2018.2.5f1", "location": ["/homce/ci/.local/share/Unity-2018.2.5f1/Editor/Unity"], "manual": true },
+                        "2017.1.0f3": { "version": "2017.1.0f3", "location": ["/homce/ci/.local/share/Unity-2017.1.0f3/Editor/Unity"], "manual": true }
                   }"#;
 
         let editors: HashMap<unity::Version, EditorInstallation> =
             serde_json::from_str(data).unwrap();
 
         let v = unity::Version::new(2018, 2, 5, unity::VersionType::Final, 1);
+
+        #[cfg(target_os = "macos")]
         let p = Path::new("/Applications/Unity-2018.2.5f1");
+        #[cfg(target_os = "windows")]
+        let p = Path::new("C:\\Program Files\\Unity-2018.2.5f1");
+        #[cfg(target_os = "linux")]
+        let p = Path::new("/homce/ci/.local/share/Unity-2018.2.5f1");
+
         assert_eq!(
             &editors[&v],
             &EditorInstallation {
@@ -236,32 +259,45 @@ mod tests {
             }
         );
     }
-}
-
-#[cfg(all(test, target_os = "windows"))]
-mod tests {
-    use super::*;
-    use std::path::Path;
 
     #[test]
-    fn parse_editors() {
-        let data = r#"{
-                        "2018.2.5f1": { "version": "2018.2.5f1", "location": ["C:\\Program Files\\Unity-2018.2.5f1\\Editor\\Unity.exe"], "manual": true },
-                        "2017.1.0f3": { "version": "2017.1.0f3", "location": ["C:\\Program Files\\Unity-2017.1.0f3\\Editor\\Unity.exe"], "manual": true }
-                  }"#;
-
-        let editors: HashMap<unity::Version, EditorInstallation> =
-            serde_json::from_str(data).unwrap();
-
+    fn write_editors() {
         let v = unity::Version::new(2018, 2, 5, unity::VersionType::Final, 1);
+
+        #[cfg(target_os = "macos")]
+        let p = Path::new("/Applications/Unity-2018.2.5f1");
+        #[cfg(target_os = "windows")]
         let p = Path::new("C:\\Program Files\\Unity-2018.2.5f1");
+        #[cfg(target_os = "linux")]
+        let p = Path::new("/homce/ci/.local/share/Unity-2018.2.5f1");
+
+        #[cfg(target_os = "macos")]
+        let expected_result = r#"{"2018.2.5f1":{"version":"2018.2.5f1","location":["/Applications/Unity-2018.2.5f1/Unity.app"],"manual":true}}"#;
+
+        #[cfg(target_os = "windows")]
+        let expected_result = r#"{"2018.2.5f1":{"version":"2018.2.5f1","location":["C:\\Program Files\\Unity-2018.2.5f1\\Editor\\Unity.exe"],"manual":true}}"#;
+
+        #[cfg(target_os = "linux")]
+        let expected_result = r#"{"2018.2.5f1":{"version":"2018.2.5f1","location":["/homce/ci/.local/share/Unity-2018.2.5f1/Editor/Unity"],"manual":true}}"#;
+
+        let i = EditorInstallation {
+            version: v.clone(),
+            location: p.to_path_buf(),
+            manual: true
+        };
+
+        let expected_editors: HashMap<unity::Version, EditorInstallation> =
+            serde_json::from_str(&expected_result).unwrap();
+
+        let mut editors: HashMap<unity::Version, EditorInstallation> = HashMap::new();
+        editors.insert(v, i);
+        let json = serde_json::to_string(&editors).expect("convert editors map to json");
+        let written_editors: HashMap<unity::Version, EditorInstallation> =
+            serde_json::from_str(&json).unwrap();
+
         assert_eq!(
-            &editors[&v],
-            &EditorInstallation {
-                version: v,
-                location: p.to_path_buf(),
-                manual: true
-            }
+            written_editors,
+            expected_editors
         );
     }
 }

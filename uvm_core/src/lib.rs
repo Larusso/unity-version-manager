@@ -9,6 +9,9 @@ extern crate serde;
 extern crate serde_ini;
 extern crate serde_json;
 extern crate serde_yaml;
+#[cfg(target_os = "linux")]
+extern crate unzip;
+
 #[macro_use]
 extern crate log;
 #[macro_use]

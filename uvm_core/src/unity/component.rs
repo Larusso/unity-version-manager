@@ -64,12 +64,29 @@ impl Component {
         path.map(|p| Path::new(p).to_path_buf())
     }
 
+    #[cfg(target_os = "linux")]
+    pub fn installpath(self) -> Option<PathBuf> {
+        let path = match self {
+            StandardAssets => Some("Editor/Standard Assets"),
+            Android => Some("Editor/Data/PlaybackEngines/AndroidPlayer"),
+            Ios => Some("Editor/Data/PlaybackEngines/iOSSupport"),
+            TvOs => Some("Editor/Data/PlaybackEngines/AppleTVSupport"),
+            //Linux => Some("Editor/Data/PlaybackEngines/LinuxStandaloneSupport"),
+            Windows => Some("Editor/Data/PlaybackEngines/windowsstandalonesupport"),
+            WindowsMono => Some("Editor/Data/PlaybackEngines/windowsstandalonesupport"),
+            WebGl => Some("Editor/Data/PlaybackEngines/WebGLSupport"),
+            _ => None,
+        };
+
+        path.map(|p| Path::new(p).to_path_buf())
+    }
+
     #[cfg(target_os = "windows")]
     pub fn installpath(self) -> Option<PathBuf> {
         None
     }
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     pub fn install_location(self) -> Option<PathBuf> {
         self.installpath()
     }

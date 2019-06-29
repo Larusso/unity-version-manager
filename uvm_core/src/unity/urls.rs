@@ -70,13 +70,15 @@ impl Into<Url> for IniUrl {
 }
 
 impl IniUrl {
-    #[cfg(any(target_os = "windows", target_os = "macos"))]
+    #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
     pub fn new<V: AsRef<Version>>(version: V) -> Result<IniUrl> {
         let version = version.as_ref();
         let download_url = DownloadURL::new(version)?;
 
         let os = if cfg!(target_os = "macos") {
             "osx"
+        } else if cfg!(target_os = "linux") {
+            "linux"
         } else {
             "win"
         };
@@ -87,7 +89,7 @@ impl IniUrl {
         Ok(IniUrl(url))
     }
 
-    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     pub fn new<V: AsRef<Version>>(version: V) -> Result<IniUrl> {
         unimplemented!()
     }

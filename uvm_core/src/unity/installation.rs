@@ -19,7 +19,7 @@ pub trait UnityInstallation: Eq + Ord {
 
     #[cfg(target_os = "windows")]
     fn location(&self) -> PathBuf {
-        self.path().join("Editor/Unity.exe")
+        self.path().join("Editor\\Unity.exe")
     }
 
     #[cfg(target_os = "macos")]
@@ -27,7 +27,12 @@ pub trait UnityInstallation: Eq + Ord {
         self.path().join("Unity.app")
     }
 
-    #[cfg(target_os = "windows")]
+    #[cfg(target_os = "linux")]
+    fn location(&self) -> PathBuf {
+        self.path().join("Editor/Unity")
+    }
+
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
     fn exec_path(&self) -> PathBuf {
         self.location()
     }
@@ -104,7 +109,24 @@ fn adjust_path(path:&Path) -> Option<&Path> {
     }
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[cfg(target_os = "linux")]
+fn adjust_path(path:&Path) -> Option<&Path> {
+    if path.is_file() {
+        if let Some(name) = path.file_name() {
+            if name == "Unity" {
+                path.parent().and_then(|path| path.parent())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 fn adjust_path(path:&Path) -> Option<&Path> {
     None
 }
@@ -117,6 +139,7 @@ impl Installation {
         } else {
             path
         };
+
         version::read_version_from_path(&path)
             .map(|version| Installation {
                 version,
@@ -144,7 +167,7 @@ impl Installation {
 
     #[cfg(target_os = "windows")]
     pub fn location(&self) -> PathBuf {
-        self.path().join("Editor/Unity.exe")
+        self.path().join("Editor\\Unity.exe")
     }
 
     #[cfg(target_os = "macos")]
@@ -152,7 +175,12 @@ impl Installation {
         self.path().join("Unity.app")
     }
 
-    #[cfg(target_os = "windows")]
+    #[cfg(target_os = "linux")]
+    pub fn location(&self) -> PathBuf {
+        self.path().join("Editor/Unity")
+    }
+
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
     pub fn exec_path(&self) -> PathBuf {
         self.location()
     }
