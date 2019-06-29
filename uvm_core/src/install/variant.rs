@@ -1,5 +1,5 @@
 use std::fmt;
-use unity::Component;
+use crate::unity::Component;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum InstallVariant {
@@ -13,7 +13,7 @@ pub enum InstallVariant {
 }
 
 impl fmt::Display for InstallVariant {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             InstallVariant::Android => write!(f, "android"),
             InstallVariant::Ios => write!(f, "ios"),

@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use unity::Version;
+use crate::unity::Version;
 pub mod error;
 mod installer;
 mod variant;
@@ -14,6 +14,6 @@ pub use self::installer::install_module;
 pub use self::variant::InstallVariant;
 
 pub fn download_installer(variant: InstallVariant, version: &Version) -> Result<PathBuf> {
-    let mut d = Loader::new(variant, version.to_owned());
+    let d = Loader::new(variant, version.to_owned());
     d.download()
 }

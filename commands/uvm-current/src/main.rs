@@ -1,5 +1,5 @@
-extern crate uvm_cli;
-extern crate uvm_current;
+use uvm_cli;
+use uvm_current;
 
 use uvm_current::CurrentOptions;
 

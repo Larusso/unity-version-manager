@@ -2,7 +2,7 @@
 name = "uvm-list"
 version = "2.1.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
-
+edition = "2018"
 [dependencies]
 console = "0.6.1"
 log = "0.4.5"

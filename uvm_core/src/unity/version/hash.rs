@@ -4,7 +4,7 @@ use std::error::Error;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
-use unity::hub::paths;
+use crate::unity::hub::paths;
 
 pub fn all_versions() -> io::Result<impl Iterator<Item = Version>> {
     let url = reqwest::Url::parse("https://unity-versions-service.herokuapp.com/").unwrap();

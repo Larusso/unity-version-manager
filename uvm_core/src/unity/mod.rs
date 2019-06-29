@@ -16,7 +16,7 @@ pub use self::version::Version;
 pub use self::version::VersionType;
 pub use self::version::{UvmVersionError, UvmVersionErrorKind};
 
-use error::*;
+use crate::error::*;
 use itertools::Itertools;
 use std::convert::From;
 use std::fs;
@@ -24,8 +24,8 @@ use std::io;
 use std::path::Path;
 use std::slice::Iter;
 
-pub struct Installations(Box<Iterator<Item = Installation>>);
-pub struct Versions(Box<Iterator<Item = Version>>);
+pub struct Installations(Box<dyn Iterator<Item = Installation>>);
+pub struct Versions(Box<dyn Iterator<Item = Version>>);
 
 pub struct InstalledComponents {
     installation: Installation,
@@ -185,7 +185,7 @@ mod tests {
     use std::path::PathBuf;
     use std::str::FromStr;
     use tempfile::Builder;
-    use unity::installation::AppInfo;
+    use crate::unity::installation::AppInfo;
 
     fn create_test_path(base_dir: &PathBuf, version: &str) -> PathBuf {
         let path = base_dir.join(format!("Unity-{version}", version = version));

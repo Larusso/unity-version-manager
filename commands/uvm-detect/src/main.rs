@@ -1,6 +1,6 @@
-extern crate console;
-extern crate uvm_cli;
-extern crate uvm_core;
+
+use uvm_cli;
+use uvm_core;
 
 use console::style;
 use std::env;

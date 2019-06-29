@@ -1,5 +1,5 @@
-extern crate console;
-extern crate uvm_cli;
+
+use uvm_cli;
 
 use std::process;
 use uvm_cli::UvmOptions;

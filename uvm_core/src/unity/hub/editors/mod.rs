@@ -1,4 +1,7 @@
 use super::*;
+use crate::unity;
+use crate::unity::hub::paths;
+use crate::unity::installation::UnityInstallation;
 use serde_json;
 use std::collections::HashMap;
 use std::fs;
@@ -6,9 +9,6 @@ use std::fs::File;
 use std::io::Write;
 use std::iter::{IntoIterator, Iterator};
 use std::path::PathBuf;
-use unity;
-use unity::hub::paths;
-use unity::installation::UnityInstallation;
 mod cmp;
 mod convert;
 
@@ -130,7 +130,7 @@ impl IntoIterator for Editors {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct EditorInstallation {
     version: unity::Version,
-    #[serde(with = "unity::hub::editors::editor_value_location")]
+    #[serde(with = "editor_value_location")]
     location: PathBuf,
     manual: bool,
 }
@@ -184,7 +184,8 @@ pub mod editor_value_location {
                     return location.parent();
                 }
                 Some(location)
-            }).ok_or_else(|| {
+            })
+            .ok_or_else(|| {
                 serde::de::Error::invalid_value(
                     Unexpected::Other("location with empty parent"),
                     &"valid unity location",
@@ -212,14 +213,16 @@ pub mod editor_value_location {
     }
 }
 
-
+#[cfg(test)]
 mod tests {
-    use super::*;
+    use std::collections::HashMap;
     use std::path::Path;
+    use crate::unity::hub::editors::EditorInstallation;
+    use crate::unity::version::Version;
+    use crate::unity::version::VersionType;
 
     #[test]
     fn parse_editors() {
-
         #[cfg(target_os = "macos")]
         let data = r#"{
                         "2018.2.5f1": { "version": "2018.2.5f1", "location": ["/Applications/Unity-2018.2.5f1/Unity.app"], "manual": true },
@@ -238,10 +241,10 @@ mod tests {
                         "2017.1.0f3": { "version": "2017.1.0f3", "location": ["/homce/ci/.local/share/Unity-2017.1.0f3/Editor/Unity"], "manual": true }
                   }"#;
 
-        let editors: HashMap<unity::Version, EditorInstallation> =
+        let editors: HashMap<Version, EditorInstallation> =
             serde_json::from_str(data).unwrap();
 
-        let v = unity::Version::new(2018, 2, 5, unity::VersionType::Final, 1);
+        let v = Version::new(2018, 2, 5, VersionType::Final, 1);
 
         #[cfg(target_os = "macos")]
         let p = Path::new("/Applications/Unity-2018.2.5f1");
@@ -262,7 +265,7 @@ mod tests {
 
     #[test]
     fn write_editors() {
-        let v = unity::Version::new(2018, 2, 5, unity::VersionType::Final, 1);
+        let v = Version::new(2018, 2, 5, VersionType::Final, 1);
 
         #[cfg(target_os = "macos")]
         let p = Path::new("/Applications/Unity-2018.2.5f1");
@@ -283,16 +286,16 @@ mod tests {
         let i = EditorInstallation {
             version: v.clone(),
             location: p.to_path_buf(),
-            manual: true
+            manual: true,
         };
 
-        let expected_editors: HashMap<unity::Version, EditorInstallation> =
+        let expected_editors: HashMap<Version, EditorInstallation> =
             serde_json::from_str(&expected_result).unwrap();
 
-        let mut editors: HashMap<unity::Version, EditorInstallation> = HashMap::new();
+        let mut editors: HashMap<Version, EditorInstallation> = HashMap::new();
         editors.insert(v, i);
         let json = serde_json::to_string(&editors).expect("convert editors map to json");
-        let written_editors: HashMap<unity::Version, EditorInstallation> =
+        let written_editors: HashMap<Version, EditorInstallation> =
             serde_json::from_str(&json).unwrap();
 
         assert_eq!(

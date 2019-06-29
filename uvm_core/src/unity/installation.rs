@@ -1,9 +1,9 @@
-use error::*;
+use crate::error::*;
 use std::cmp::Ordering;
 use std::path::{Path, PathBuf};
-use unity::version;
-use unity::InstalledComponents;
-use unity::Version;
+use crate::unity::version;
+use crate::unity::InstalledComponents;
+use crate::unity::Version;
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]

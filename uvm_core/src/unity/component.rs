@@ -130,7 +130,7 @@ impl ParseComponentError {
 }
 
 impl fmt::Display for ParseComponentError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "ParseComponentError")
     }
 }
@@ -142,7 +142,7 @@ impl Error for ParseComponentError {
 }
 
 impl fmt::Display for Component {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Component::Editor => write!(f, "editor"),
             Component::Mono => write!(f, "mono"),

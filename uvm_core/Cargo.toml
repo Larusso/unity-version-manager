@@ -8,6 +8,7 @@ readme = "../README.md"
 keywords = ["unity","version-manager"]
 categories = ["development-tools"]
 license = "Apache-2.0"
+edition = "2018"
 [badges]
 travis-ci = { repository = "Larusso/unity-version-manager", branch = "master" }
 appveyor = { repository = "Larusso/unity-version-manager", branch = "master", service = "github" }

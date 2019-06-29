@@ -6,7 +6,7 @@ use std::convert::{AsMut, AsRef, From};
 use std::fmt;
 use std::result;
 use std::str::FromStr;
-use unity::Installation;
+use crate::unity::Installation;
 
 mod hash;
 pub mod manifest;
@@ -173,7 +173,7 @@ impl From<(u64, u64, u64, u64)> for Version {
 }
 
 impl fmt::Display for VersionType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             match *self {
                 VersionType::Final => write!(f, "final"),
@@ -193,7 +193,7 @@ impl fmt::Display for VersionType {
 }
 
 impl fmt::Display for Version {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}{}{}",

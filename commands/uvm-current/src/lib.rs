@@ -1,6 +1,6 @@
-extern crate console;
-extern crate uvm_cli;
-extern crate uvm_core;
+
+use uvm_cli;
+use uvm_core;
 #[macro_use]
 extern crate serde_derive;
 

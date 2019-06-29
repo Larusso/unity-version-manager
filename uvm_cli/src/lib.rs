@@ -1,12 +1,12 @@
-#[macro_use]
-extern crate serde_derive;
-extern crate cli_core;
-extern crate console;
-extern crate serde;
-extern crate uvm_core;
+
+
+
+
 #[macro_use]
 extern crate log;
-extern crate flexi_logger;
+#[macro_use]
+extern crate serde_derive;
+
 
 mod detect;
 mod help;

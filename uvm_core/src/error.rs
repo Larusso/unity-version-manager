@@ -4,9 +4,9 @@ error_chain! {
     }
 
     links {
-        VersionError(::unity::UvmVersionError, ::unity::UvmVersionErrorKind);
-        HubError(::unity::hub::UvmHubError, ::unity::hub::UvmHubErrorKind);
-        InstallError(::install::UvmInstallError, ::install::UvmInstallErrorKind);
+        VersionError(crate::unity::UvmVersionError, crate::unity::UvmVersionErrorKind);
+        HubError(crate::unity::hub::UvmHubError, crate::unity::hub::UvmHubErrorKind);
+        InstallError(crate::install::UvmInstallError, crate::install::UvmInstallErrorKind);
     }
 
     foreign_links {

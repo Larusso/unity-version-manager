@@ -1,5 +1,5 @@
-extern crate uvm_cli;
-extern crate uvm_commands;
+use uvm_cli;
+use uvm_commands;
 
 use uvm_commands::CommandsOptions;
 

@@ -2,7 +2,7 @@
 name = "uvm-launch"
 version = "2.1.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
-
+edition = "2018"
 [dependencies]
 console = "0.6.1"
 uvm_cli = { path = "../../uvm_cli" }

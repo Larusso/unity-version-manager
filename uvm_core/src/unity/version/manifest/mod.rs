@@ -1,4 +1,4 @@
-use error::*;
+use crate::error::*;
 use reqwest::header;
 use reqwest::Url;
 use serde_ini;
@@ -7,9 +7,9 @@ use std::fs::{DirBuilder, File};
 use std::io::{self, Write};
 use std::path::Path;
 use std::time::Duration;
-use unity::{Component, Version};
-use unity::hub::paths;
-use unity::urls::{DownloadURL, IniUrl};
+use crate::unity::{Component, Version};
+use crate::unity::hub::paths;
+use crate::unity::urls::{DownloadURL, IniUrl};
 
 lazy_static! {
     static ref CLIENT: reqwest::Client = {
@@ -63,7 +63,7 @@ impl Manifest {
             io::Error::new(io::ErrorKind::Other, "Unable to fetch cache directory")
         })?;
 
-        DirBuilder::new().recursive(true).create(&cache_dir).map_err(|err| {
+        DirBuilder::new().recursive(true).create(&cache_dir).map_err(|_err| {
             io::Error::new(io::ErrorKind::Other, format!("Unable to create cache directory at {}", cache_dir.display()))
         })?;
 
