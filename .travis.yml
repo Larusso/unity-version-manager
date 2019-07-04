@@ -17,7 +17,7 @@ branches:
   only:
     # release tags
     - /^v\d+\.\d+\.\d+.*$/
-- master
+    - master
 
 matrix:
   # TODO These are all the build jobs. Adjust as necessary. Comment out what you
