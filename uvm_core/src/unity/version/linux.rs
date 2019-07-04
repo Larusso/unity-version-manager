@@ -14,7 +14,7 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
     }
 
     if path.is_dir() {
-        //check for the `Unity.exe`
+        //check for the `Unity` executable
         let executable_path = path.join("Editor/Unity");
         trace!(
             "executable_path {} exists: {}",
@@ -23,12 +23,14 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
         );
 
         if executable_path.exists() {
-            let path_name = path.file_name().and_then(|name| name.to_str()).ok_or_else(|| {
+            return path.file_name().and_then(|name| name.to_str()).ok_or_else(|| {
                 debug!("Unable to read filename from path {}", path.display());
                 UvmVersionErrorKind::FailedToReadVersion(path.display().to_string())
-            })?;
-
-            return Version::from_str(path_name);
+            }).and_then(|path| {
+                Version::from_str(path).map_err(|err| err.into())
+            }).or_else(|_| {
+                Version::find_version_in_file(executable_path).into()
+            })
         }
     }
 

@@ -4,6 +4,7 @@ use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
 use std::cmp::Ordering;
 use std::convert::{AsMut, AsRef, From};
 use std::fmt;
+use std::path::Path;
 use std::result;
 use std::str::FromStr;
 use crate::unity::Installation;
@@ -162,6 +163,29 @@ impl Version {
 
     pub fn revision(&self) -> u64 {
         self.revision
+    }
+
+    #[cfg(unix)]
+    pub fn find_version_in_file<P: AsRef<Path>>(path: P) -> Result<Version> {
+        use std::process::{Command, Stdio};
+
+        let path = path.as_ref();
+        debug!("find unity version in Unity executable {}", path.display());
+
+        let child = Command::new("strings")
+            .arg("--")
+            .arg(path)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?;
+
+        let output = child.wait_with_output()?;
+
+        ensure!(output.status.success(), "Unable to read strings from executable {}", path.display());
+
+        let version = Version::from_str(&String::from_utf8_lossy(&output.stdout))?;
+        debug!("found version {}", &version);
+        Ok(version)
     }
 }
 
@@ -408,6 +432,70 @@ mod tests {
     fn fetch_hash_for_known_version() {
         let version = Version::f(2017, 1, 0, 2);
         assert_eq!(version.version_hash().unwrap(), String::from("66e9e4bfc850"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn reads_version_from_binary_file() {
+        use tempfile::Builder;
+        use std::io::Write;
+
+        let mut test_file = Builder::new()
+            .prefix("version_binary")
+            .rand_bytes(5)
+            .tempfile()
+            .unwrap();
+
+        let version = "2018.2.1f2";
+        let version_hash = "dft74dsds844";
+
+        //Some known result patterns
+        let test_value_1 = format!("Unity {}", version);
+        let test_value_2 = format!("{}_{}", version, version_hash);
+        let test_value_3 = format!("{} ({})", version, version_hash);
+        let test_value_4 = format!("Mozilla/5.0 (MacIntel; ) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36 Unity/{} (unity3d.com;", version);
+        let test_value_5 = format!("Invalid serialized file version. File: \"%s\". Expected version: {}. Actual version: %s.", version);
+        let test_value_6 = format!("UnityPlayer/{} (UnityWebRequest/1.0, libcurl/7.52.0-DEV)", version);
+
+        let f = test_file.as_file_mut();
+        let random_bytes: Vec<u8> = (0..2048).map(|_| { rand::random::<u8>() }).collect();
+
+        f.write_all(&random_bytes).unwrap();
+        f.write_all(test_value_1.as_bytes()).unwrap();
+        f.write_all(&random_bytes).unwrap();
+        f.write_all(test_value_2.as_bytes()).unwrap();
+        f.write_all(&random_bytes).unwrap();
+        f.write_all(test_value_3.as_bytes()).unwrap();
+        f.write_all(&random_bytes).unwrap();
+        f.write_all(test_value_4.as_bytes()).unwrap();
+        f.write_all(&random_bytes).unwrap();
+        f.write_all(test_value_5.as_bytes()).unwrap();
+        f.write_all(&random_bytes).unwrap();
+        f.write_all(test_value_6.as_bytes()).unwrap();
+        f.write_all(&random_bytes).unwrap();
+
+        let v = Version::find_version_in_file(test_file.path()).unwrap();
+        assert_eq!(v, Version::f(2018, 2, 1, 2));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn fails_to_read_version_from_binary_file_if_verion_can_not_be_found() {
+        use tempfile::Builder;
+        use std::io::Write;
+
+        let mut test_file = Builder::new()
+            .prefix("version_binary")
+            .rand_bytes(5)
+            .tempfile()
+            .unwrap();
+
+        let f = test_file.as_file_mut();
+        let random_bytes: Vec<u8> = (0..8000).map(|_| { rand::random::<u8>() }).collect();
+
+        f.write_all(&random_bytes).unwrap();
+        let v = Version::find_version_in_file(test_file.path());
+        assert!(v.is_err());
     }
 
     #[test]
