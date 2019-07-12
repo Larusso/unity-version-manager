@@ -65,7 +65,7 @@ impl<'a> Loader<'a> {
             "download installer for variant: {} and version: {}",
             self.variant, self.version
         );
-        let manifest = Manifest::load(self.version.clone()).map_err(|err| {
+        let manifest = Manifest::load(&self.version).map_err(|err| {
             UvmInstallError::with_chain(err, UvmInstallErrorKind::ManifestLoadFailed)
         })?;
         let component: Component = self.variant.clone().into();
