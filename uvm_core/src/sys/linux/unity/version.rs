@@ -1,7 +1,11 @@
-use super::*;
+use crate::unity::UvmVersionErrorKind;
+use crate::unity::UvmVersionErrorResult as Result;
+use crate::unity::UvmVersionErrorResultExt;
+use crate::unity::Version;
 use std::convert::AsRef;
 use std::io;
 use std::path::Path;
+use std::str::FromStr;
 
 pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
     let path = path.as_ref();

@@ -3,9 +3,8 @@ use std::fmt;
 use std::path::{Path, PathBuf};
 use std::slice::Iter;
 use std::str::FromStr;
-
+use crate::sys::unity::component as component_impl;
 mod error;
-mod sys;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Deserialize)]
 pub enum Component {
@@ -134,11 +133,11 @@ impl Component {
     }
 
     pub fn installpath(self) -> Option<PathBuf> {
-        sys::installpath(self)
+        component_impl::installpath(self)
     }
 
     pub fn install_location(self) -> Option<PathBuf> {
-        sys::install_location(self)
+        component_impl::install_location(self)
     }
 
     pub fn is_installed<P: AsRef<Path>>(self, unity_install_location: P) -> bool {

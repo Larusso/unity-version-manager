@@ -1,7 +1,7 @@
 use crate::error::*;
 use std::cmp::Ordering;
 use std::path::{Path, PathBuf};
-use crate::unity::version;
+use std::convert::TryFrom;
 use crate::unity::InstalledComponents;
 use crate::unity::Version;
 
@@ -140,7 +140,7 @@ impl Installation {
             path
         };
 
-        version::read_version_from_path(&path)
+        Version::try_from(path)
             .map(|version| Installation {
                 version,
                 path: path.to_path_buf(),
@@ -188,6 +188,14 @@ impl Installation {
     #[cfg(target_os = "macos")]
     pub fn exec_path(&self) -> PathBuf {
         self.path().join("Unity.app/Contents/MacOS/Unity")
+    }
+}
+
+use std::fmt;
+
+impl fmt::Display for Installation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.version, self.path.display())
     }
 }
 

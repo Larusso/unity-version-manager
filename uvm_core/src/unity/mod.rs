@@ -5,6 +5,7 @@ mod installation;
 pub mod urls;
 mod version;
 
+use core::iter::FromIterator;
 pub use self::component::Component;
 pub use self::current_installation::current_installation;
 pub use self::current_installation::CurrentInstallation;
@@ -14,7 +15,7 @@ pub use self::version::manifest::Manifest;
 pub use self::version::manifest::MD5;
 pub use self::version::Version;
 pub use self::version::VersionType;
-pub use self::version::{UvmVersionError, UvmVersionErrorKind};
+pub use self::version::{UvmVersionError, UvmVersionErrorKind, ResultExt as UvmVersionErrorResultExt, Result as UvmVersionErrorResult};
 
 use crate::error::*;
 use itertools::Itertools;
@@ -113,6 +114,15 @@ impl From<Installations> for Versions {
         Versions(Box::new(iter))
     }
 }
+
+impl FromIterator<Installation> for Installations {
+    fn from_iter<I: IntoIterator<Item=Installation>>(iter: I) -> Self {
+        let c:Vec<Installation> = iter.into_iter().collect();
+        Installations(Box::new(c.into_iter()))
+    }
+}
+
+use std::fmt;
 
 pub fn list_all_installations() -> Result<Installations> {
     let i1 = list_installations()?;

@@ -8,7 +8,6 @@ pub use self::installer::Loader;
 
 pub use self::error::{UvmInstallError, UvmInstallErrorKind, ResultExt, Result};
 
-
 pub use self::installer::install_editor;
 pub use self::installer::install_module;
 pub use self::variant::InstallVariant;
