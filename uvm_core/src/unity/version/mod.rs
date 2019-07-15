@@ -2,9 +2,9 @@ use regex::Regex;
 use semver;
 use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
 use std::cmp::Ordering;
-use std::convert::{AsMut, AsRef, From};
+use std::convert::{AsMut, AsRef, From, TryFrom};
 use std::fmt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::result;
 use std::str::FromStr;
 use crate::unity::Installation;
@@ -12,26 +12,11 @@ use crate::unity::Installation;
 mod hash;
 pub mod manifest;
 
-#[cfg(target_os = "macos")]
-mod mac;
-#[cfg(target_os = "windows")]
-mod win;
-#[cfg(target_os = "linux")]
-mod linux;
-#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-mod other;
-
-#[cfg(target_os = "macos")]
-use self::mac as sys;
-#[cfg(target_os = "windows")]
-use self::win as sys;
-#[cfg(target_os = "linux")]
-use self::linux as sys;
-#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-use self::other as sys;
+use crate::sys::unity::version as version_impl;
 
 pub use self::hash::all_versions;
-pub use self::sys::read_version_from_path;
+
+//pub use self::version_impl::read_version_from_path;
 
 #[derive(PartialEq, Eq, Ord, Hash, Debug, Clone, Copy)]
 pub enum VersionType {
@@ -99,6 +84,10 @@ impl Version {
             revision,
             hash: None,
         }
+    }
+
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
+        version_impl::read_version_from_path(path)
     }
 
     pub fn a(major: u64, minor: u64, patch: u64, revision: u64) -> Version {
@@ -193,6 +182,22 @@ impl From<(u64, u64, u64, u64)> for Version {
     fn from(tuple: (u64, u64, u64, u64)) -> Version {
         let (major, minor, patch, revision) = tuple;
         Version::f(major, minor, patch, revision)
+    }
+}
+
+impl TryFrom<PathBuf> for Version {
+    type Error = UvmVersionError;
+
+    fn try_from(path: PathBuf) -> Result<Self> {
+        Version::from_path(path)
+    }
+}
+
+impl TryFrom<&Path> for Version {
+    type Error = UvmVersionError;
+
+    fn try_from(path: &Path) -> Result<Self> {
+        Version::from_path(path)
     }
 }
 

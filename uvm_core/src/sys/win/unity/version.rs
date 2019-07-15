@@ -1,4 +1,8 @@
-use super::*;
+use crate::unity::UvmVersionError;
+use crate::unity::UvmVersionErrorKind;
+use crate::unity::UvmVersionErrorResult as Result;
+use crate::unity::UvmVersionErrorResultExt;
+use crate::unity::Version;
 use std::path::Path;
 
 extern crate core;
@@ -18,6 +22,7 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io;
 use std::mem;
+use std::str::FromStr;
 
 pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
     let path = path.as_ref();
@@ -146,7 +151,8 @@ fn win_query_version_value(
                     query_string, &result
                 );
                 result
-            }).map_err(|_err| WinVersionError::new("Unable to create UTF8 string"));
+            })
+            .map_err(|_err| WinVersionError::new("Unable to create UTF8 string"));
 
         libc::free(data as *mut libc::c_void);
         version

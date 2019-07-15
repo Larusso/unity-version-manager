@@ -1,4 +1,4 @@
-use super::Component;
+use crate::unity::Component;
 use std::path::{Path, PathBuf};
 
 pub fn installpath(component:Component) -> Option<PathBuf> {
