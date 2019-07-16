@@ -6,6 +6,7 @@ pub struct ProgressBar(indicatif::ProgressBar);
 pub struct MultiProgress(indicatif::MultiProgress);
 
 impl ProgressBar {
+    #[allow(dead_code)]
     pub fn new(len: u64) -> ProgressBar {
         ProgressBar(indicatif::ProgressBar::new(len))
     }

@@ -23,10 +23,19 @@ enum CheckSumResult {
 
 struct DownloadProgress<'a, R, P> {
     pub inner: R,
-    pub progress_handle: &'a Box<P>,
+    pub progress_handle: &'a P,
 }
 
-impl<'a, R: Read, P: 'a + ProgressHandler + ?Sized> Read for DownloadProgress<'a, R, &P> {
+// impl<'a, R: Read, P: 'a + ProgressHandler + ?Sized> Read for DownloadProgress<'a, R, &P> {
+//     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+//         self.inner.read(buf).map(|n| {
+//             self.progress_handle.inc(n as u64);
+//             n
+//         })
+//     }
+// }
+
+impl<'a, R: Read, P: 'a + ProgressHandler + ?Sized> Read for DownloadProgress<'a, R, Box<&P>> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.inner.read(buf).map(|n| {
             self.progress_handle.inc(n as u64);

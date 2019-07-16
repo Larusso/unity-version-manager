@@ -279,8 +279,7 @@ mod tests {
     proptest! {
         #[test]
         fn doesnt_crash(ref s in "\\PC*") {
-
-            Installation::new(Path::new(s).to_path_buf()).is_ok();
+            let _ = Installation::new(Path::new(s).to_path_buf()).is_ok();
         }
 
         #[test]

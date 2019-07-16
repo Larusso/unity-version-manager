@@ -1,10 +1,8 @@
-
 use uvm_cli;
 use uvm_core;
-#[macro_use]
-extern crate serde_derive;
+use serde_derive::Deserialize;
 
-use console::{style, Term};
+use console::style;
 use std::io;
 use uvm_cli::{ColorOption, Options};
 
@@ -31,10 +29,7 @@ impl uvm_cli::Options for CurrentOptions {
     }
 }
 
-pub struct UvmCommand {
-    stdout: Term,
-    stderr: Term,
-}
+pub struct UvmCommand {}
 
 impl Default for UvmCommand {
     fn default() -> Self {
@@ -44,10 +39,7 @@ impl Default for UvmCommand {
 
 impl UvmCommand {
     pub fn new() -> UvmCommand {
-        UvmCommand {
-            stdout: Term::stdout(),
-            stderr: Term::stderr(),
-        }
+        UvmCommand {}
     }
 
     pub fn exec(&self, options: &CurrentOptions) -> io::Result<()> {
@@ -65,9 +57,9 @@ impl UvmCommand {
                     version = style(installation.version().to_string()).cyan(),
                 )
             };
-            self.stdout.write_line(&line).is_ok();
+            println!("{}", &line);
         } else {
-            self.stderr.write_line("No active version").is_ok();
+            println!("No active version");
         }
 
         Ok(())

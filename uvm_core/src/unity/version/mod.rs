@@ -455,12 +455,12 @@ mod tests {
         let version_hash = "dft74dsds844";
 
         //Some known result patterns
-        let test_value_1 = format!("Unity {}", version);
-        let test_value_2 = format!("{}_{}", version, version_hash);
-        let test_value_3 = format!("{} ({})", version, version_hash);
-        let test_value_4 = format!("Mozilla/5.0 (MacIntel; ) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36 Unity/{} (unity3d.com;", version);
-        let test_value_5 = format!("Invalid serialized file version. File: \"%s\". Expected version: {}. Actual version: %s.", version);
-        let test_value_6 = format!("UnityPlayer/{} (UnityWebRequest/1.0, libcurl/7.52.0-DEV)", version);
+        let test_value_1 = format!("Unity {}\n", version);
+        let test_value_2 = format!("{}_{}\n", version, version_hash);
+        let test_value_3 = format!("{} ({})\n", version, version_hash);
+        let test_value_4 = format!("Mozilla/5.0 (MacIntel; ) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36 Unity/{} (unity3d.com;\n", version);
+        let test_value_5 = format!("Invalid serialized file version. File: \"%s\". Expected version: {}. Actual version: %s.\n", version);
+        let test_value_6 = format!("UnityPlayer/{} (UnityWebRequest/1.0, libcurl/7.52.0-DEV)\n", version);
 
         let f = test_file.as_file_mut();
         let random_bytes: Vec<u8> = (0..2048).map(|_| { rand::random::<u8>() }).collect();
@@ -512,7 +512,7 @@ mod tests {
     proptest! {
         #[test]
         fn doesnt_crash(ref s in "\\PC*") {
-            Version::from_str(s).is_ok();
+            let _ = Version::from_str(s);
         }
 
         #[test]
