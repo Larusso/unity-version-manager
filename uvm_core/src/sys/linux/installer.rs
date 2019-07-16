@@ -2,7 +2,7 @@ use std::io;
 use std::path::PathBuf;
 use std::fs::File;
 use std::fs::DirBuilder;
-use std::ffi::{OsString, OsStr};
+use std::ffi::OsStr;
 use std::fs;
 use unzip::Unzipper;
 use std::process::{Command, Stdio};
@@ -32,12 +32,12 @@ fn _install_editor(installer: &PathBuf, destination: &PathBuf) -> io::Result<()>
 
     if installer.extension() == Some(OsStr::new("zip")) {
         debug!("install editor from zip archive");
-        cleanDirectory(destination)?;
+        clean_directory(destination)?;
         deploy_zip(installer, destination)?;
         return Ok(());
     } else if installer.extension() == Some(OsStr::new("xz")) {
         debug!("install editor from xz archive");
-        cleanDirectory(destination)?;
+        clean_directory(destination)?;
         untar(installer, destination)?;
         return Ok(());
     }
@@ -71,7 +71,7 @@ fn _install_module(installer: &PathBuf, destination: &PathBuf) -> io::Result<()>
 
     if installer.extension() == Some(OsStr::new("zip")) {
         debug!("install component from zip archive");
-        cleanDirectory(destination)?;
+        clean_directory(destination)?;
         deploy_zip(installer, destination)?;
         return Ok(());
     } else if installer.extension() == Some(OsStr::new("xz")) {
@@ -149,7 +149,7 @@ fn find_payload(dir: &PathBuf) -> io::Result<PathBuf> {
     debug!("find paylod in unpacked installer {}", dir.display());
     let mut files = fs::read_dir(dir).and_then(|read_dir| {
         Ok(read_dir.filter_map(io::Result::ok))
-    }).map_err(|err| {
+    }).map_err(|_err| {
         io::Error::new(
             io::ErrorKind::Other,
             format!(
@@ -215,7 +215,7 @@ fn untar_pkg(base_payload_path: &PathBuf, destination: &PathBuf) -> io::Result<(
             .stdin(Stdio::piped())
             .spawn()?;
         {
-            let mut stdin = cpio.stdin.as_mut().expect("stdin");
+            let stdin = cpio.stdin.as_mut().expect("stdin");
             let mut file = File::open(payload)?;
             let mut buffer = Vec::new();
             file.read_to_end(&mut buffer)?;
@@ -235,10 +235,10 @@ fn untar_pkg(base_payload_path: &PathBuf, destination: &PathBuf) -> io::Result<(
                 .stdin(Stdio::piped())
                 .spawn()?;
             {
-                let mut stdin = cpio.stdin.as_mut().expect("stdin");
-                let mut gzipStdOut = gzip.stdout.as_mut().expect("stdout");
+                let stdin = cpio.stdin.as_mut().expect("stdin");
+                let gzip_std_out = gzip.stdout.as_mut().expect("stdout");
                 let mut buffer = Vec::new();
-                gzipStdOut.read_to_end(&mut buffer)?;
+                gzip_std_out.read_to_end(&mut buffer)?;
                 stdin.write(&buffer)?;
             }
             cpio
@@ -258,7 +258,7 @@ fn untar_pkg(base_payload_path: &PathBuf, destination: &PathBuf) -> io::Result<(
     Ok(())
 }
 
-fn cleanDirectory(path: &PathBuf) -> io::Result<()> {
+fn clean_directory(path: &PathBuf) -> io::Result<()> {
     debug!("clean output directory {}", path.display());
     if path.exists() {
         debug!("directory exists. Delete directory and create empty directory at {}", path.display());

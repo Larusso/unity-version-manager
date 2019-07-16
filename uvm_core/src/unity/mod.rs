@@ -122,8 +122,6 @@ impl FromIterator<Installation> for Installations {
     }
 }
 
-use std::fmt;
-
 pub fn list_all_installations() -> Result<Installations> {
     let i1 = list_installations()?;
     let i2 = hub::list_installations()?;
@@ -304,7 +302,7 @@ mod tests {
     proptest! {
         #[test]
         fn doesnt_crash(ref s in "\\PC*") {
-            Installations::new(Path::new(s))
+            let _ = Installations::new(Path::new(s));
         }
 
         #[test]

@@ -1,6 +1,5 @@
 use crate::unity::UvmVersionErrorKind;
 use crate::unity::UvmVersionErrorResult as Result;
-use crate::unity::UvmVersionErrorResultExt;
 use crate::unity::Version;
 use std::convert::AsRef;
 use std::io;

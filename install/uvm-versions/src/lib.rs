@@ -1,15 +1,8 @@
-#[macro_use]
-extern crate serde_derive;
-
-
-
-
 use serde;
 use uvm_cli;
 use uvm_core;
 #[macro_use]
 extern crate log;
-
 use console::Style;
 use console::Term;
 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
@@ -251,17 +244,17 @@ impl UvmCommand {
         let versions = uvm_core::unity::all_versions()?;
         let versions: Vec<Version> = if options.filter_versions() {
             self.filter_versions(versions)
-                .filter_map(|version| match options.pattern() {
-                    Some(p) if p.is_match(&version.to_string()) => Some(version),
-                    Some(_) => None,
-                    None => Some(version),
+                .filter(|version| match options.pattern() {
+                    Some(p) if p.is_match(&version.to_string()) => true,
+                    Some(_) => false,
+                    None => true,
                 }).collect()
         } else {
             versions
-                .filter_map(|version| match options.pattern() {
-                    Some(p) if p.is_match(&version.to_string()) => Some(version),
-                    Some(_) => None,
-                    None => Some(version),
+                .filter(|version| match options.pattern() {
+                    Some(p) if p.is_match(&version.to_string()) => true,
+                    Some(_) => false,
+                    None => true,
                 }).collect()
         };
 

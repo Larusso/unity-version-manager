@@ -225,7 +225,9 @@ pub struct MD5(#[serde(with = "hex_serde")] pub [u8; 16]);
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(target_os = "macos")]
     use std::fs;
+    #[cfg(target_os = "macos")]
     use tempfile;
 
     #[cfg(target_os = "macos")]

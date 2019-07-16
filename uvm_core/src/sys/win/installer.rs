@@ -38,9 +38,9 @@ fn install_from_exe(installer: &PathBuf, destination: &PathBuf) -> io::Result<()
             destination.display()
         );
         trace!("install helper script content:");
-        writeln!(script, "ECHO OFF");
+        writeln!(script, "ECHO OFF")?;
         trace!("{}", &install_command);
-        writeln!(script, "{}", install_command);
+        writeln!(script, "{}", install_command)?;
     }
 
     info!(
