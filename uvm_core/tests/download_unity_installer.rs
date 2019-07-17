@@ -3,7 +3,6 @@ cfg_if::cfg_if! {
         use uvm_core::install;
         use uvm_core::unity;
 
-        #[cfg(target_os = "macos")]
         #[test]
         fn downloads_editor_installer_for_version() {
             let variant = install::InstallVariant::Editor;

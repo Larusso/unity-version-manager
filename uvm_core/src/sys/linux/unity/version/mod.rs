@@ -6,6 +6,8 @@ use std::io;
 use std::path::Path;
 use std::str::FromStr;
 
+pub mod module;
+
 pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
     let path = path.as_ref();
     if !path.exists() {

@@ -1,17 +1,25 @@
 use self::Component::*;
+use crate::sys::unity::component as component_impl;
+use crate::unity::{Version, Localization};
+use crate::unity::urls::DownloadURL;
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::slice::Iter;
 use std::str::FromStr;
-use crate::sys::unity::component as component_impl;
+use reqwest::Url;
 mod error;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Deserialize)]
 pub enum Component {
+    Language(Localization),
     #[serde(rename = "Unity")]
     Editor,
     Mono,
     VisualStudio,
+    #[cfg(windows)]
+    VisualStudioProfessionalUnityWorkload,
+    #[cfg(windows)]
+    VisualStudioEnterpriseUnityWorkload,
     MonoDevelop,
     Documentation,
     StandardAssets,
@@ -28,6 +36,8 @@ pub enum Component {
     AndroidSdkNdkTools,
     #[serde(rename = "Android-Ndk")]
     AndroidNdk,
+    #[serde(rename = "Android-Open-Jdk")]
+    AndroidOpenJdk,
     #[serde(rename = "iOS")]
     Ios,
     TvOs,
@@ -41,7 +51,6 @@ pub enum Component {
     #[serde(rename = "Mac-IL2CPP")]
     MacIL2CPP,
     #[serde(rename = "Mac-Mono")]
-    #[cfg(windows)]
     MacMono,
     #[cfg(windows)]
     Metro,
@@ -52,14 +61,15 @@ pub enum Component {
     #[cfg(windows)]
     UwpNet,
     #[cfg(windows)]
+    #[serde(rename = "Universal-Windows-Platform")]
     UniversalWindowsPlatform,
     Samsungtv,
     #[serde(rename = "Samsung-TV")]
     SamsungTV,
     Tizen,
     Vuforia,
-    #[serde(rename = "Vuforia-Ar")]
-    VuforiaAr,
+    #[serde(rename = "Vuforia-AR")]
+    VuforiaAR,
     Windows,
     #[serde(rename = "Windows-Mono")]
     WindowsMono,
@@ -69,7 +79,7 @@ pub enum Component {
     Facebook,
     #[serde(rename = "Facebook-Games")]
     FacebookGames,
-    #[serde(rename = "Facebookgameroom")]
+    #[serde(rename = "FacebookGameroom")]
     FacebookGameRoom,
     Lumin,
     #[serde(other)]
@@ -79,13 +89,17 @@ pub enum Component {
 impl Component {
     pub fn iterator() -> Iter<'static, Component> {
         #[cfg(windows)]
-        const SIZE: usize = 38;
+        const SIZE: usize = 41;
         #[cfg(not(windows))]
-        const SIZE: usize = 32;
+        const SIZE: usize = 34;
 
         static COMPONENTS: [Component; SIZE] = [
             Mono,
             VisualStudio,
+            #[cfg(windows)]
+            VisualStudioEnterpriseUnityWorkload,
+            #[cfg(windows)]
+            VisualStudioProfessionalUnityWorkload,
             MonoDevelop,
             Documentation,
             StandardAssets,
@@ -97,6 +111,7 @@ impl Component {
             AndroidSdkPlatformTools,
             AndroidSdkNdkTools,
             AndroidNdk,
+            AndroidOpenJdk,
             Ios,
             TvOs,
             AppleTV,
@@ -104,7 +119,6 @@ impl Component {
             LinuxMono,
             Mac,
             MacIL2CPP,
-            #[cfg(windows)]
             MacMono,
             #[cfg(windows)]
             Metro,
@@ -118,7 +132,7 @@ impl Component {
             SamsungTV,
             Tizen,
             Vuforia,
-            VuforiaAr,
+            VuforiaAR,
             WebGl,
             Windows,
             WindowsMono,
@@ -128,16 +142,55 @@ impl Component {
             FacebookGames,
             FacebookGameRoom,
             Lumin,
+            // Language(Localization::Ja),
+            // Language(Localization::Ko),
+            // Language(Localization::Fr),
+            // Language(Localization::Es),
+            // Language(Localization::ZhCn),
+            // Language(Localization::ZhHant),
+            // Language(Localization::ZhHans),
+            // Language(Localization::Ru),
         ];
         COMPONENTS.iter()
     }
 
+    #[cfg(windows)]
+    pub fn installpath_with_installer_url(self, installer_url:&str) -> Option<PathBuf> {
+        use crate::sys::unity::component::InstallerType;
+        if installer_url.ends_with(".zip") {
+            component_impl::installpath(self, InstallerType::Zip)
+        } else {
+            component_impl::installpath(self, InstallerType::Exe)
+        }
+    }
+
+    #[cfg(windows)]
+    pub fn installpath(self) -> Option<PathBuf> {
+        use crate::sys::unity::component::InstallerType;
+
+        component_impl::installpath(self, InstallerType::Exe)
+    }
+
+    #[cfg(not(windows))]
     pub fn installpath(self) -> Option<PathBuf> {
         component_impl::installpath(self)
     }
 
     pub fn install_location(self) -> Option<PathBuf> {
         component_impl::install_location(self)
+    }
+
+    pub fn selected(self) -> bool {
+        component_impl::selected(self)
+    }
+
+    pub fn visible(self) -> bool {
+        match self {
+            Mono | FacebookGameRoom | AndroidSdkPlatformTools | AndroidSdkBuildTools | AndroidSdkPlatforms | AndroidNdk => false,
+            #[cfg(windows)]
+            VisualStudioProfessionalUnityWorkload | VisualStudioEnterpriseUnityWorkload => false,
+            _ => true
+        }
     }
 
     pub fn is_installed<P: AsRef<Path>>(self, unity_install_location: P) -> bool {
@@ -147,14 +200,80 @@ impl Component {
             .map(|install_path| install_path.exists())
             .unwrap_or(false)
     }
+
+    pub fn category<V: AsRef<Version>>(self, version: V) -> String {
+        let c = match self {
+            MonoDevelop | VisualStudio => "Dev tools",
+            Mono | FacebookGameRoom => "Plugins",
+            #[cfg(windows)]
+            VisualStudioProfessionalUnityWorkload | VisualStudioEnterpriseUnityWorkload => {
+                "Plugins"
+            }
+            Documentation | StandardAssets | ExampleProject | Example => {
+                if *version.as_ref() >= Version::a(2018, 2, 0, 0) {
+                    "Documentation"
+                } else {
+                    "Components"
+                }
+            }
+            Language(_) => "Language packs (Preview)",
+            _ => "Platforms",
+        };
+
+        c.to_string()
+    }
+
+    pub fn sync(self) -> Option<String> {
+        let s = match self {
+            Mono => Some("visualstudio"),
+            AndroidSdkNdkTools | AndroidOpenJdk => Some("Android Build Support"),
+            AndroidSdkBuildTools | AndroidSdkPlatformTools | AndroidSdkPlatforms | AndroidNdk => Some("android-sdk-ndk-tools"),
+            _ => None,
+        };
+        s.map(|s| s.to_string())
+    }
+
+    fn add_version_to_url<V:AsRef<Version>>(self, download_url:&str, version:V) -> String {
+        let version = version.as_ref();
+        let version_pattern = &format!("-{}", version);
+        if !download_url.contains(version_pattern) {
+            if download_url.ends_with(".pkg") {
+                return download_url.replace(".pkg", &format!("{}.pkg", &version_pattern))
+            } else if download_url.ends_with(".exe") {
+                return download_url.replace(".exe", &format!("{}.exe", &version_pattern))
+            } else if download_url.ends_with(".tar.xz") {
+                return download_url.replace(".tar.xz", &format!("{}.tar.xz", &version_pattern))
+            }
+        }
+        download_url.to_string()
+    }
+
+    pub fn download_url<V:AsRef<Version>>(self, base_url:&DownloadURL, download_url:&str, version:V) -> Option<Url> {
+        if download_url.starts_with("https://") || download_url.starts_with("http://") {
+            return Url::parse(download_url).ok()
+        }
+
+        match self {
+            #[cfg(target_os = "linux")]
+            StandardAssets | Example | Documentation => Url::parse(download_url).ok(),
+            _ => base_url.join(&self.add_version_to_url(download_url, version)).ok()
+        }
+    }
 }
 
 impl fmt::Display for Component {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Language(l) => write!(f, "language-{}", l.locale()),
             Editor => write!(f, "editor"),
             Mono => write!(f, "mono"),
             VisualStudio => write!(f, "visualstudio"),
+            #[cfg(windows)]
+            VisualStudioProfessionalUnityWorkload => {
+                write!(f, "visualstudioprofessionalunityworkload")
+            }
+            #[cfg(windows)]
+            VisualStudioEnterpriseUnityWorkload => write!(f, "visualstudioenterpriseunityworkload"),
             MonoDevelop => write!(f, "monodevelop"),
             Documentation => write!(f, "documentation"),
             StandardAssets => write!(f, "standardassets"),
@@ -166,6 +285,7 @@ impl fmt::Display for Component {
             AndroidSdkPlatformTools => write!(f, "android-sdk-platform-tools"),
             AndroidSdkNdkTools => write!(f, "android-sdk-ndk-tools"),
             AndroidNdk => write!(f, "android-ndk"),
+            AndroidOpenJdk => write!(f, "android-open-jdk"),
             Ios => write!(f, "ios"),
             TvOs => write!(f, "tvos"),
             AppleTV => write!(f, "appletv"),
@@ -173,7 +293,6 @@ impl fmt::Display for Component {
             LinuxMono => write!(f, "linux-mono"),
             Mac => write!(f, "mac"),
             MacIL2CPP => write!(f, "mac-il2cpp"),
-            #[cfg(windows)]
             MacMono => write!(f, "mac-mono"),
             #[cfg(windows)]
             Metro => write!(f, "metro"),
@@ -187,7 +306,7 @@ impl fmt::Display for Component {
             SamsungTV => write!(f, "samsung-tv"),
             Tizen => write!(f, "tizen"),
             Vuforia => write!(f, "vuforia"),
-            VuforiaAr => write!(f, "vuforia-ar"),
+            VuforiaAR => write!(f, "vuforia-ar"),
             WebGl => write!(f, "webgl"),
             Windows => write!(f, "windows"),
             WindowsMono => write!(f, "windows-mono"),
@@ -209,6 +328,10 @@ impl FromStr for Component {
         match s {
             "mono" => Ok(Mono),
             "visualstudio" => Ok(VisualStudio),
+            #[cfg(windows)]
+            "visualstudioprofessionalunityworkload" => Ok(VisualStudioProfessionalUnityWorkload),
+            #[cfg(windows)]
+            "visualstudioenterpriseunityworkload" => Ok(VisualStudioEnterpriseUnityWorkload),
             "monodevelop" => Ok(MonoDevelop),
             "documentation" => Ok(Documentation),
             "standardassets" => Ok(StandardAssets),
@@ -220,6 +343,7 @@ impl FromStr for Component {
             "android-sdk-platform-tools" => Ok(AndroidSdkPlatformTools),
             "android-sdk-ndk-tools" => Ok(AndroidSdkNdkTools),
             "android-ndk" => Ok(AndroidNdk),
+            "android-open-jdk" => Ok(AndroidOpenJdk),
             "ios" => Ok(Ios),
             "tvos" => Ok(TvOs),
             "appletv" => Ok(AppleTV),
@@ -227,7 +351,6 @@ impl FromStr for Component {
             "linux-mono" => Ok(LinuxMono),
             "mac" => Ok(Mac),
             "mac-il2cpp" => Ok(MacIL2CPP),
-            #[cfg(windows)]
             "mac-mono" => Ok(MacMono),
             #[cfg(windows)]
             "metro" => Ok(Metro),
@@ -241,7 +364,7 @@ impl FromStr for Component {
             "samsung-tv" => Ok(SamsungTV),
             "tizen" => Ok(Tizen),
             "vuforia" => Ok(Vuforia),
-            "vuforia-ar" => Ok(VuforiaAr),
+            "vuforia-ar" => Ok(VuforiaAR),
             "webgl" => Ok(WebGl),
             "windows" => Ok(Windows),
             "windows-mono" => Ok(WindowsMono),
@@ -251,7 +374,12 @@ impl FromStr for Component {
             "facebook-games" => Ok(FacebookGames),
             "facebookgameroom" => Ok(FacebookGameRoom),
             "lumin" => Ok(Lumin),
-            x => Err(error::ParseComponentErrorKind::Unsupported(x.to_string()).into()),
+            x => {
+                match x.rsplitn(1,'_').next().and_then(|sub| Localization::from_str(sub).ok()) {
+                    Some(locale) => Ok(Language(locale)),
+                    None => Err(error::ParseComponentErrorKind::Unsupported(x.to_string()).into())
+                }
+            },
         }
     }
 }
@@ -275,7 +403,7 @@ mod tests {
     fn unknown_components_values_will_be_wrapped() {
         use serde_yaml::Result;
         let ini_id = "Some-Random-Value";
-        let component:Result<Component> = serde_yaml::from_str(ini_id);
+        let component: Result<Component> = serde_yaml::from_str(ini_id);
         assert!(component.is_ok(), "valid input returns a component");
         assert_eq!(component.unwrap(), Component::Unknown);
     }
@@ -321,21 +449,23 @@ mod tests {
         ini_name_samsung_tv_can_be_deserialized, "Samsung-TV" => SamsungTV,
         ini_name_tizen_can_be_deserialized, "Tizen" => Tizen,
         ini_name_vuforia_can_be_deserialized, "Vuforia" => Vuforia,
-        ini_name_vuforia_ar_can_be_deserialized, "Vuforia-Ar" => VuforiaAr,
+        ini_name_vuforia_ar_can_be_deserialized, "Vuforia-AR" => VuforiaAR,
         ini_name_windows_can_be_deserialized, "Windows" => Windows,
         ini_name_windows_mono_can_be_deserialized, "Windows-Mono" => WindowsMono,
         ini_name_facebook_can_be_deserialized, "Facebook" => Facebook,
         ini_name_facebook_games_can_be_deserialized, "Facebook-Games" => FacebookGames,
-        ini_name_facebookgamesroom_can_be_deserialized, "Facebookgameroom" => FacebookGameRoom,
+        ini_name_facebookgamesroom_can_be_deserialized, "FacebookGameroom" => FacebookGameRoom,
         ini_name_lumin_can_be_deserialized, "Lumin" => Lumin
     }
 
     #[cfg(windows)]
     valid_component_ini_input! {
-        ini_name_mac_mono_can_be_deserialized, "Metro" => Metro,
+        ini_name_metro_can_be_deserialized, "Metro" => Metro,
+        ini_name_visualstudioenterpriseunityworkload_can_be_deserialized, "VisualStudioEnterpriseUnityWorkload" => VisualStudioEnterpriseUnityWorkload,
+        ini_name_visualstudioprofessionalunityworkload_can_be_deserialized, "VisualStudioProfessionalUnityWorkload" => VisualStudioProfessionalUnityWorkload,
         ini_name_mac_uwp_il2ccp_can_be_deserialized, "UWP-IL2CPP" => UwpIL2CPP,
         ini_name_mac_uwp_net_can_be_deserialized, "UWP-.NET" => UwpNet,
-        ini_name_mac_universal_windows_platform_can_be_deserialized, "UniversalWindowsPlatform" => UniversalWindowsPlatform,
+        ini_name_mac_universal_windows_platform_can_be_deserialized, "Universal-Windows-Platform" => UniversalWindowsPlatform,
         ini_name_windows_il2cpp_can_be_deserialized, "Windows-IL2CPP" => WindowsIL2CCP
     }
 }
