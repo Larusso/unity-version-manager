@@ -9,7 +9,7 @@ use std::str::FromStr;
 use reqwest::Url;
 mod error;
 
-#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Deserialize)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
 pub enum Component {
     Language(Localization),
     #[serde(rename = "Unity")]

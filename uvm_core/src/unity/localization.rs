@@ -20,7 +20,7 @@ pub mod error {
 /// zh-cn is available since 2018.2+
 /// zh-hant is available since 2019.1+
 /// zh-cn changed to zh-hans since 2019.1+
-#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Deserialize)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
 pub enum Localization {
     Ja,
     Ko,
