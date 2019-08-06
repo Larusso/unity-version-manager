@@ -55,9 +55,14 @@ impl<'a> Manifest<'a> {
         Version::from_str(&manifest_buffer).chain_err(|| "can't read version from manifest body")
     }
 
-    pub fn from_reader<R: Read>(version: &'a Version, manifest: R) -> Result<Manifest<'a>> {
+    pub fn from_reader<R: Read>(version: &'a Version, mut manifest: R) -> Result<Manifest<'a>> {
         let base_url = DownloadURL::new(&version)?;
-        let components = Self::read_components(manifest, &base_url, version)?;
+        let mut ini_data = String::new();
+        manifest.read_to_string(&mut ini_data)?;
+        let ini_data = Self::cleanup_ini_data(&ini_data);
+
+        let components = Self::read_components(ini_data.as_bytes(), &base_url, version)?;
+
         Ok(Manifest {
             version,
             base_url,
@@ -509,6 +514,27 @@ optsync_webgl=WebGL"#;
         assert!(manifest.get(Component::Ios).is_some());
         assert!(manifest.get(Component::Editor).is_some());
 }
+
+    #[test]
+    fn cleanup_ini_data_when_read_with_reader() {
+        let test_ini = r#"[Unity]
+title=Unity 2018.4.0f1
+description=Unity Editor
+url=MacEditorInstaller/Unity.pkg
+install=true
+mandatory=false
+size=989685761
+installedsize=2576390000
+ver sio n=2018.4.0f1
+md5=822c52aa75af582318c5d0ef94137f40"#;
+        let test_ini_1 = StringReader::new(test_ini);
+        let version = Manifest::read_manifest_version(test_ini_1).expect("a version from manifest");
+        let test_ini_2 = StringReader::new(test_ini);
+        let manifest = Manifest::from_reader(&version, test_ini_2).expect("a manifest from reader");
+        assert!(manifest.get(Component::Editor).is_some());
+        let c = manifest.get(Component::Editor).unwrap();
+        assert_eq!(c.description, "Unity Editor".to_string());
+    }
 
     #[test]
     fn cleanup_ini_data_removes_junk_lines() {
