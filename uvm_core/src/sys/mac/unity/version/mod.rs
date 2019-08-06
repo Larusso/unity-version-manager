@@ -9,6 +9,8 @@ use std::io;
 use std::path::Path;
 use std::str::FromStr;
 
+pub mod module;
+
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct AppInfo {

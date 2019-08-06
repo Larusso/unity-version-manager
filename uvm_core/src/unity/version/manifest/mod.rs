@@ -55,9 +55,14 @@ impl<'a> Manifest<'a> {
         Version::from_str(&manifest_buffer).chain_err(|| "can't read version from manifest body")
     }
 
-    pub fn from_reader<R: Read>(version: &'a Version, manifest: R) -> Result<Manifest<'a>> {
+    pub fn from_reader<R: Read>(version: &'a Version, mut manifest: R) -> Result<Manifest<'a>> {
         let base_url = DownloadURL::new(&version)?;
-        let components = Self::read_components(manifest, &base_url)?;
+        let mut ini_data = String::new();
+        manifest.read_to_string(&mut ini_data)?;
+        let ini_data = Self::cleanup_ini_data(&ini_data);
+
+        let components = Self::read_components(ini_data.as_bytes(), &base_url, version)?;
+
         Ok(Manifest {
             version,
             base_url,
@@ -125,12 +130,13 @@ impl<'a> Manifest<'a> {
         }
     }
 
-    fn read_components<R: Read>(input: R, base_url: &DownloadURL) -> Result<Components> {
+    fn read_components<R: Read, V:AsRef<Version>>(input: R, base_url: &DownloadURL, version:V) -> Result<Components> {
+        let version = version.as_ref();
         serde_ini::from_read(input)
             .chain_err(|| UvmErrorKind::ManifestReadError)
             .map(|mut components: Components| {
-                for (_, data) in components.iter_mut() {
-                    data.download_url = base_url.join(&data.url).ok()
+                for (component, data) in components.iter_mut() {
+                    data.download_url = component.download_url(base_url, &data.url, version)
                 }
                 components
             })
@@ -168,7 +174,7 @@ impl<'a> Manifest<'a> {
         let body = Self::cleanup_ini_data(&body);
 
         let base_url = DownloadURL::new(version)?;
-        let components = Self::read_components(body.as_bytes(), &base_url)?;
+        let components = Self::read_components(body.as_bytes(), &base_url, version)?;
 
         File::create(path.as_ref())
             .and_then(|mut f| write!(f, "{}", body))
@@ -205,12 +211,20 @@ impl<'a> Manifest<'a> {
     }
 }
 
-impl IntoIterator for Manifest<'_> {
-    type Item = (Component, ComponentData);
-    type IntoIter = ::std::collections::hash_map::IntoIter<Component, ComponentData>;
+use std::iter::Zip;
+use std::iter::Cycle;
+use std::vec::IntoIter as VecIter;
+use std::collections::hash_map::IntoIter as HashIter;
+
+pub type ManifestIteratorItem<'a> = ((Component, ComponentData), &'a Version);
+
+impl<'a> IntoIterator for Manifest<'a> {
+    type Item = ManifestIteratorItem<'a>;
+    type IntoIter = Zip<HashIter<Component, ComponentData>,Cycle<VecIter<&'a Version>>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.components.into_iter()
+        let version_iterator = vec![self.version].into_iter().cycle();
+        self.components.into_iter().zip(version_iterator)
     }
 }
 
@@ -227,6 +241,17 @@ pub struct ComponentData {
     #[serde(with = "de::bool")]
     #[serde(default = "de::bool::default")]
     pub hidden: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename="eulaurl1")]
+    pub eula_url_1: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename="eulalabel1")]
+    pub eula_label_1: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename="eulamessage")]
+    pub eula_message: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sync: Option<Component>,
     #[serde(flatten)]
     pub other: HashMap<String, String>,
 }
@@ -291,11 +316,11 @@ mod tests {
 
         #[cfg(target_os = "macos")]
         let expected_url =
-            "https://download.unity3d.com/download_unity/f2970305fe1c/MacEditorInstaller/Unity.pkg";
+            "https://download.unity3d.com/download_unity/f2970305fe1c/MacEditorInstaller/Unity-2019.1.6f1.pkg";
         #[cfg(target_os = "windows")]
-        let expected_url = "https://download.unity3d.com/download_unity/f2970305fe1c/Windows64EditorInstaller/UnitySetup64.exe";
+        let expected_url = "https://download.unity3d.com/download_unity/f2970305fe1c/Windows64EditorInstaller/UnitySetup64-2019.1.6f1.exe";
         #[cfg(target_os = "linux")]
-        let expected_url = "https://download.unity3d.com/download_unity/f2970305fe1c/LinuxEditorInstaller/Unity.tar.xz";
+        let expected_url = "https://download.unity3d.com/download_unity/f2970305fe1c/LinuxEditorInstaller/Unity.tar-2019.1.6f1.xz";
         #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
         let expected_url = "";
 
@@ -489,6 +514,27 @@ optsync_webgl=WebGL"#;
         assert!(manifest.get(Component::Ios).is_some());
         assert!(manifest.get(Component::Editor).is_some());
 }
+
+    #[test]
+    fn cleanup_ini_data_when_read_with_reader() {
+        let test_ini = r#"[Unity]
+title=Unity 2018.4.0f1
+description=Unity Editor
+url=MacEditorInstaller/Unity.pkg
+install=true
+mandatory=false
+size=989685761
+installedsize=2576390000
+ver sio n=2018.4.0f1
+md5=822c52aa75af582318c5d0ef94137f40"#;
+        let test_ini_1 = StringReader::new(test_ini);
+        let version = Manifest::read_manifest_version(test_ini_1).expect("a version from manifest");
+        let test_ini_2 = StringReader::new(test_ini);
+        let manifest = Manifest::from_reader(&version, test_ini_2).expect("a manifest from reader");
+        assert!(manifest.get(Component::Editor).is_some());
+        let c = manifest.get(Component::Editor).unwrap();
+        assert_eq!(c.description, "Unity Editor".to_string());
+    }
 
     #[test]
     fn cleanup_ini_data_removes_junk_lines() {

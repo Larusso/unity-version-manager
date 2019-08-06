@@ -11,6 +11,7 @@ use crate::unity::Installation;
 
 mod hash;
 pub mod manifest;
+pub mod module;
 
 use crate::sys::unity::version as version_impl;
 
