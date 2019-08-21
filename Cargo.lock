@@ -1924,6 +1924,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "uvm-download-manifest"
+version = "0.1.0"
+dependencies = [
+ "console 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flexi_logger 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest 0.9.18 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uvm_cli 2.0.1",
+ "uvm_core 0.3.1",
+]
+
+[[package]]
 name = "uvm-generate-modules-json"
 version = "1.0.0"
 dependencies = [

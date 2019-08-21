@@ -32,6 +32,7 @@ extern crate error_chain;
 pub mod utils;
 pub mod progress;
 pub mod sys;
+pub mod platform;
 
 #[macro_export]
 #[cfg(unix)]
