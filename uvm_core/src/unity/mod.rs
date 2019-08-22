@@ -8,6 +8,7 @@ mod localization;
 
 use core::iter::FromIterator;
 pub use self::component::Component;
+pub use self::component::Category;
 pub use self::localization::Localization;
 pub use self::current_installation::current_installation;
 pub use self::current_installation::CurrentInstallation;
