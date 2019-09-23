@@ -30,7 +30,7 @@ pub fn get_android_open_jdk_download_info<V: AsRef<Version>>(_version:V) -> Modu
 pub fn get_android_sdk_ndk_download_info<V: AsRef<Version>>(version:V) -> Vec<ModulePart> {
     let version = version.as_ref();
     let (ndk_version, ndk_install_size, ndk_download_size) = if *version >= Version::a(2019,3,0,0) {
-        ("r19b", 2_690_000_000, 785_000_000)
+        ("r19", 2_690_000_000, 785_000_000)
     } else {
         ("r16b", 2_355_200_000, 626_000_000)
     };

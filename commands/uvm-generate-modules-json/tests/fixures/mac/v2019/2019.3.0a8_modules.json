@@ -16,8 +16,8 @@
     "id": "android-ndk",
     "sync": "android-sdk-ndk-tools",
     "name": "Android NDK",
-    "description": "Android NDK r19b",
-    "downloadUrl": "https://dl.google.com/android/repository/android-ndk-r19b-darwin-x86_64.zip",
+    "description": "Android NDK r19",
+    "downloadUrl": "https://dl.google.com/android/repository/android-ndk-r19-darwin-x86_64.zip",
     "category": "Platforms",
     "installedSize": 2700000000,
     "downloadSize": 770000000,
@@ -25,7 +25,7 @@
     "selected": false,
     "destination": "{UNITY_PATH}/PlaybackEngines/AndroidPlayer/NDK",
     "renameTo": "{UNITY_PATH}/PlaybackEngines/AndroidPlayer/NDK",
-    "renameFrom": "{UNITY_PATH}/PlaybackEngines/AndroidPlayer/NDK/android-ndk-r19b"
+    "renameFrom": "{UNITY_PATH}/PlaybackEngines/AndroidPlayer/NDK/android-ndk-r19"
   },
   {
     "id": "android-sdk-ndk-tools",

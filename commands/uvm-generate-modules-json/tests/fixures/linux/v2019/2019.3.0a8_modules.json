@@ -138,8 +138,8 @@
   {
     "id": "android-ndk",
     "name": "Android NDK",
-    "description": "Android NDK r19b",
-    "downloadUrl": "https://dl.google.com/android/repository/android-ndk-r19b-linux-x86_64.zip",
+    "description": "Android NDK r19",
+    "downloadUrl": "https://dl.google.com/android/repository/android-ndk-r19-linux-x86_64.zip",
     "category": "Platforms",
     "installedSize": 2690000000,
     "downloadSize": 785000000,
