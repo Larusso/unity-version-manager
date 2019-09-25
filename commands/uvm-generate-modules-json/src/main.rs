@@ -1,45 +1,56 @@
+use console::style;
+use log::{info, trace};
+use std::io::{Result, Write};
+use std::process;
 use uvm_cli;
 use uvm_core;
-use log::{trace,debug,info};
+use uvm_core::unity::{Manifest, Modules};
 use uvm_generate_modules_json::Options;
-use uvm_core::unity::{Installations, Manifest, Modules};
 
 const USAGE: &str = "
-uvm-detect - Write the modules.json for the given unity version.
+uvm-generate-modules-json - Write the modules.json for the given unity version.
 
 Usage:
-  uvm-generate-mopdules-json [options] (--all | <version>)
-  uvm-generate-mopdules-json (-h | --help)
+  uvm-generate-modules-json [options] <version>...
+  uvm-generate-modules-json (-h | --help)
 
 Options:
-  --all             generate modules.json for all installed editors
-  -v, --verbose     print more output
-  -d, --debug       print debug output
-  --color WHEN      Coloring: auto, always, never [default: auto]
-  -h, --help        show this help message and exit
+  -o=PATH, --output-dir=PATH        the output path. default stdout
+  -n=NAME, --name=NAME              name of the output file. [default: unity-{version}.json]
+  -f, --force                       force override of existing files.
+  -v, --verbose                     print more output
+  -d, --debug                       print debug output
+  --color WHEN                      Coloring: auto, always, never [default: auto]
+  -h, --help                        show this help message and exit
 ";
 
+fn generate_modules(options: Options) -> Result<()> {
+    for version in options.version() {
+        let mut output_handle = options.output(&version)?;
+        let output_path = options.output_path(&version);
+
+        let manifest = Manifest::load(version).unwrap();
+        let modules: Modules = manifest.into();
+        let j = serde_json::to_string_pretty(&modules)?;
+
+        if let Some(output_path) = output_path {
+            info!("write modules to {}", output_path.display());
+        }
+        output_handle.write_all(j.as_bytes())?;
+    }
+    Ok(())
+}
+
 fn main() {
-    let options:Options = uvm_cli::get_options(USAGE).unwrap();
+    let options: Options = uvm_cli::get_options(USAGE).unwrap();
     trace!("generate modules.json");
 
-    let installations = if options.all() {
-        info!("generate modules.json for all installations");
-        uvm_core::list_all_installations()
-    } else {
-        let v = options.version().as_ref().expect("expect a provided version");
-        let installations:Installations = uvm_core::find_installation(v).into_iter().collect();
-        Ok(installations)
-    }.unwrap();
+    generate_modules(options).unwrap_or_else(|err| {
+        let message = "Unable generate modules.json";
+        eprintln!("{}", style(message).red());
+        eprintln!("{}", style(err).red());
+        process::exit(1);
+    });
 
-    for i in installations {
-        debug!("installation: {}", i);
-        let manifest = Manifest::load(i.version()).expect("a manifest");
-        let modules:Modules = manifest.into();
-
-        let j = serde_json::to_string_pretty(&modules).expect("export json");
-        println!("{}", j);
-    }
-
-    eprintln!("Done");
+    eprintln!("{}", style("Done").green());
 }

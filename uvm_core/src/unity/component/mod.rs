@@ -194,11 +194,13 @@ impl Component {
     }
 
     pub fn is_installed<P: AsRef<Path>>(self, unity_install_location: P) -> bool {
-        let unity_install_location = unity_install_location.as_ref();
-        self.install_location()
-            .map(|install_path| unity_install_location.join(install_path))
-            .map(|install_path| install_path.exists())
-            .unwrap_or(false)
+        if let Some(install_path) = self.install_location() {
+            let unity_install_location = unity_install_location.as_ref();
+            let install_path = unity_install_location.join(install_path);
+            install_path.exists()
+        } else {
+            false
+        }
     }
 
     pub fn category<V: AsRef<Version>>(self, version: V) -> String {

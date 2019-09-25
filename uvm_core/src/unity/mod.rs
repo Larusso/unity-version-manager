@@ -17,8 +17,7 @@ pub use self::version::manifest::Manifest;
 pub use self::version::manifest::ManifestIteratorItem;
 pub use self::version::manifest::MD5;
 pub use self::version::manifest::ComponentData;
-pub use self::version::module::Module;
-pub use self::version::module::Modules;
+pub use self::version::module::{Module, Modules, ModulesMap};
 pub use self::version::Version;
 pub use self::version::VersionType;
 pub use self::version::{UvmVersionError, UvmVersionErrorKind, ResultExt as UvmVersionErrorResultExt, Result as UvmVersionErrorResult};
@@ -105,7 +104,7 @@ impl Iterator for InstalledComponents {
                 trace!(
                     "found component {:?} installed at {}",
                     &c,
-                    &self.installation.path().display()
+                    &c.install_location().unwrap().display()
                 );
                 return Some(*c);
             }
