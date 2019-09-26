@@ -32,7 +32,7 @@ pub fn install_location(component:Component) -> Option<PathBuf> {
     use Component::*;
     let path = match component {
         VisualStudio | ExampleProject | Example | FacebookGameRoom | VisualStudioProfessionalUnityWorkload | VisualStudioEnterpriseUnityWorkload => None,
-        Mono | MonoDevelop | LinuxMono => Some(r""),
+        Mono | MonoDevelop => Some(r""),
         Documentation => Some(r"Editor\Data"),
         StandardAssets => Some(r"Editor"),
         Android => Some(r"Editor\Data\PlaybackEngines\AndroidPlayer"),
@@ -43,7 +43,7 @@ pub fn install_location(component:Component) -> Option<PathBuf> {
         AndroidOpenJdk => Some(r"Editor\Data\PlaybackEngines\AndroidPlayer\OpenJDK"),
         Ios => Some(r"Editor\Data\PlaybackEngines\iOSSupport"),
         TvOs | AppleTV => Some(r"Editor\Data\PlaybackEngines\AppleTVSupport"),
-        Linux => Some(r"Editor\Data\PlaybackEngines\LinuxStandaloneSupport"),
+        Linux | LinuxMono => Some(r"Editor\Data\PlaybackEngines\LinuxStandaloneSupport"),
         Mac | MacIL2CPP | MacMono => Some(r"Editor\Data\PlaybackEngines\MacStandaloneSupport"),
         Metro | UwpIL2CPP | UwpNet | UniversalWindowsPlatform => Some(r"Editor\Data\PlaybackEngines\MetroSupport"),
         Samsungtv | SamsungTV => Some(r"Editor\Data\PlaybackEngines\STVPlayer"),

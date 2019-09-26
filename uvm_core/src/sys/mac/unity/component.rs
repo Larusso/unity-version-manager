@@ -5,7 +5,7 @@ pub fn installpath(component:Component) -> Option<PathBuf> {
     use Component::*;
     let path = match component {
         Mono | VisualStudio | FacebookGameRoom => None,
-        MonoDevelop | Documentation | LinuxMono => Some(""),
+        MonoDevelop | Documentation => Some(""),
         StandardAssets => Some("Standard Assets"),
         ExampleProject | Example => Some("/Users/Shared/Unity"),
         Android => Some("PlaybackEngines/AndroidPlayer"),
@@ -17,7 +17,7 @@ pub fn installpath(component:Component) -> Option<PathBuf> {
         Ios => Some("PlaybackEngines/iOSSupport"),
         TvOs => Some("PlaybackEngines/AppleTVSupport"),
         AppleTV => Some("PlaybackEngines/AppleTVSupport"),
-        Linux  => Some("PlaybackEngines/LinuxStandaloneSupport"),
+        Linux | LinuxMono => Some("PlaybackEngines/LinuxStandaloneSupport"),
         Mac | MacIL2CPP => Some("Unity.app/Contents/PlaybackEngines/MacStandaloneSupport"),
         Samsungtv | SamsungTV => Some("PlaybackEngines/STVPlayer"),
         Tizen => Some("PlaybackEngines/TizenPlayer"),
