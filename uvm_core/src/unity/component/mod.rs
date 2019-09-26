@@ -8,6 +8,9 @@ use std::slice::Iter;
 use std::str::FromStr;
 use reqwest::Url;
 mod error;
+mod category;
+
+pub use self::category::Category;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
 pub enum Component {
@@ -203,26 +206,24 @@ impl Component {
         }
     }
 
-    pub fn category<V: AsRef<Version>>(self, version: V) -> String {
-        let c = match self {
-            MonoDevelop | VisualStudio => "Dev tools",
-            Mono | FacebookGameRoom => "Plugins",
+    pub fn category<V: AsRef<Version>>(self, version: V) -> Category {
+        match self {
+            MonoDevelop | VisualStudio => Category::DevTools,
+            Mono | FacebookGameRoom => Category::Plugins,
             #[cfg(windows)]
             VisualStudioProfessionalUnityWorkload | VisualStudioEnterpriseUnityWorkload => {
-                "Plugins"
+                Category::Plugins
             }
             Documentation | StandardAssets | ExampleProject | Example => {
                 if *version.as_ref() >= Version::a(2018, 2, 0, 0) {
-                    "Documentation"
+                    Category::Documentation
                 } else {
-                    "Components"
+                    Category::Components
                 }
             }
-            Language(_) => "Language packs (Preview)",
-            _ => "Platforms",
-        };
-
-        c.to_string()
+            Language(_) => Category::LanguagePack,
+            _ => Category::Platforms,
+        }
     }
 
     pub fn sync(self) -> Option<String> {

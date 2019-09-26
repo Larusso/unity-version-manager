@@ -9,6 +9,7 @@ use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 use std::str::FromStr;
+use crate::unity::component::Category;
 
 #[derive(Serialize, Deserialize, Debug, Default, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -21,7 +22,7 @@ pub struct Module {
     pub name: String,
     pub description: String,
     pub download_url: String,
-    pub category: String,
+    pub category: Category,
     pub installed_size: u64,
     pub download_size: u64,
     pub visible: bool,
