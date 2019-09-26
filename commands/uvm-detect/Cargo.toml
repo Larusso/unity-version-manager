@@ -1,6 +1,6 @@
 [package]
 name = "uvm-detect"
-version = "2.1.0"
+version = "2.3.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 edition = "2018"
 [dependencies]
