@@ -2,6 +2,7 @@ use crate::sys::unity::version::module::get_android_open_jdk_download_info;
 use crate::sys::unity::version::module::get_android_sdk_ndk_download_info;
 use crate::unity::{VersionType, Component, Manifest, ManifestIteratorItem, Localization};
 use crate::unity::MD5;
+use crate::unity::InstalledComponents;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -263,6 +264,16 @@ impl From<Manifest<'_>> for Modules {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(transparent)]
 pub struct ModulesMap(HashMap<Component, Module>);
+
+impl ModulesMap {
+    pub fn mark_installed_modules(&mut self, components:InstalledComponents) {
+        for component in components {
+            if let Some(m) = self.0.get_mut(&component) {
+                m.selected = true;
+            }
+        }
+    }
+}
 
 impl Deref for Modules {
     type Target = Vec<Module>;
