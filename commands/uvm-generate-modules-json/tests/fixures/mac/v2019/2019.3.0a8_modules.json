@@ -109,7 +109,7 @@
     "downloadSize": 85452817,
     "visible": true,
     "selected": false,
-    "destination": "{UNITY_PATH}",
+    "destination": "{UNITY_PATH}/PlaybackEngines/LinuxStandaloneSupport",
     "checksum": "53c051ef052e7351d5fab6b55e2ad82c"
   },
   {
