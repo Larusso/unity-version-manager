@@ -378,9 +378,13 @@ impl FromStr for Component {
             "facebookgameroom" => Ok(FacebookGameRoom),
             "lumin" => Ok(Lumin),
             x => {
-                match x.rsplitn(1,'_').next().and_then(|sub| Localization::from_str(sub).ok()) {
-                    Some(locale) => Ok(Language(locale)),
-                    None => Err(error::ParseComponentErrorKind::Unsupported(x.to_string()).into())
+                if x.starts_with("language-") {
+                    match x.splitn(2,'-').last().and_then(|sub| Localization::from_str(sub).ok()) {
+                        Some(locale) => Ok(Language(locale)),
+                        None => Err(error::ParseComponentErrorKind::Unsupported(x.to_string()).into())
+                    }
+                } else {
+                    Err(error::ParseComponentErrorKind::Unsupported(x.to_string()).into())
                 }
             },
         }
@@ -401,6 +405,30 @@ mod tests {
             assert_eq!(&component_value, component);
         }
     }
+
+    macro_rules! can_read_locale_string {
+        ($($id:ident, $locale:expr, $expected_component:expr),*) => {
+            $(
+                #[test]
+                fn $id() {
+                    let parsed_component = Component::from_str($locale);
+                    assert!(parsed_component.is_ok());
+                    assert_eq!(parsed_component.unwrap(), $expected_component);
+                }
+            )*
+        }
+    }
+
+    can_read_locale_string! [
+        can_read_locale_string_ja, "language-ja", Component::Language(Localization::Ja),
+        can_read_locale_string_ko, "language-ko", Component::Language(Localization::Ko),
+        can_read_locale_string_fr, "language-fr", Component::Language(Localization::Fr),
+        can_read_locale_string_es, "language-es", Component::Language(Localization::Es),
+        can_read_locale_string_zh_cn, "language-zh-cn", Component::Language(Localization::ZhCn),
+        can_read_locale_string_zh_hant, "language-zh-hant", Component::Language(Localization::ZhHant),
+        can_read_locale_string_zh_hans, "language-zh-hans", Component::Language(Localization::ZhHans),
+        can_read_locale_string_ru, "language-ru", Component::Language(Localization::Ru)
+    ];
 
     #[test]
     fn unknown_components_values_will_be_wrapped() {
