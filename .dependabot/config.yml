@@ -1,0 +1,18 @@
+version: 1
+update_configs:
+  - package_manager: "rust:cargo"
+    directory: "/"
+    update_schedule: "live"
+    version_requirement_updates: "off"
+    allowed_updates:
+    - match:
+        update_type: "security"
+    - match:
+        dependency_type: "direct"
+    automerged_updates:
+    - match:
+        dependency_type: "all"
+        update_type: "semver:patch"
+    - match:
+        dependency_type: "all"
+        update_type: "security:patch"
