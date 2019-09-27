@@ -264,6 +264,12 @@ impl Component {
     }
 }
 
+impl Default for Component {
+    fn default() -> Self {
+        Component::Editor
+    }
+}
+
 impl fmt::Display for Component {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
