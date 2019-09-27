@@ -8,13 +8,37 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
-use std::str::FromStr;
 use crate::unity::component::Category;
+
+
+mod id_serialize {
+    use crate::unity::Component;
+    use serde::{Deserialize, Deserializer, Serializer};
+    use std::str::FromStr;
+
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn serialize<S>(c:&Component, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&c.to_string())
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Component, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Component::from_str(&s).map_err(serde::de::Error::custom)
+    }
+}
+
 
 #[derive(Serialize, Deserialize, Debug, Default, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Module {
-    pub id: String,
+    #[serde(with = "id_serialize")]
+    pub id: Component,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sync: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -135,10 +159,8 @@ impl Module {
 
 impl From<ManifestIteratorItem<'_>> for Module {
     fn from(((component, data), version): ManifestIteratorItem) -> Self {
-        let id = component.to_string();
         let mut module = Module::default();
-
-        module.id = id;
+        module.id = component;
         module.name = data.title.clone();
         module.category = component.category(version);
         module.description = data.description.clone();
@@ -188,7 +210,7 @@ impl From<Manifest<'_>> for Modules {
             modules.append(&mut get_android_sdk_ndk_download_info(&version).into_iter().map(|module_part| {
                 let mut module = Module::default();
                 let component = module_part.component;
-                module.id = component.to_string();
+                module.id = component;
                 module.description = format!("{name} {version}", name = &module_part.name, version = &module_part.version);
                 module.name = module_part.name;
                 module.category = component.category(&version);
@@ -216,7 +238,7 @@ impl From<Manifest<'_>> for Modules {
             let module_part = get_android_open_jdk_download_info(&version);
             let mut module = Module::default();
             let component = module_part.component;
-            module.id = component.to_string();
+            module.id = component;
             module.description = format!("Android {name} {version}", name = &module_part.name, version = &module_part.version);
             module.name = module_part.name;
             module.category = component.category(&version);
@@ -235,7 +257,7 @@ impl From<Manifest<'_>> for Modules {
             modules.append(&mut Localization::locals(&version).filter_map(|locale| {
                 let mut module = Module::default();
                 let component = Component::Language(locale);
-                module.id = component.to_string();
+                module.id = component;
                 module.description = locale.name().to_string();
                 module.name = locale.name().to_string();
                 module.category = component.category(&version);
@@ -326,10 +348,7 @@ impl From<Modules> for ModulesMap {
     fn from(modules: Modules) -> Self {
         modules.into_iter()
             .filter_map(|module| {
-                match Component::from_str(&module.id) {
-                    Ok(component) => Some((component, module)),
-                    _ => None
-                }
+                Some((module.id, module))
             })
             .collect::<HashMap<Component, Module>>().into()
     }
@@ -359,7 +378,7 @@ fn documentation_module_info<V: AsRef<Version>>(version:V) -> Module {
     let version = version.as_ref();
     let mut module = Module::default();
     let component = Component::Documentation;
-    module.id = component.to_string();
+    module.id = component;
     module.name = "Documentation".to_string();
     module.description = "Offline Documentation".to_string();
     module.download_url = format!("https://storage.googleapis.com/docscloudstorage/{major}.{minor}/UnityDocumentation.zip", major = version.major(), minor = version.minor());
