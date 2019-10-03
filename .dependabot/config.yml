@@ -3,7 +3,7 @@ update_configs:
   - package_manager: "rust:cargo"
     directory: "/"
     update_schedule: "live"
-    version_requirement_updates: "off"
+    version_requirement_updates: "on"
     allowed_updates:
     - match:
         update_type: "security"
