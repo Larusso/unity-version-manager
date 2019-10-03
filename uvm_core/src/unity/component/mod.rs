@@ -226,14 +226,13 @@ impl Component {
         }
     }
 
-    pub fn sync(self) -> Option<String> {
-        let s = match self {
-            Mono => Some("visualstudio"),
-            AndroidSdkNdkTools | AndroidOpenJdk => Some("Android Build Support"),
-            AndroidSdkBuildTools | AndroidSdkPlatformTools | AndroidSdkPlatforms | AndroidNdk => Some("android-sdk-ndk-tools"),
+    pub fn sync(self) -> Option<Component> {
+        match self {
+            Mono => Some(VisualStudio),
+            AndroidSdkNdkTools | AndroidOpenJdk => Some(Android),
+            AndroidSdkBuildTools | AndroidSdkPlatformTools | AndroidSdkPlatforms | AndroidNdk => Some(AndroidSdkNdkTools),
             _ => None,
-        };
-        s.map(|s| s.to_string())
+        }
     }
 
     fn add_version_to_url<V:AsRef<Version>>(self, download_url:&str, version:V) -> String {

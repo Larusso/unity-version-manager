@@ -1,48 +1,27 @@
 use crate::sys::unity::version::module::get_android_open_jdk_download_info;
 use crate::sys::unity::version::module::get_android_sdk_ndk_download_info;
-use crate::unity::{VersionType, Component, Manifest, ManifestIteratorItem, Localization};
-use crate::unity::MD5;
+use crate::unity::component::Category;
 use crate::unity::InstalledComponents;
+use crate::unity::MD5;
+use crate::unity::{Component, Localization, Manifest, ManifestIteratorItem, VersionType};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
-use crate::unity::component::Category;
-
-
-mod id_serialize {
-    use crate::unity::Component;
-    use serde::{Deserialize, Deserializer, Serializer};
-    use std::str::FromStr;
-
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn serialize<S>(c:&Component, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&c.to_string())
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Component, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Component::from_str(&s).map_err(serde::de::Error::custom)
-    }
-}
-
 
 #[derive(Serialize, Deserialize, Debug, Default, Eq)]
 #[serde(rename_all = "camelCase")]
+#[serde(default)]
 pub struct Module {
     #[serde(with = "id_serialize")]
     pub id: Component,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sync: Option<String>,
+    #[serde(with = "id_serialize_optional_sync")]
+    pub sync: Option<Component>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent: Option<String>,
+    #[serde(with = "id_serialize_optional")]
+    pub parent: Option<Component>,
     pub name: String,
     pub description: String,
     pub download_url: String,
@@ -71,22 +50,22 @@ use std::cmp::Ordering;
 
 impl PartialEq for Module {
     fn eq(&self, other: &Module) -> bool {
-        self.id == other.id &&
-        self.sync == other.sync &&
-        self.parent == other.parent &&
-        self.name == other.name &&
-        self.description == other.description &&
-        self.download_url == other.download_url &&
-        self.category == other.category &&
-        self.visible == other.visible &&
-        self.selected == other.selected &&
-        self.destination == other.destination &&
-        self.rename_to == other.rename_to &&
-        self.rename_from == other.rename_from &&
-        self.checksum == other.checksum &&
-        self.eula_url_1 == other.eula_url_1 &&
-        self.eula_label_1 == other.eula_label_1 &&
-        self.eula_message == other.eula_message
+        self.id == other.id
+            && self.sync == other.sync
+            && self.parent == other.parent
+            && self.name == other.name
+            && self.description == other.description
+            && self.download_url == other.download_url
+            && self.category == other.category
+            && self.visible == other.visible
+            && self.selected == other.selected
+            && self.destination == other.destination
+            && self.rename_to == other.rename_to
+            && self.rename_from == other.rename_from
+            && self.checksum == other.checksum
+            && self.eula_url_1 == other.eula_url_1
+            && self.eula_label_1 == other.eula_label_1
+            && self.eula_message == other.eula_message
     }
 }
 
@@ -125,8 +104,9 @@ impl Ord for Module {
 
 impl Module {
     #[cfg(not(windows))]
-    fn destination(component:Component, _:&str) -> Option<String> {
-        component.installpath()
+    fn destination(component: Component, _: &str) -> Option<String> {
+        component
+            .installpath()
             .map(|mut p| {
                 if component == Component::Ios {
                     p.pop();
@@ -143,8 +123,9 @@ impl Module {
     }
 
     #[cfg(windows)]
-    fn destination(component:Component, installer_url:&str) -> Option<String> {
-        component.installpath_with_installer_url(installer_url)
+    fn destination(component: Component, installer_url: &str) -> Option<String> {
+        component
+            .installpath_with_installer_url(installer_url)
             .map(|p| {
                 if p == Path::new("") {
                     "{UNITY_PATH}".to_string()
@@ -164,12 +145,20 @@ impl From<ManifestIteratorItem<'_>> for Module {
         module.name = data.title.clone();
         module.category = component.category(version);
         module.description = data.description.clone();
-        module.download_size = if cfg![windows] { data.size * 1024 } else { data.size };
-        module.installed_size = if cfg![windows] { data.installedsize * 1024 } else { data.installedsize };
+        module.download_size = if cfg![windows] {
+            data.size * 1024
+        } else {
+            data.size
+        };
+        module.installed_size = if cfg![windows] {
+            data.installedsize * 1024
+        } else {
+            data.installedsize
+        };
         module.checksum = data.md5;
         module.selected = component.selected();
         module.visible = component.visible();
-        module.sync = data.sync.map(|c| c.to_string()).or_else(|| component.sync());
+        module.sync = data.sync.or_else(|| component.sync());
         module.download_url = data.download_url.expect("a download URL").to_string();
         module.destination = Module::destination(component, &module.download_url);
         module.eula_url_1 = data.eula_url_1;
@@ -186,21 +175,23 @@ pub struct Modules(Vec<Module>);
 impl From<Manifest<'_>> for Modules {
     fn from(manifest: Manifest) -> Self {
         let version = manifest.version().to_owned();
-        let has_documentation = manifest.get(Component::Documentation).is_some() && version.major() < 2018;
+        let has_documentation =
+            manifest.get(Component::Documentation).is_some() && version.major() < 2018;
         let has_android = manifest.get(Component::Android).is_some();
 
-        let mut modules: Modules = manifest.into_iter()
-        .filter(|((component, _),_)| {
-            *component != Component::Editor
-        })
-        .filter(|((component, _),_)| {
-            if version.major() >= 2018 {
-                *component != Component::Documentation
-            } else {
-                true
-            }
-        })
-        .map(Module::from).collect::<Vec<Module>>().into();
+        let mut modules: Modules = manifest
+            .into_iter()
+            .filter(|((component, _), _)| *component != Component::Editor)
+            .filter(|((component, _), _)| {
+                if version.major() >= 2018 {
+                    *component != Component::Documentation
+                } else {
+                    true
+                }
+            })
+            .map(Module::from)
+            .collect::<Vec<Module>>()
+            .into();
 
         if !has_documentation && version.major() >= 2018 {
             modules.push(documentation_module_info(&version));
@@ -224,8 +215,8 @@ impl From<Manifest<'_>> for Modules {
                 module.rename_to = module_part.rename_to;
                 module.rename_from = module_part.rename_from;
                 if module_part.main {
-                    module.parent = Some("android".to_string());
-                    module.sync = Some("Android Build Support".to_string());
+                    module.parent = Some(Component::Android);
+                    module.sync = Some(Component::Android);
                     module.eula_url_1 = Some("https://dl.google.com/dl/android/repository/repository2-1.xml".to_string());
                     module.eula_label_1 = Some("Android SDK and NDK License Terms from Google".to_string());
                     module.eula_message = Some("Please review and accept the license terms before downloading and installing Android's SDK and NDK.".to_string());
@@ -239,15 +230,19 @@ impl From<Manifest<'_>> for Modules {
             let mut module = Module::default();
             let component = module_part.component;
             module.id = component;
-            module.description = format!("Android {name} {version}", name = &module_part.name, version = &module_part.version);
+            module.description = format!(
+                "Android {name} {version}",
+                name = &module_part.name,
+                version = &module_part.version
+            );
             module.name = module_part.name;
             module.category = component.category(&version);
             module.download_size = module_part.download_size;
             module.installed_size = module_part.installed_size;
             module.visible = component.visible();
             module.selected = component.selected();
-            module.parent = Some("android".to_string());
-            module.sync = Some("Android Build Support".to_string());
+            module.parent = Some(Component::Android);
+            module.sync = Some(Component::Android);
             module.download_url = module_part.download_url;
             module.destination = Module::destination(component, &module.download_url);
             modules.push(module);
@@ -289,7 +284,7 @@ impl From<Manifest<'_>> for Modules {
 pub struct ModulesMap(HashMap<Component, Module>);
 
 impl ModulesMap {
-    pub fn mark_installed_modules(&mut self, components:InstalledComponents) {
+    pub fn mark_installed_modules(&mut self, components: InstalledComponents) {
         for component in components {
             if let Some(m) = self.0.get_mut(&component) {
                 m.selected = true;
@@ -346,22 +341,26 @@ impl IntoIterator for ModulesMap {
 
 impl From<Modules> for ModulesMap {
     fn from(modules: Modules) -> Self {
-        modules.into_iter()
-            .filter_map(|module| {
-                Some((module.id, module))
-            })
-            .collect::<HashMap<Component, Module>>().into()
+        modules
+            .into_iter()
+            .filter_map(|module| Some((module.id, module)))
+            .collect::<HashMap<Component, Module>>()
+            .into()
     }
 }
 
 impl From<ModulesMap> for Modules {
     fn from(modules: ModulesMap) -> Self {
-        modules.into_iter().map(|(_,module)| module).collect::<Vec<Module>>().into()
+        modules
+            .into_iter()
+            .map(|(_, module)| module)
+            .collect::<Vec<Module>>()
+            .into()
     }
 }
 
-impl From<HashMap<Component,Module>> for ModulesMap {
-    fn from(modules: HashMap<Component,Module>) -> Self {
+impl From<HashMap<Component, Module>> for ModulesMap {
+    fn from(modules: HashMap<Component, Module>) -> Self {
         ModulesMap(modules)
     }
 }
@@ -374,14 +373,18 @@ impl From<Vec<Module>> for Modules {
 
 use crate::unity::Version;
 
-fn documentation_module_info<V: AsRef<Version>>(version:V) -> Module {
+fn documentation_module_info<V: AsRef<Version>>(version: V) -> Module {
     let version = version.as_ref();
     let mut module = Module::default();
     let component = Component::Documentation;
     module.id = component;
     module.name = "Documentation".to_string();
     module.description = "Offline Documentation".to_string();
-    module.download_url = format!("https://storage.googleapis.com/docscloudstorage/{major}.{minor}/UnityDocumentation.zip", major = version.major(), minor = version.minor());
+    module.download_url = format!(
+        "https://storage.googleapis.com/docscloudstorage/{major}.{minor}/UnityDocumentation.zip",
+        major = version.major(),
+        minor = version.minor()
+    );
     module.category = component.category(version);
     module.visible = component.visible();
     module.selected = component.selected();
@@ -395,16 +398,104 @@ fn documentation_module_info<V: AsRef<Version>>(version:V) -> Module {
     module
 }
 
-use reqwest::{Client,IntoUrl};
+use reqwest::{Client, IntoUrl};
 
-fn content_size<U: IntoUrl>(url: U) -> Option<(u64,u64)> {
+fn content_size<U: IntoUrl>(url: U) -> Option<(u64, u64)> {
     let client = Client::builder()
         .gzip(false)
         .build()
         .expect("a HTTP client");
 
-    client.head(url).send().ok().and_then(|response| response.content_length())
-    .map(|content_length| (content_length, (content_length as f64 * 2.04).round() as u64))
+    client
+        .head(url)
+        .send()
+        .ok()
+        .and_then(|response| response.content_length())
+        .map(|content_length| {
+            (
+                content_length,
+                (content_length as f64 * 2.04).round() as u64,
+            )
+        })
+}
+
+mod id_serialize {
+    use crate::unity::Component;
+    use serde::{Deserialize, Deserializer, Serializer};
+    use std::str::FromStr;
+
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn serialize<S>(c: &Component, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&c.to_string())
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Component, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Component::from_str(&s).map_err(serde::de::Error::custom)
+    }
+}
+
+mod id_serialize_optional {
+    use crate::unity::Component;
+    use serde::{Deserialize, Deserializer, Serializer};
+    use std::str::FromStr;
+
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn serialize<S>(c: &Option<Component>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match c {
+            Some(c) => serializer.serialize_str(&c.to_string()),
+            None => serializer.serialize_unit(),
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Component>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Component::from_str(&s).map(Some).map_err(serde::de::Error::custom)
+    }
+}
+
+mod id_serialize_optional_sync {
+    use crate::unity::Component;
+    use serde::{Deserialize, Deserializer, Serializer};
+    use std::str::FromStr;
+
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn serialize<S>(c: &Option<Component>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match c {
+            //Fix special case in module json for sync field
+            Some(Component::Android) => serializer.serialize_str("Android Build Support"),
+            Some(c) => serializer.serialize_str(&c.to_string()),
+            None => serializer.serialize_unit(),
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Component>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        //Fix special case in module json for sync field
+        if s == "Android Build Support" {
+            Ok(Some(Component::Android))
+        } else {
+            Component::from_str(&s).map(Some).map_err(serde::de::Error::custom)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -543,35 +634,35 @@ optsync_webgl=WebGL"#;
 
     #[test]
     fn can_create_modules_from_manifest() {
-        let version = Version::f(2018,4,0,1);
+        let version = Version::f(2018, 4, 0, 1);
         let test_ini = StringReader::new(TEST_INI);
         let manifest = Manifest::from_reader(&version, test_ini).expect("a manifest from reader");
-        let _modules:Modules = manifest.into();
+        let _modules: Modules = manifest.into();
     }
 
     #[test]
     fn can_create_modules_map_from_modules() {
-        let version = Version::f(2018,4,0,1);
+        let version = Version::f(2018, 4, 0, 1);
         let test_ini = StringReader::new(TEST_INI);
         let manifest = Manifest::from_reader(&version, test_ini).expect("a manifest from reader");
-        let modules:Modules = manifest.into();
-        let _modules_map:ModulesMap = modules.into();
+        let modules: Modules = manifest.into();
+        let _modules_map: ModulesMap = modules.into();
     }
 
     #[test]
     fn can_create_modulesfrom_modules_map() {
-        let version = Version::f(2018,4,0,1);
+        let version = Version::f(2018, 4, 0, 1);
         let test_ini = StringReader::new(TEST_INI);
         let manifest = Manifest::from_reader(&version, test_ini).expect("a manifest from reader");
 
-        let modules_1:Modules = manifest.into();
+        let modules_1: Modules = manifest.into();
 
         let test_ini = StringReader::new(TEST_INI);
         let manifest = Manifest::from_reader(&version, test_ini).expect("a manifest from reader");
 
-        let mut modules_2:Modules = manifest.into();
+        let mut modules_2: Modules = manifest.into();
 
-        let modules_map:ModulesMap = modules_1.into();
+        let modules_map: ModulesMap = modules_1.into();
         let mut modules_3: Modules = modules_map.into();
 
         assert_eq!(modules_2.sort(), modules_3.sort());
