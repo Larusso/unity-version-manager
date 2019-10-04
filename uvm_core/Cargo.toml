@@ -33,14 +33,15 @@ tempfile = "3"
 md-5 = { version = "0.8.0", features = ["std"] }
 hex-serde = "0.1.0"
 error-chain = "0.12.0"
+unzip = "0.1.0"
+[target.'cfg(target_os="macos")'.dependencies]
+dmg = "0.1.1"
 [target.'cfg(unix)'.dependencies]
 cluFlock = "1.2.5"
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["winver","memoryapi"] }
 libc = "0.2.43"
 tempfile = "3"
-[target.'cfg(target_os = "linux")'.dependencies]
-unzip = "0.1.0"
 
 [dev-dependencies]
 proptest = "0.9.4"
