@@ -1,3 +1,4 @@
+use crate::sys::shared::installer::*;
 use std::ffi::OsStr;
 use std::fs;
 use std::fs::DirBuilder;
@@ -84,32 +85,7 @@ where
             })
         }
 
-        Some(ext) if ext == "po" => {
-            let destination_file = installer
-                .file_name()
-                .map(|name| destination.join(name))
-                .ok_or_else(|| {
-                    io::Error::new(
-                        io::ErrorKind::Other,
-                        format!("Unable to read filename from path {}", installer.display()),
-                    )
-                })?;
-
-            let destination_already_existed = if destination.exists() {
-                false
-            } else {
-                DirBuilder::new().recursive(true).create(&destination)?;
-                true
-            };
-
-            install_language_po_file(installer, &destination_file).map_err(|err| {
-                cleanup_file_failable(&destination_file);
-                if destination_already_existed {
-                    cleanup_directory_failable(&destination)
-                }
-                err
-            })
-        }
+        Some(ext) if ext == "po" => install_po_file(installer, destination),
 
         Some(ext) if ext == "dmg" => install_module_from_dmg(installer, destination),
 
@@ -142,38 +118,6 @@ where
     untar_pkg(&tmp_destination, destination)?;
     cleanup_ios_support_pkg(destination)?;
     cleanup_pkg(&tmp_destination)?;
-    Ok(())
-}
-
-fn install_module_from_zip<P, D>(installer: P, destination: D) -> io::Result<()>
-where
-    P: AsRef<Path>,
-    D: AsRef<Path>,
-{
-    let installer = installer.as_ref();
-    let destination = destination.as_ref();
-
-    debug!(
-        "install module from zip archive {} to {}",
-        installer.display(),
-        destination.display()
-    );
-
-    clean_directory(destination)?;
-    debug!("deploy zip archive to {}", destination.display());
-    deploy_zip(installer, destination)?;
-    Ok(())
-}
-
-fn install_language_po_file<P, D>(po: P, destination: D) -> io::Result<()>
-where
-    P: AsRef<Path>,
-    D: AsRef<Path>,
-{
-    let po = po.as_ref();
-    let destination = destination.as_ref();
-    debug!("Copy po file {} to {}", po.display(), destination.display());
-    fs::copy(po, destination)?;
     Ok(())
 }
 
@@ -233,12 +177,6 @@ where
         ));
     }
     Ok(())
-}
-
-fn cleanup_pkg<D: AsRef<Path>>(tmp_destination: D) -> io::Result<()> {
-    let tmp_destination = tmp_destination.as_ref();
-    debug!("cleanup {}", &tmp_destination.display());
-    fs::remove_dir_all(tmp_destination)
 }
 
 fn cleanup_ios_support_pkg<D: AsRef<Path>>(destination: D) -> io::Result<()> {
@@ -318,40 +256,6 @@ where
     })
 }
 
-fn find_payload<P: AsRef<Path>>(dir: P) -> io::Result<PathBuf> {
-    let dir = dir.as_ref();
-    debug!("find paylod in unpacked installer {}", dir.display());
-    fs::read_dir(dir).and_then(|read_dir| {
-        read_dir
-            .filter_map(io::Result::ok)
-            .find(|entry| entry.file_name().to_str().unwrap().ends_with(".pkg.tmp"))
-            .ok_or_else(|| {
-                io::Error::new(
-                    io::ErrorKind::Other,
-                    format!(
-                        "can't locate *.pkg.tmp directory in extracted installer at {}",
-                        &dir.display()
-                    ),
-                )
-            })
-            .map(|entry| entry.path())
-            .and_then(|path| Ok(path.join("Payload")))
-            .and_then(|path| {
-                if path.exists() {
-                    Ok(path)
-                } else {
-                    Err(io::Error::new(
-                        io::ErrorKind::Other,
-                        format!(
-                            "can't locate Payload directory in extracted installer at {}",
-                            &dir.display()
-                        ),
-                    ))
-                }
-            })
-    })
-}
-
 fn untar_pkg<P: AsRef<Path>, D: AsRef<Path>>(
     base_payload_path: P,
     destination: D,
@@ -416,53 +320,4 @@ fn move_files<P: AsRef<Path>, D: AsRef<Path>>(source: P, destination: D) -> io::
         fs::rename(entry.path(), &new_location)?;
     }
     Ok(())
-}
-
-fn deploy_zip<P: AsRef<Path>, D: AsRef<Path>>(installer: P, destination: D) -> io::Result<()> {
-    use std::fs::File;
-    use unzip::Unzipper;
-
-    let installer = installer.as_ref();
-    let destination = destination.as_ref();
-
-    let file = File::open(installer)?;
-    let unzipper = Unzipper::new(file, destination);
-    unzipper.unzip()?;
-
-    Ok(())
-}
-
-fn cleanup_file_failable<P: AsRef<Path>>(file: P) {
-    let file = file.as_ref();
-    if file.exists() && file.is_file() {
-        debug!("cleanup file {}", &file.display());
-        fs::remove_file(file).unwrap_or_else(|err| {
-            error!("failed to cleanup file {}", &file.display());
-            error!("{}", err);
-        });
-    }
-}
-
-fn cleanup_directory_failable<P: AsRef<Path>>(dir: P) {
-    let dir = dir.as_ref();
-    if dir.exists() && dir.is_dir() {
-        debug!("cleanup directory {}", dir.display());
-        fs::remove_dir_all(dir).unwrap_or_else(|err| {
-            error!("failed to cleanup directory {}", dir.display());
-            error!("{}", err);
-        })
-    }
-}
-
-fn clean_directory<P: AsRef<Path>>(dir: P) -> io::Result<()> {
-    let dir = dir.as_ref();
-    debug!("clean output directory {}", dir.display());
-    if dir.exists() && dir.is_dir() {
-        debug!(
-            "directory exists, delete directory and create empty directory at {}",
-            dir.display()
-        );
-        fs::remove_dir_all(dir)?;
-    }
-    DirBuilder::new().recursive(true).create(dir)
 }

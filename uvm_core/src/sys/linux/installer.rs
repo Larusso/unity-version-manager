@@ -1,19 +1,21 @@
-use std::io;
-use std::path::PathBuf;
-use std::fs::File;
-use std::fs::DirBuilder;
+use crate::sys::shared::installer::*;
 use std::ffi::OsStr;
 use std::fs;
-use unzip::Unzipper;
-use std::process::{Command, Stdio};
-use std::io::Write;
+use std::fs::DirBuilder;
+use std::fs::File;
+use std::io;
 use std::io::Read;
+use std::io::Write;
+use std::path::{Path,PathBuf};
+use std::process::{Command, Stdio};
 
 pub fn install_editor(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
-    _install_editor(installer, destination)
-    .map_err(|err| {
+    _install_editor(installer, destination).map_err(|err| {
         if destination.exists() {
-            debug!("Delete destination directory after failure {}", destination.display());
+            debug!(
+                "Delete destination directory after failure {}",
+                destination.display()
+            );
             fs::remove_dir_all(destination).unwrap_or_else(|err| {
                 error!("Failed to cleanup destination {}", destination.display());
                 error!("{}", err);
@@ -23,7 +25,13 @@ pub fn install_editor(installer: &PathBuf, destination: &PathBuf) -> io::Result<
     })
 }
 
-fn _install_editor(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
+fn _install_editor<P, D>(installer: P, destination: D) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    let installer = installer.as_ref();
+    let destination = destination.as_ref();
     debug!(
         "install editor to destination: {} with installer: {}",
         destination.display(),
@@ -44,15 +52,21 @@ fn _install_editor(installer: &PathBuf, destination: &PathBuf) -> io::Result<()>
 
     Err(io::Error::new(
         io::ErrorKind::Other,
-        format!("Wrong installer. Expect .zip or .xz {:?} - {}", &installer.extension(), &installer.display()),
+        format!(
+            "Wrong installer. Expect .zip or .xz {:?} - {}",
+            &installer.extension(),
+            &installer.display()
+        ),
     ))
 }
 
 pub fn install_module(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
-    _install_module(installer, destination)
-    .map_err(|err| {
+    _install_module(installer, destination).map_err(|err| {
         if destination.exists() {
-            debug!("Delete destination directory after failure {}", destination.display());
+            debug!(
+                "Delete destination directory after failure {}",
+                destination.display()
+            );
             fs::remove_dir_all(destination).unwrap_or_else(|err| {
                 error!("Failed to cleanup destination {}", destination.display());
                 error!("{}", err);
@@ -62,56 +76,121 @@ pub fn install_module(installer: &PathBuf, destination: &PathBuf) -> io::Result<
     })
 }
 
-fn _install_module(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
+fn _install_module<P, D>(installer: P, destination: D) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    let installer = installer.as_ref();
+    let destination = destination.as_ref();
+
     debug!(
         "install component {} to {}",
         &installer.display(),
         &destination.display()
     );
 
-    if installer.extension() == Some(OsStr::new("zip")) {
-        debug!("install component from zip archive");
-        clean_directory(destination)?;
-        deploy_zip(installer, destination)?;
-        return Ok(());
-    } else if installer.extension() == Some(OsStr::new("xz")) {
-        let destination = if destination.ends_with("Editor/Data/PlaybackEngines") {
-            destination.parent()
-                .and_then(|f| f.parent())
-                .and_then(|f| f.parent())
-                .ok_or_else(|| io::Error::new(
-                    io::ErrorKind::NotFound,
-                    format!("Can't determine destination for {} and destination {}", &installer.display(), destination.display()),
-                ))?
-        } else {
-            destination
-        };
+    match installer.extension() {
+        Some(ext) if ext == "zip" => {
+            install_module_from_zip(installer, destination).map_err(|err| {
+                cleanup_directory_failable(destination);
+                err
+            })
+        }
 
-        DirBuilder::new().recursive(true).create(destination)?;
-        untar(installer, &destination.to_path_buf())?;
-        return Ok(());
-    } else if installer.extension() == Some(OsStr::new("po")) {
-        debug!("install component po file");
-        let destination = destination.join(installer.file_name().unwrap().to_str().unwrap());
-        fs::copy(installer, destination)?;
-        return Ok(());
-    } else if installer.extension() == Some(OsStr::new("pkg")) {
-        debug!("install component from pkg archive");
-        let tmp_destination = destination.join("tmp");
-        DirBuilder::new().recursive(true).create(&tmp_destination)?;
-        xar_pkg(installer, &tmp_destination)?;
-        untar_pkg(&tmp_destination, destination)?;
-        cleanup_pkg(&tmp_destination)?;
-        return Ok(());
+        Some(ext) if ext == "xz" => install_module_from_xz(installer, destination).map_err(|err| {
+            cleanup_directory_failable(destination);
+            err
+        }),
+
+        Some(ext) if ext == "po" => install_po_file(installer, destination),
+
+        Some(ext) if ext == "pkg" => {
+            install_module_from_pkg(installer, destination).map_err(|err| {
+                cleanup_directory_failable(destination);
+                err
+            })
+        }
+
+        _ => Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!(
+                "Wrong installer. Expect .pkg, .zip, .xz or .po {}",
+                &installer.display()
+            ),
+        )),
     }
-
-    Err(io::Error::new(
-        io::ErrorKind::Other,
-        format!("Wrong installer. Expect .pkg, .zip, .xz or .po {}", &installer.display()),
-    ))
 }
 
-fn xar_pkg(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
+fn install_module_from_pkg<P, D>(installer: P, destination: D) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    let installer = installer.as_ref();
+    let destination = destination.as_ref();
+
+    debug!(
+        "install module from pkg {} to {}",
+        installer.display(),
+        destination.display()
+    );
+
+    let tmp_destination = destination.join("tmp");
+    DirBuilder::new().recursive(true).create(&tmp_destination)?;
+
+    xar_pkg(installer, &tmp_destination)?;
+    untar_pkg(&tmp_destination, destination)?;
+    cleanup_pkg(&tmp_destination)?;
+    Ok(())
+}
+
+fn install_module_from_xz<P, D>(installer: P, destination: D) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    let installer = installer.as_ref();
+    let destination = destination.as_ref();
+
+    debug!(
+        "install module from xz archive {} to {}",
+        installer.display(),
+        destination.display()
+    );
+
+    let destination = if destination.ends_with("Editor/Data/PlaybackEngines") {
+        destination
+            .parent()
+            .and_then(|f| f.parent())
+            .and_then(|f| f.parent())
+            .ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!(
+                        "Can't determine destination for {} and destination {}",
+                        &installer.display(),
+                        destination.display()
+                    ),
+                )
+            })?
+    } else {
+        destination
+    };
+
+    DirBuilder::new().recursive(true).create(destination)?;
+    untar(installer, destination)?;
+    return Ok(());
+}
+
+fn xar_pkg<P, D>(installer: P, destination: D) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    let installer = installer.as_ref();
+    let destination = destination.as_ref();
+
     debug!(
         "unpack installer {} to temp destination {}",
         installer.display(),
@@ -140,72 +219,15 @@ fn xar_pkg(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
     Ok(())
 }
 
-fn cleanup_pkg(tmp_destination: &PathBuf) -> io::Result<()> {
-    debug!("cleanup {}", &tmp_destination.display());
-    fs::remove_dir_all(tmp_destination)
-}
+fn untar_pkg<P, D>(base_payload_path: P, destination: D) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    let base_payload_path = base_payload_path.as_ref();
+    let destination = destination.as_ref();
 
-fn find_payload(dir: &PathBuf) -> io::Result<PathBuf> {
-    debug!("find paylod in unpacked installer {}", dir.display());
-    let mut files = fs::read_dir(dir).and_then(|read_dir| {
-        Ok(read_dir.filter_map(io::Result::ok))
-    }).map_err(|_err| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!(
-                "can't iterate files in extracted payload {}",
-                &dir.display()
-            ),
-        )
-    })?;
-
-    files.find(|entry| {
-        if let Some(file_name) = entry.file_name().to_str() {
-            if file_name.ends_with(".pkg.tmp") || file_name == "Payload~" {
-                true
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    })
-    .ok_or_else(|| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!(
-                "can't locate *.pkg.tmp directory or Payload~ in extracted installer at {}",
-                &dir.display()
-            ),
-        )
-    })
-    .map(|entry| entry.path())
-    .and_then(|path| {
-        if path.file_name() == Some(OsStr::new("Payload~")) {
-            Ok(path)
-        } else {
-            let payload_path = path.join("Payload");
-            if payload_path.exists() {
-                Ok(payload_path)
-            } else {
-                Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    format!(
-                        "can't locate Payload directory in extracted installer at {}",
-                        &dir.display()
-                    ),
-                ))
-            }
-        }
-    })
-    .map(|path| {
-        debug!("Found payload {}", path.display());
-        path
-    })
-}
-
-fn untar_pkg(base_payload_path: &PathBuf, destination: &PathBuf) -> io::Result<()> {
-    let payload = find_payload(&base_payload_path)?;
+    let payload = find_payload(base_payload_path)?;
     debug!("extract payload at {}", payload.display());
 
     let tar_child = if payload.file_name() == Some(OsStr::new("Payload~")) {
@@ -229,19 +251,19 @@ fn untar_pkg(base_payload_path: &PathBuf, destination: &PathBuf) -> io::Result<(
             .stdout(Stdio::piped())
             .spawn()?;
 
-            let mut cpio = Command::new("cpio")
-                .arg("-iu")
-                .current_dir(destination)
-                .stdin(Stdio::piped())
-                .spawn()?;
-            {
-                let stdin = cpio.stdin.as_mut().expect("stdin");
-                let gzip_std_out = gzip.stdout.as_mut().expect("stdout");
-                let mut buffer = Vec::new();
-                gzip_std_out.read_to_end(&mut buffer)?;
-                stdin.write(&buffer)?;
-            }
-            cpio
+        let mut cpio = Command::new("cpio")
+            .arg("-iu")
+            .current_dir(destination)
+            .stdin(Stdio::piped())
+            .spawn()?;
+        {
+            let stdin = cpio.stdin.as_mut().expect("stdin");
+            let gzip_std_out = gzip.stdout.as_mut().expect("stdout");
+            let mut buffer = Vec::new();
+            gzip_std_out.read_to_end(&mut buffer)?;
+            stdin.write(&buffer)?;
+        }
+        cpio
     };
 
     let tar_output = tar_child.wait_with_output()?;
@@ -258,25 +280,19 @@ fn untar_pkg(base_payload_path: &PathBuf, destination: &PathBuf) -> io::Result<(
     Ok(())
 }
 
-fn clean_directory(path: &PathBuf) -> io::Result<()> {
-    debug!("clean output directory {}", path.display());
-    if path.exists() {
-        debug!("directory exists. Delete directory and create empty directory at {}", path.display());
-        fs::remove_dir_all(path)?;
-    }
-    DirBuilder::new().recursive(true).create(path)
-}
+fn untar<P, D>(source: P, destination: D) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    let source = source.as_ref();
+    let destination = destination.as_ref();
 
-fn deploy_zip(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
-    let file = File::open(installer)?;
-    let unzipper = Unzipper::new(file, destination);
-    unzipper.unzip()?;
-
-    Ok(())
-}
-
-fn untar(source: &PathBuf, destination: &PathBuf) -> io::Result<()> {
-    debug!("untar archive {} to {}", source.display(), destination.display());
+    debug!(
+        "untar archive {} to {}",
+        source.display(),
+        destination.display()
+    );
     let tar_child = Command::new("tar")
         .arg("-C")
         .arg(destination)
