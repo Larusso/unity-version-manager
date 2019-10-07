@@ -1,19 +1,16 @@
 use crate::error::*;
-use crate::unity::hub::paths;
-use crate::unity::urls::{DownloadURL, IniUrl};
+use crate::unity::urls::{DownloadURL};
 use crate::unity::{Component, Version};
 use reqwest::header;
 use reqwest::Url;
-use serde::Deserialize;
-use serde_ini;
 use std::collections::hash_map::Iter;
 use std::collections::HashMap;
-use std::fmt;
-use std::fs::{DirBuilder, File};
-use std::io::{self, Read, Write};
+use std::fs::File;
+use std::io::Read;
 use std::path::Path;
 use std::time::Duration;
 use super::*;
+use super::ini::IniManifest;
 
 lazy_static! {
     static ref CLIENT: reqwest::Client = {
@@ -39,33 +36,32 @@ pub struct Manifest<'a> {
 
 impl<'a> Manifest<'a> {
     pub fn load(version: &'a Version) -> Result<Manifest<'a>> {
-        Self::get_manifest(version)
-    }
-
-    pub fn read_manifest_version_from_path<P: AsRef<Path>>(manifest_path: P) -> Result<Version> {
-        let f = File::open(manifest_path)?;
-        Self::read_manifest_version(f)
-    }
-
-    pub fn read_manifest_version<R: Read>(mut reader: R) -> Result<Version> {
-        use std::str::FromStr;
-        let mut manifest_buffer = String::new();
-        reader.read_to_string(&mut manifest_buffer)?;
-        Version::from_str(&manifest_buffer).chain_err(|| "can't read version from manifest body")
-    }
-
-    pub fn from_reader<R: Read>(version: &'a Version, mut manifest: R) -> Result<Manifest<'a>> {
+        let components = IniManifest::load(version)?;
         let base_url = DownloadURL::new(&version)?;
-        let mut ini_data = String::new();
-        manifest.read_to_string(&mut ini_data)?;
-        let ini_data = Self::cleanup_ini_data(&ini_data);
-
-        let components = Self::read_components(ini_data.as_bytes(), &base_url, version)?;
 
         Ok(Manifest {
             version,
             base_url,
-            components,
+            components: components.into(),
+        })
+    }
+
+    pub fn read_manifest_version_from_path<P: AsRef<Path>>(manifest_path: P) -> Result<Version> {
+        IniManifest::read_manifest_version_from_path(manifest_path)
+    }
+
+    pub fn read_manifest_version<R: Read>(reader: R) -> Result<Version> {
+        IniManifest::read_manifest_version(reader)
+    }
+
+    pub fn from_reader<R: Read>(version: &'a Version, manifest: R) -> Result<Manifest<'a>> {
+        let base_url = DownloadURL::new(&version)?;
+        let components = IniManifest::from_reader(version, manifest)?;
+
+        Ok(Manifest {
+            version,
+            base_url,
+            components: components.into(),
         })
     }
 
@@ -101,113 +97,6 @@ impl<'a> Manifest<'a> {
     pub fn iter(&self) -> Iter<'_, Component, ComponentData> {
         self.components.iter()
     }
-
-    fn get_manifest(version: &'a Version) -> Result<Manifest<'a>> {
-        let cache_dir = paths::cache_dir().ok_or_else(|| {
-            io::Error::new(io::ErrorKind::Other, "Unable to fetch cache directory")
-        })?;
-
-        DirBuilder::new()
-            .recursive(true)
-            .create(&cache_dir)
-            .map_err(|_err| {
-                io::Error::new(
-                    io::ErrorKind::Other,
-                    format!(
-                        "Unable to create cache directory at {}",
-                        cache_dir.display()
-                    ),
-                )
-            })?;
-
-        let manifest_path = cache_dir.join(&format!("{}_manifest.ini", version));
-
-        if !manifest_path.exists() {
-            Self::download_manifest(version, manifest_path.to_path_buf())
-        } else {
-            Manifest::new(version, manifest_path)
-        }
-    }
-
-    fn read_components<R: Read, V:AsRef<Version>>(input: R, base_url: &DownloadURL, version:V) -> Result<Components> {
-        let version = version.as_ref();
-        serde_ini::from_read(input)
-            .chain_err(|| UvmErrorKind::ManifestReadError)
-            .map(|mut components: Components| {
-                for (component, data) in components.iter_mut() {
-                    data.download_url = component.download_url(base_url, &data.url, version)
-                }
-                components
-            })
-    }
-
-    fn download_manifest<P>(version: &'a Version, path: P) -> Result<Manifest<'a>>
-    where
-        P: AsRef<Path>,
-    {
-        let version = version;
-        let ini_url = IniUrl::new(version)?;
-        let url = ini_url.into_url();
-        debug!("Manifest URL {}", &url);
-
-        let client = &CLIENT;
-        let request = client.get(url).build()?;
-
-        debug!("Manifest Request:");
-        debug!("{:?}", request);
-        let mut response = client.execute(request)?;
-
-        debug!("Manifest Repsonse:");
-        debug!("{:?}", response);
-
-        if !response.status().is_success() {
-            trace!("{}", response.text()?);
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!("Unable to load manifest. Status: {}", response.status()),
-            )
-            .into());
-        }
-
-        let body = response.text()?;
-        let body = Self::cleanup_ini_data(&body);
-
-        let base_url = DownloadURL::new(version)?;
-        let components = Self::read_components(body.as_bytes(), &base_url, version)?;
-
-        File::create(path.as_ref())
-            .and_then(|mut f| write!(f, "{}", body))
-            .unwrap_or_else(|err| {
-                warn!(
-                    "Error while creating the manifest cache file for {}",
-                    path.as_ref().display()
-                );
-                warn!("{}", err);
-            });
-
-        Ok(Manifest {
-            version,
-            base_url,
-            components,
-        })
-    }
-
-    fn cleanup_ini_data(ini_data: &str) -> String {
-        ini_data
-            .lines()
-            .filter(|line| {
-                let line = line.trim();
-                line.starts_with('[')
-                    || line
-                        .split('=')
-                        .next()
-                        .map(|sub| sub.trim())
-                        .and_then(|sub| if !sub.contains(' ') { Some(()) } else { None })
-                        .is_some()
-            })
-            .collect::<Vec<&str>>()
-            .join("\n")
-    }
 }
 
 use std::iter::Zip;
@@ -233,9 +122,8 @@ mod tests {
     use super::*;
     #[cfg(target_os = "macos")]
     use std::fs;
-    #[cfg(target_os = "macos")]
-    use tempfile;
     use stringreader::StringReader;
+    use crate::unity::hub::paths;
 
     #[cfg(target_os = "macos")]
     #[test]
@@ -306,19 +194,6 @@ mod tests {
 
         Manifest::load(&version).unwrap();
         assert!(cache_file.exists());
-    }
-
-    #[cfg(target_os = "macos")]
-    #[test]
-    fn downloads_manifest_to_local_path() {
-        let tempdir = tempfile::tempdir().unwrap();
-        let version = Version::f(2018, 2, 0, 2);
-        let path = tempdir
-            .path()
-            .join(&format!("{}_manifest.ini", version.to_string()));
-
-        Manifest::download_manifest(&version, &path).unwrap();
-        assert!(path.exists());
     }
 
     #[test]
@@ -495,26 +370,5 @@ md5=822c52aa75af582318c5d0ef94137f40"#;
         assert!(manifest.get(Component::Editor).is_some());
         let c = manifest.get(Component::Editor).unwrap();
         assert_eq!(c.description, "Unity Editor".to_string());
-    }
-
-    #[test]
-    fn cleanup_ini_data_removes_junk_lines() {
-        let test_ini = r#"[Section1]
-key=value
-[Section2]
-line which is not a section
-key = value
-line which is not a section or key=value
-line which is not a section or key = value
-key = "value with equals = ssjdd"
-key2=value2"#;
-
-        let expected_ini = r#"[Section1]
-key=value
-[Section2]
-key = value
-key = "value with equals = ssjdd"
-key2=value2"#;
-        assert_eq!(Manifest::cleanup_ini_data(test_ini), expected_ini);
     }
 }

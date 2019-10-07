@@ -10,9 +10,6 @@ use std::io::{self, Read, Write};
 use super::MD5;
 use std::path::Path;
 use derive_deref::{Deref, DerefMut};
-use std::time::Duration;
-
-//use std::ops::{Deref, DerefMut};
 
 use super::client::CLIENT;
 
@@ -184,6 +181,12 @@ impl IniManifest {
             })
             .collect::<Vec<&str>>()
             .join("\n")
+    }
+}
+
+impl From<IniManifest> for HashMap<Component, IniData> {
+    fn from(manifest: IniManifest) -> Self {
+        manifest.0
     }
 }
 

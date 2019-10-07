@@ -1,5 +1,4 @@
 use reqwest::header;
-use reqwest::Url;
 use std::time::Duration;
 
 lazy_static! {
