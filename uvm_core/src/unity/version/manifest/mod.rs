@@ -2,6 +2,7 @@ pub mod v1;
 
 mod ini;
 mod md5;
+mod client;
 
 pub type ComponentData = ini::IniData;
 
