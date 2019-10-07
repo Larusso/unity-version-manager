@@ -32,6 +32,7 @@ reqwest = "0.9.21"
 tempfile = "3"
 md-5 = { version = "0.8.0", features = ["std"] }
 hex-serde = "0.1.0"
+hex = "0.4.0"
 error-chain = "0.12.0"
 unzip = "0.1.0"
 [target.'cfg(target_os="macos")'.dependencies]

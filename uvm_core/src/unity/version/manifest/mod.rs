@@ -1,3 +1,9 @@
 pub mod v1;
 
-pub use self::v1::{Manifest, ManifestIteratorItem, ComponentData, MD5};
+mod ini;
+mod md5;
+
+pub type ComponentData = ini::IniData;
+
+pub use self::v1::{Manifest, ManifestIteratorItem};
+pub use self::md5::MD5;

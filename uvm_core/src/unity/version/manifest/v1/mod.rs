@@ -13,8 +13,7 @@ use std::fs::{DirBuilder, File};
 use std::io::{self, Read, Write};
 use std::path::Path;
 use std::time::Duration;
-
-mod de;
+use super::*;
 
 lazy_static! {
     static ref CLIENT: reqwest::Client = {
@@ -227,44 +226,6 @@ impl<'a> IntoIterator for Manifest<'a> {
         self.components.into_iter().zip(version_iterator)
     }
 }
-
-#[derive(Deserialize, Debug)]
-pub struct ComponentData {
-    pub title: String,
-    pub description: String,
-    pub url: String,
-    #[serde(skip)]
-    pub download_url: Option<Url>,
-    pub size: u64,
-    pub installedsize: u64,
-    pub md5: Option<MD5>,
-    #[serde(with = "de::bool")]
-    #[serde(default = "de::bool::default")]
-    pub hidden: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename="eulaurl1")]
-    pub eula_url_1: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename="eulalabel1")]
-    pub eula_label_1: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename="eulamessage")]
-    pub eula_message: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sync: Option<Component>,
-    #[serde(flatten)]
-    pub other: HashMap<String, String>,
-}
-
-impl fmt::Display for ComponentData {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}, {})", self.title, self.url)
-    }
-}
-
-#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(transparent)]
-pub struct MD5(#[serde(with = "hex_serde")] pub [u8; 16]);
 
 #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
 #[cfg(test)]
