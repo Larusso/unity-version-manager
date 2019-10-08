@@ -116,7 +116,6 @@ impl<'a> IntoIterator for Manifest<'a> {
     }
 }
 
-#[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -169,7 +168,7 @@ mod tests {
         #[cfg(target_os = "windows")]
         let expected_url = "https://download.unity3d.com/download_unity/f2970305fe1c/Windows64EditorInstaller/UnitySetup64-2019.1.6f1.exe";
         #[cfg(target_os = "linux")]
-        let expected_url = "https://download.unity3d.com/download_unity/f2970305fe1c/LinuxEditorInstaller/Unity.tar-2019.1.6f1.xz";
+        let expected_url = "https://download.unity3d.com/download_unity/f2970305fe1c/LinuxEditorInstaller/Unity-2019.1.6f1.tar.xz";
         #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
         let expected_url = "";
 

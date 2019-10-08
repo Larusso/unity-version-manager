@@ -230,6 +230,7 @@ mod tests {
     use tempfile;
     use stringreader::StringReader;
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn fetch_metadata_for_known_unity_version_does_not_fail() {
         let version = Version::f(2019, 1, 6, 1);
@@ -242,6 +243,7 @@ mod tests {
         IniManifest::load(&version).unwrap();
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn fetch_metedata_for_unknown_unity_version_fails() {
         let version = Version::f(2030, 1, 1, 1);
@@ -254,6 +256,7 @@ mod tests {
         assert!(IniManifest::load(&version).is_err());
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn saves_meta_file_to_cache_dir() {
         let version = Version::f(2019, 1, 7, 1);
@@ -268,6 +271,7 @@ mod tests {
         assert!(cache_file.exists());
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn downloads_manifest_to_local_path() {
         let tempdir = tempfile::tempdir().unwrap();
