@@ -42,7 +42,7 @@ dmg = "0.1.1"
 cluFlock = "1.2.5"
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["winver","memoryapi"] }
-libc = "0.2.43"
+libc = "0.2.64"
 tempfile = "3"
 
 [dev-dependencies]
