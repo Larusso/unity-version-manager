@@ -10,7 +10,17 @@ use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 
-const UNITY_BASE_PATTERN:&str = "{UNITY_PATH}";
+lazy_static! {
+    static ref UNITY_BASE_PATTERN: &'static Path = {
+        Path::new("{UNITY_PATH}")
+    };
+}
+
+impl AsRef<Path> for UNITY_BASE_PATTERN {
+    fn as_ref(&self) -> &Path {
+        self.deref()
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Default, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -33,11 +43,11 @@ pub struct Module {
     pub visible: bool,
     pub selected: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub destination: Option<PathBuf>,
+    destination: Option<PathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub rename_to: Option<PathBuf>,
+    rename_to: Option<PathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub rename_from: Option<PathBuf>,
+    rename_from: Option<PathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub checksum: Option<MD5>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -117,9 +127,9 @@ impl Module {
             })
             .map(|p| {
                 if p == Path::new("") {
-                    Path::new(UNITY_BASE_PATTERN).to_path_buf()
+                    UNITY_BASE_PATTERN.to_path_buf()
                 } else {
-                    Path::new(UNITY_BASE_PATTERN).join(p)
+                    UNITY_BASE_PATTERN.join(p)
                 }
             })
     }
@@ -130,11 +140,42 @@ impl Module {
             .installpath_with_installer_url(installer_url)
             .map(|p| {
                 if p == Path::new("") {
-                    Path::new(UNITY_BASE_PATTERN).to_path_buf()
+                    UNITY_BASE_PATTERN.to_path_buf()
                 } else {
-                    Path::new(UNITY_BASE_PATTERN).join(p)
+                    UNITY_BASE_PATTERN.join(p)
                 }
             })
+    }
+
+    fn strip_unity_base_url<P:AsRef<Path>, Q:AsRef<Path>>(path:P, base_dir:Q) -> PathBuf {
+        let path = path.as_ref();
+        base_dir.as_ref().join(&path.strip_prefix(&UNITY_BASE_PATTERN).unwrap_or(path))
+    }
+
+    pub fn install_rename_from<P: AsRef<Path>>(&self, base_dir: P) -> Option<PathBuf> {
+        self.rename_from.as_ref().map(|from| {
+            Self::strip_unity_base_url(from, base_dir)
+        })
+    }
+
+    pub fn install_rename_to<P: AsRef<Path>>(&self, base_dir: P) -> Option<PathBuf> {
+        self.rename_to.as_ref().map(|to| {
+            Self::strip_unity_base_url(to, base_dir)
+        })
+    }
+
+    pub fn install_rename_from_to<P: AsRef<Path>>(&self, base_dir: P) -> Option<(PathBuf, PathBuf)> {
+        let base_dir = base_dir.as_ref();
+        Some((
+            self.install_rename_from(base_dir)?,
+            self.install_rename_to(base_dir)?,
+        ))
+    }
+
+    pub fn install_destination<P: AsRef<Path>>(&self, base_dir: P) -> Option<PathBuf> {
+        Some(
+            Self::strip_unity_base_url(self.destination.as_ref()?, base_dir.as_ref()),
+        )
     }
 }
 
