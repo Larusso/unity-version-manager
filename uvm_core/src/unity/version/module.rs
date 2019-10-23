@@ -8,7 +8,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+const UNITY_BASE_PATTERN:&str = "{UNITY_PATH}";
 
 #[derive(Serialize, Deserialize, Debug, Default, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -31,11 +33,11 @@ pub struct Module {
     pub visible: bool,
     pub selected: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub destination: Option<String>,
+    pub destination: Option<PathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub rename_to: Option<String>,
+    pub rename_to: Option<PathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub rename_from: Option<String>,
+    pub rename_from: Option<PathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub checksum: Option<MD5>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -104,7 +106,7 @@ impl Ord for Module {
 
 impl Module {
     #[cfg(not(windows))]
-    fn destination(component: Component, _: &str) -> Option<String> {
+    fn destination(component: Component, _: &str) -> Option<PathBuf> {
         component
             .installpath()
             .map(|mut p| {
@@ -115,24 +117,22 @@ impl Module {
             })
             .map(|p| {
                 if p == Path::new("") {
-                    "{UNITY_PATH}".to_string()
+                    Path::new(UNITY_BASE_PATTERN).to_path_buf()
                 } else {
-                    Path::new("{UNITY_PATH}").join(p).display().to_string()
+                    Path::new(UNITY_BASE_PATTERN).join(p)
                 }
             })
     }
 
     #[cfg(windows)]
-    fn destination(component: Component, installer_url: &str) -> Option<String> {
+    fn destination(component: Component, installer_url: &str) -> Option<PathBuf> {
         component
             .installpath_with_installer_url(installer_url)
             .map(|p| {
                 if p == Path::new("") {
-                    "{UNITY_PATH}".to_string()
+                    Path::new(UNITY_BASE_PATTERN).to_path_buf()
                 } else {
-                    let base = Path::new("{UNITY_PATH}");
-                    let s = base.join(p).display().to_string();
-                    s.as_str().replace(r"\", "/")
+                    Path::new(UNITY_BASE_PATTERN).join(p)
                 }
             })
     }
