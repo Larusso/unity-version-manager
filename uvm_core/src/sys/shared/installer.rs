@@ -63,7 +63,6 @@ where
         destination.display()
     );
 
-    clean_directory(destination)?;
     debug!("deploy zip archive to {}", destination.display());
     deploy_zip(installer, destination)?;
     Ok(())
@@ -71,14 +70,46 @@ where
 
 pub fn deploy_zip<P: AsRef<Path>, D: AsRef<Path>>(installer: P, destination: D) -> io::Result<()> {
     use std::fs::File;
-    use unzip::Unzipper;
 
     let installer = installer.as_ref();
     let destination = destination.as_ref();
 
     let file = File::open(installer)?;
-    let unzipper = Unzipper::new(file, destination);
-    unzipper.unzip()?;
+
+    let mut archive = zip::ZipArchive::new(file)?;
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).unwrap();
+        let outpath = destination.join(file.sanitized_name());
+
+        {
+            let comment = file.comment();
+            if !comment.is_empty() {
+                trace!("File {} comment: {}", i, comment);
+            }
+        }
+
+        if (&*file.name()).ends_with('/') {
+            debug!("File {} extracted to \"{}\"", i, outpath.as_path().display());
+            std::fs::DirBuilder::new().recursive(true).create(&outpath)?;
+        } else {
+            debug!("File {} extracted to \"{}\" ({} bytes)", i, outpath.as_path().display(), file.size());
+            if let Some(p) = outpath.parent() {
+                if !p.exists() {
+                    std::fs::DirBuilder::new().recursive(true).create(&p)?;
+                }
+            }
+            let mut outfile = fs::File::create(&outpath)?;
+            io::copy(&mut file, &mut outfile)?;
+        }
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Some(mode) = file.unix_mode() {
+                fs::set_permissions(&outpath, fs::Permissions::from_mode(mode))?;
+            }
+        }
+    }
 
     Ok(())
 }
