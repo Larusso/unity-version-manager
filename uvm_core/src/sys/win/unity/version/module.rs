@@ -1,5 +1,6 @@
 use crate::unity::{Version};
 use crate::unity::Component;
+use std::path::{Path, PathBuf};
 
 pub struct ModulePart {
     pub component:Component,
@@ -9,8 +10,8 @@ pub struct ModulePart {
     pub main:bool,
     pub installed_size:u64,
     pub download_size:u64,
-    pub rename_from:Option<String>,
-    pub rename_to:Option<String>,
+    pub rename_from:Option<PathBuf>,
+    pub rename_to:Option<PathBuf>,
 }
 
 pub fn get_android_open_jdk_download_info<V: AsRef<Version>>(_version:V) -> ModulePart {
@@ -66,8 +67,8 @@ pub fn get_android_sdk_ndk_download_info<V: AsRef<Version>>(version:V) -> Vec<Mo
             main: false,
             installed_size: 120_000_000,
             download_size: 52_600_000,
-            rename_from: Some("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/android-9".to_string()),
-            rename_to: Some("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/build-tools/28.0.3".to_string())
+            rename_from: Some(Path::new("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/android-9").to_path_buf()),
+            rename_to: Some(Path::new("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/build-tools/28.0.3").to_path_buf())
         },
         ModulePart {
             component: Component::AndroidSdkPlatforms,
@@ -77,8 +78,8 @@ pub fn get_android_sdk_ndk_download_info<V: AsRef<Version>>(version:V) -> Vec<Mo
             main: false,
             installed_size: 121_000_000,
             download_size: 60_600_000,
-            rename_from: Some("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/android-9".to_string()),
-            rename_to: Some("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platforms/android-28".to_string())
+            rename_from: Some(Path::new("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/android-9").to_path_buf()),
+            rename_to: Some(Path::new("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platforms/android-28").to_path_buf()),
         },
         ModulePart {
             component: Component::AndroidNdk,
@@ -88,8 +89,8 @@ pub fn get_android_sdk_ndk_download_info<V: AsRef<Version>>(version:V) -> Vec<Mo
             main: false,
             installed_size: ndk_install_size,
             download_size: ndk_download_size,
-            rename_from: Some(format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/NDK/android-ndk-{}", ndk_version)),
-            rename_to: Some("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/NDK".to_string())
+            rename_from: Some(Path::new(&format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/NDK/android-ndk-{}", ndk_version)).to_path_buf()),
+            rename_to: Some(Path::new("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/NDK").to_path_buf())
         },
     ]
 }
