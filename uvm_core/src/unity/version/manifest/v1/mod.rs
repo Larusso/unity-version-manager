@@ -4,7 +4,6 @@ use crate::unity::{Component, Version};
 use reqwest::header;
 use reqwest::Url;
 use std::collections::hash_map::Iter;
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -25,13 +24,11 @@ lazy_static! {
     };
 }
 
-type Components = HashMap<Component, ComponentData>;
-
 #[derive(Debug)]
 pub struct Manifest<'a> {
     version: &'a Version,
     base_url: DownloadURL,
-    components: Components,
+    components: IniManifest,
 }
 
 impl<'a> Manifest<'a> {
@@ -42,7 +39,7 @@ impl<'a> Manifest<'a> {
         Ok(Manifest {
             version,
             base_url,
-            components: components.into(),
+            components,
         })
     }
 
@@ -61,7 +58,7 @@ impl<'a> Manifest<'a> {
         Ok(Manifest {
             version,
             base_url,
-            components: components.into(),
+            components,
         })
     }
 
@@ -96,6 +93,12 @@ impl<'a> Manifest<'a> {
 
     pub fn iter(&self) -> Iter<'_, Component, ComponentData> {
         self.components.iter()
+    }
+}
+
+impl From<Manifest<'_>> for IniManifest {
+    fn from(manifest:Manifest) -> Self {
+        manifest.components
     }
 }
 

@@ -184,9 +184,24 @@ impl IniManifest {
     }
 }
 
+impl IntoIterator for IniManifest {
+    type Item = (Component, IniData);
+    type IntoIter = ::std::collections::hash_map::IntoIter<Component, IniData>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
 impl From<IniManifest> for HashMap<Component, IniData> {
     fn from(manifest: IniManifest) -> Self {
         manifest.0
+    }
+}
+
+impl From<HashMap<Component, IniData>> for IniManifest {
+    fn from(map: HashMap<Component, IniData>) -> Self {
+        IniManifest(map)
     }
 }
 

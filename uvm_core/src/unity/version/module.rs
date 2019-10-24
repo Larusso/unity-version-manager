@@ -3,7 +3,10 @@ use crate::sys::unity::version::module::get_android_sdk_ndk_download_info;
 use crate::unity::component::Category;
 use crate::unity::InstalledComponents;
 use crate::unity::MD5;
-use crate::unity::{Component, Localization, Manifest, ManifestIteratorItem, VersionType};
+use crate::unity::{
+    Component, IniManifest, Localization, Manifest, ManifestIteratorItem, Version, VersionType,
+};
+use reqwest::{Client, IntoUrl};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -11,9 +14,7 @@ use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 
 lazy_static! {
-    static ref UNITY_BASE_PATTERN: &'static Path = {
-        Path::new("{UNITY_PATH}")
-    };
+    static ref UNITY_BASE_PATTERN: &'static Path = { Path::new("{UNITY_PATH}") };
 }
 
 impl AsRef<Path> for UNITY_BASE_PATTERN {
@@ -147,24 +148,29 @@ impl Module {
             })
     }
 
-    fn strip_unity_base_url<P:AsRef<Path>, Q:AsRef<Path>>(path:P, base_dir:Q) -> PathBuf {
+    fn strip_unity_base_url<P: AsRef<Path>, Q: AsRef<Path>>(path: P, base_dir: Q) -> PathBuf {
         let path = path.as_ref();
-        base_dir.as_ref().join(&path.strip_prefix(&UNITY_BASE_PATTERN).unwrap_or(path))
+        base_dir
+            .as_ref()
+            .join(&path.strip_prefix(&UNITY_BASE_PATTERN).unwrap_or(path))
     }
 
     pub fn install_rename_from<P: AsRef<Path>>(&self, base_dir: P) -> Option<PathBuf> {
-        self.rename_from.as_ref().map(|from| {
-            Self::strip_unity_base_url(from, base_dir)
-        })
+        self.rename_from
+            .as_ref()
+            .map(|from| Self::strip_unity_base_url(from, base_dir))
     }
 
     pub fn install_rename_to<P: AsRef<Path>>(&self, base_dir: P) -> Option<PathBuf> {
-        self.rename_to.as_ref().map(|to| {
-            Self::strip_unity_base_url(to, base_dir)
-        })
+        self.rename_to
+            .as_ref()
+            .map(|to| Self::strip_unity_base_url(to, base_dir))
     }
 
-    pub fn install_rename_from_to<P: AsRef<Path>>(&self, base_dir: P) -> Option<(PathBuf, PathBuf)> {
+    pub fn install_rename_from_to<P: AsRef<Path>>(
+        &self,
+        base_dir: P,
+    ) -> Option<(PathBuf, PathBuf)> {
         let base_dir = base_dir.as_ref();
         Some((
             self.install_rename_from(base_dir)?,
@@ -173,9 +179,189 @@ impl Module {
     }
 
     pub fn install_destination<P: AsRef<Path>>(&self, base_dir: P) -> Option<PathBuf> {
-        Some(
-            Self::strip_unity_base_url(self.destination.as_ref()?, base_dir.as_ref()),
-        )
+        Some(Self::strip_unity_base_url(
+            self.destination.as_ref()?,
+            base_dir.as_ref(),
+        ))
+    }
+}
+
+pub struct ModuleBuilder {}
+
+impl ModuleBuilder {
+    pub fn from<V: AsRef<Version>>(manifest: IniManifest, version: V) -> Modules {
+        let version = version.as_ref();
+        let has_documentation =
+            manifest.get(&Component::Documentation).is_some() && version.major() < 2018;
+        let has_android = manifest.get(&Component::Android).is_some();
+
+        let mut modules: Modules = manifest
+            .into_iter()
+            .map(|item| (item, version))
+            .filter(|((component, _), _)| *component != Component::Editor)
+            .filter(|((component, _), _)| {
+                if version.major() >= 2018 {
+                    *component != Component::Documentation
+                } else {
+                    true
+                }
+            })
+            .map(Module::from)
+            .collect::<Vec<Module>>()
+            .into();
+
+        modules.append(&mut Self::generate_missing_modules_for_version(
+            version,
+            has_documentation,
+            has_android,
+        ));
+        modules
+    }
+
+    fn generate_missing_modules_for_version<V: AsRef<Version>>(
+        version: V,
+        has_documentation: bool,
+        has_android: bool,
+    ) -> Vec<Module> {
+        let version = version.as_ref();
+        let mut modules: Vec<Module> = Vec::new();
+
+        if !has_documentation && version.major() >= 2018 {
+            modules.push(Self::documentation_module_info(&version));
+        }
+
+        if has_android && *version >= Version::a(2019, 1, 0, 1) {
+            modules.append(&mut get_android_sdk_ndk_download_info(&version).into_iter().map(|module_part| {
+                let mut module = Module::default();
+                let component = module_part.component;
+                module.id = component;
+                module.description = format!("{name} {version}", name = &module_part.name, version = &module_part.version);
+                module.name = module_part.name;
+                module.category = component.category(&version);
+                module.download_size = module_part.download_size;
+                module.installed_size = module_part.installed_size;
+                module.visible = component.visible();
+                module.sync = component.sync();
+                module.selected = component.selected();
+                module.download_url = module_part.download_url;
+                module.destination = Module::destination(component, &module.download_url);
+                module.rename_to = module_part.rename_to;
+                module.rename_from = module_part.rename_from;
+                if module_part.main {
+                    module.parent = Some(Component::Android);
+                    module.sync = Some(Component::Android);
+                    module.eula_url_1 = Some("https://dl.google.com/dl/android/repository/repository2-1.xml".to_string());
+                    module.eula_label_1 = Some("Android SDK and NDK License Terms from Google".to_string());
+                    module.eula_message = Some("Please review and accept the license terms before downloading and installing Android's SDK and NDK.".to_string());
+                }
+                module
+            }).collect());
+        }
+
+        if has_android && *version >= Version::a(2019, 2, 0, 1) {
+            let module_part = get_android_open_jdk_download_info(&version);
+            let mut module = Module::default();
+            let component = module_part.component;
+            module.id = component;
+            module.description = format!(
+                "Android {name} {version}",
+                name = &module_part.name,
+                version = &module_part.version
+            );
+            module.name = module_part.name;
+            module.category = component.category(&version);
+            module.download_size = module_part.download_size;
+            module.installed_size = module_part.installed_size;
+            module.visible = component.visible();
+            module.selected = component.selected();
+            module.parent = Some(Component::Android);
+            module.sync = Some(Component::Android);
+            module.download_url = module_part.download_url;
+            module.destination = Module::destination(component, &module.download_url);
+            modules.push(module);
+        }
+
+        if *version >= Version::a(2018, 1, 0, 1) {
+            modules.append(
+                &mut Localization::locals(&version)
+                    .filter_map(|locale| {
+                        let mut module = Module::default();
+                        let component = Component::Language(locale);
+                        module.id = component;
+                        module.description = locale.name().to_string();
+                        module.name = locale.name().to_string();
+                        module.category = component.category(&version);
+
+                        module.visible = component.visible();
+                        module.selected = component.selected();
+                        module.download_url = format!(
+                            "https://new-translate.unity3d.jp/v1/live/54/{major}.{minor}/{lang_code}",
+                            major = version.major(),
+                            minor = version.minor(),
+                            lang_code = locale.locale()
+                        );
+                        module.destination = Module::destination(component, &module.download_url);
+
+                        if let Some((content_size, _)) = Self::content_size(&module.download_url) {
+                            module.download_size = content_size;
+                            module.installed_size = content_size;
+                        }
+
+                        if module.download_size == 8 && *version.release_type() == VersionType::Alpha {
+                            return None;
+                        }
+
+                        Some(module)
+                    })
+                    .collect(),
+            );
+        }
+
+        modules
+    }
+
+    fn documentation_module_info<V: AsRef<Version>>(version: V) -> Module {
+        let version = version.as_ref();
+        let mut module = Module::default();
+        let component = Component::Documentation;
+        module.id = component;
+        module.name = "Documentation".to_string();
+        module.description = "Offline Documentation".to_string();
+        module.download_url = format!(
+            "https://storage.googleapis.com/docscloudstorage/{major}.{minor}/UnityDocumentation.zip",
+            major = version.major(),
+            minor = version.minor()
+        );
+        module.category = component.category(version);
+        module.visible = component.visible();
+        module.selected = component.selected();
+        module.destination = Module::destination(component, &module.download_url);
+
+        if let Some((content_size, file_size)) = Self::content_size(&module.download_url) {
+            module.download_size = content_size;
+            module.installed_size = file_size;
+        }
+
+        module
+    }
+
+    fn content_size<U: IntoUrl>(url: U) -> Option<(u64, u64)> {
+        let client = Client::builder()
+            .gzip(false)
+            .build()
+            .expect("a HTTP client");
+
+        client
+            .head(url)
+            .send()
+            .ok()
+            .and_then(|response| response.content_length())
+            .map(|content_length| {
+                (
+                    content_length,
+                    (content_length as f64 * 2.04).round() as u64,
+                )
+            })
     }
 }
 
@@ -216,107 +402,7 @@ pub struct Modules(Vec<Module>);
 impl From<Manifest<'_>> for Modules {
     fn from(manifest: Manifest) -> Self {
         let version = manifest.version().to_owned();
-        let has_documentation =
-            manifest.get(Component::Documentation).is_some() && version.major() < 2018;
-        let has_android = manifest.get(Component::Android).is_some();
-
-        let mut modules: Modules = manifest
-            .into_iter()
-            .filter(|((component, _), _)| *component != Component::Editor)
-            .filter(|((component, _), _)| {
-                if version.major() >= 2018 {
-                    *component != Component::Documentation
-                } else {
-                    true
-                }
-            })
-            .map(Module::from)
-            .collect::<Vec<Module>>()
-            .into();
-
-        if !has_documentation && version.major() >= 2018 {
-            modules.push(documentation_module_info(&version));
-        }
-
-        if has_android && version >= Version::a(2019, 1, 0, 1) {
-            modules.append(&mut get_android_sdk_ndk_download_info(&version).into_iter().map(|module_part| {
-                let mut module = Module::default();
-                let component = module_part.component;
-                module.id = component;
-                module.description = format!("{name} {version}", name = &module_part.name, version = &module_part.version);
-                module.name = module_part.name;
-                module.category = component.category(&version);
-                module.download_size = module_part.download_size;
-                module.installed_size = module_part.installed_size;
-                module.visible = component.visible();
-                module.sync = component.sync();
-                module.selected = component.selected();
-                module.download_url = module_part.download_url;
-                module.destination = Module::destination(component, &module.download_url);
-                module.rename_to = module_part.rename_to;
-                module.rename_from = module_part.rename_from;
-                if module_part.main {
-                    module.parent = Some(Component::Android);
-                    module.sync = Some(Component::Android);
-                    module.eula_url_1 = Some("https://dl.google.com/dl/android/repository/repository2-1.xml".to_string());
-                    module.eula_label_1 = Some("Android SDK and NDK License Terms from Google".to_string());
-                    module.eula_message = Some("Please review and accept the license terms before downloading and installing Android's SDK and NDK.".to_string());
-                }
-                module
-            }).collect());
-        }
-
-        if has_android && version >= Version::a(2019, 2, 0, 1) {
-            let module_part = get_android_open_jdk_download_info(&version);
-            let mut module = Module::default();
-            let component = module_part.component;
-            module.id = component;
-            module.description = format!(
-                "Android {name} {version}",
-                name = &module_part.name,
-                version = &module_part.version
-            );
-            module.name = module_part.name;
-            module.category = component.category(&version);
-            module.download_size = module_part.download_size;
-            module.installed_size = module_part.installed_size;
-            module.visible = component.visible();
-            module.selected = component.selected();
-            module.parent = Some(Component::Android);
-            module.sync = Some(Component::Android);
-            module.download_url = module_part.download_url;
-            module.destination = Module::destination(component, &module.download_url);
-            modules.push(module);
-        }
-
-        if version >= Version::a(2018, 1, 0, 1) {
-            modules.append(&mut Localization::locals(&version).filter_map(|locale| {
-                let mut module = Module::default();
-                let component = Component::Language(locale);
-                module.id = component;
-                module.description = locale.name().to_string();
-                module.name = locale.name().to_string();
-                module.category = component.category(&version);
-
-                module.visible = component.visible();
-                module.selected = component.selected();
-                module.download_url = format!("https://new-translate.unity3d.jp/v1/live/54/{major}.{minor}/{lang_code}", major = version.major(), minor = version.minor(), lang_code=locale.locale());
-                module.destination = Module::destination(component, &module.download_url);
-
-                if let Some((content_size, _)) = content_size(&module.download_url) {
-                    module.download_size = content_size;
-                    module.installed_size = content_size;
-                }
-
-                if module.download_size == 8 && *version.release_type() == VersionType::Alpha {
-                    return None
-                }
-
-                Some(module)
-            }).collect());
-        }
-
-        modules
+        ModuleBuilder::from(manifest.into(), version)
     }
 }
 
@@ -412,54 +498,6 @@ impl From<Vec<Module>> for Modules {
     }
 }
 
-use crate::unity::Version;
-
-fn documentation_module_info<V: AsRef<Version>>(version: V) -> Module {
-    let version = version.as_ref();
-    let mut module = Module::default();
-    let component = Component::Documentation;
-    module.id = component;
-    module.name = "Documentation".to_string();
-    module.description = "Offline Documentation".to_string();
-    module.download_url = format!(
-        "https://storage.googleapis.com/docscloudstorage/{major}.{minor}/UnityDocumentation.zip",
-        major = version.major(),
-        minor = version.minor()
-    );
-    module.category = component.category(version);
-    module.visible = component.visible();
-    module.selected = component.selected();
-    module.destination = Module::destination(component, &module.download_url);
-
-    if let Some((content_size, file_size)) = content_size(&module.download_url) {
-        module.download_size = content_size;
-        module.installed_size = file_size;
-    }
-
-    module
-}
-
-use reqwest::{Client, IntoUrl};
-
-fn content_size<U: IntoUrl>(url: U) -> Option<(u64, u64)> {
-    let client = Client::builder()
-        .gzip(false)
-        .build()
-        .expect("a HTTP client");
-
-    client
-        .head(url)
-        .send()
-        .ok()
-        .and_then(|response| response.content_length())
-        .map(|content_length| {
-            (
-                content_length,
-                (content_length as f64 * 2.04).round() as u64,
-            )
-        })
-}
-
 mod id_serialize {
     use crate::unity::Component;
     use serde::{Deserialize, Deserializer, Serializer};
@@ -503,7 +541,9 @@ mod id_serialize_optional {
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        Component::from_str(&s).map(Some).map_err(serde::de::Error::custom)
+        Component::from_str(&s)
+            .map(Some)
+            .map_err(serde::de::Error::custom)
     }
 }
 
@@ -534,7 +574,9 @@ mod id_serialize_optional_sync {
         if s == "Android Build Support" {
             Ok(Some(Component::Android))
         } else {
-            Component::from_str(&s).map(Some).map_err(serde::de::Error::custom)
+            Component::from_str(&s)
+                .map(Some)
+                .map_err(serde::de::Error::custom)
         }
     }
 }
