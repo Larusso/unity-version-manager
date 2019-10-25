@@ -1,16 +1,16 @@
-use crate::install::error::{Result, UvmInstallError, UvmInstallErrorKind};
-use crate::install::InstallVariant;
+use crate::install::error::Result;
+use crate::progress::ProgressHandler;
+use crate::unity::hub::paths;
+use crate::unity::{v2::Manifest, Component, MD5};
+use log::*;
 use md5::{Digest, Md5};
 use reqwest::header::{RANGE, USER_AGENT};
 use reqwest::StatusCode;
 use std::fs;
 use std::io;
+use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
-use crate::unity::hub::paths;
-use crate::unity::{Component, Manifest, Version, MD5};
-use crate::progress::ProgressHandler;
-use std::io::Read;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
 enum CheckSumResult {
@@ -45,19 +45,24 @@ impl<'a, R: Read, P: 'a + ProgressHandler + ?Sized> Read for DownloadProgress<'a
 }
 
 pub struct Loader<'a> {
-    variant: InstallVariant,
-    version: Version,
+    component: Component,
+    manifest: &'a Manifest<'a>,
     verify: bool,
-    progress_handle: Option<Box<&'a dyn ProgressHandler>>
+    progress_handle: Option<Box<&'a dyn ProgressHandler>>,
 }
 
 impl<'a> Loader<'a> {
-    pub fn new(variant: InstallVariant, version: Version) -> Loader<'a> {
+    pub fn new<C>(component: C, manifest: &'a Manifest<'a>) -> Loader<'a>
+    where
+        C: Into<Component>,
+    {
+        let component = component.into();
+
         Loader {
-            variant,
-            version,
+            component,
+            manifest,
             verify: true,
-            progress_handle: None
+            progress_handle: None,
         }
     }
 
@@ -70,18 +75,18 @@ impl<'a> Loader<'a> {
     }
 
     pub fn download(&self) -> Result<PathBuf> {
+        let manifest = &self.manifest;
         debug!(
-            "download installer for variant: {} and version: {}",
-            self.variant, self.version
+            "download installer for component: {} and version: {}",
+            self.component,
+            manifest.version()
         );
-        let manifest = Manifest::load(&self.version).map_err(|err| {
-            UvmInstallError::with_chain(err, UvmInstallErrorKind::ManifestLoadFailed)
-        })?;
-        let component: Component = self.variant.clone().into();
+
+        let component: Component = self.component;
         let component_url = manifest
             .url(component)
             .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Failed to fetch installer url"))?;
-        let component_data = manifest.get(component).ok_or_else(|| {
+        let component_data = manifest.get(&component).ok_or_else(|| {
             io::Error::new(io::ErrorKind::Other, "Failed to fetch component data")
         })?;
 
@@ -93,7 +98,7 @@ impl<'a> Loader<'a> {
         }
 
         let installer_dir = paths::cache_dir()
-            .map(|c| c.join(&format!("installer/{}", self.version)))
+            .map(|c| c.join(&format!("installer/{}", manifest.version())))
             .ok_or_else(|| {
                 io::Error::new(
                     io::ErrorKind::Other,
@@ -112,15 +117,20 @@ impl<'a> Loader<'a> {
         lock_process!(installer_dir.join(format!("{}.lock", file_name)));
 
         let installer_path = installer_dir.join(file_name);
+        trace!("installer_path: {}", installer_path.display());
         if installer_path.exists() {
             debug!("found installer at {}", installer_path.display());
-            let r = self.verify_checksum(&installer_path, component_data.md5)?;
-            if CheckSumResult::Equal == r || CheckSumResult::Skipped == r {
+            let r = self.verify_checksum(&installer_path, component_data.checksum)?;
+            if CheckSumResult::Equal == r
+                || CheckSumResult::Skipped == r
+                || CheckSumResult::NoCheckSum == r
+            {
                 if let Some(ref p) = self.progress_handle {
                     p.finish();
                 }
                 return Ok(installer_path);
             } else {
+                trace!("checksum result {:?}", r);
                 fs::remove_file(&installer_path)?;
             }
         }
@@ -186,7 +196,7 @@ impl<'a> Loader<'a> {
 
         fs::rename(&temp_file, &installer_path)?;
 
-        match self.verify_checksum(&installer_path, component_data.md5)? {
+        match self.verify_checksum(&installer_path, component_data.checksum)? {
             CheckSumResult::NotEqual => Err(io::Error::new(
                 io::ErrorKind::Other,
                 format!("Checksum verify failed for {}", installer_path.display()),

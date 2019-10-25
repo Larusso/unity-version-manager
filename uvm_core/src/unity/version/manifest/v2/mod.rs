@@ -77,13 +77,12 @@ impl<'a> Manifest<'a> {
     }
 
     pub fn url(&self, component: Component) -> Option<Url> {
-        self.modules
-            .get(&component)
+        self.get(&component)
             .and_then(|m| Url::parse(&m.download_url).ok())
     }
 
     pub fn size(&self, component: Component) -> Option<u64> {
-        self.modules.get(&component).map(|m| m.download_size)
+        self.get(&component).map(|m| m.download_size)
     }
 
     pub fn version(&self) -> &Version {
