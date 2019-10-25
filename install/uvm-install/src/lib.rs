@@ -25,6 +25,7 @@ use uvm_core::install::InstallVariant;
 use uvm_core::unity::hub;
 use uvm_core::unity::hub::editors::{EditorInstallation, Editors};
 use uvm_core::unity::hub::paths;
+use uvm_core::unity::v2::Manifest;
 use uvm_core::unity::{Component, Installation, Version};
 #[cfg(unix)]
 use uvm_core::utils;
@@ -179,11 +180,15 @@ impl UvmCommand {
         editor_installed_lock: Arc<(EditorInstallLock, Condvar)>,
     ) -> io::Result<()> {
         pb.set_message(&format!("{}", style("download installer").yellow()));
+        let manifest = Manifest::load(&install_object.version).map_err(|_|
+            io::Error::new(io::ErrorKind::Other, "unable to load manifest")
+        )?;
 
         let mut installer_loader = install::Loader::new(
             install_object.variant.clone(),
-            install_object.version.clone(),
+            &manifest,
         );
+
         let sty = ProgressStyle::default_bar()
             .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
             .progress_chars("=>-")

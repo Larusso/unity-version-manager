@@ -3,8 +3,12 @@ mod current_installation;
 pub mod hub;
 mod installation;
 pub mod urls;
-pub mod version;
+mod version;
 mod localization;
+
+pub mod v2 {
+    pub use super::version::manifest::v2::Manifest;
+}
 
 use core::iter::FromIterator;
 pub use self::component::Component;
@@ -15,7 +19,6 @@ pub use self::current_installation::CurrentInstallation;
 pub use self::installation::Installation;
 pub use self::version::all_versions;
 pub use self::version::manifest::Manifest;
-pub use self::version::manifest::v2::Manifest as ManifestV2;
 pub use self::version::manifest::ManifestIteratorItem;
 pub use self::version::manifest::MD5;
 pub use self::version::manifest::IniManifest;
