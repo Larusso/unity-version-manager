@@ -1,0 +1,25 @@
+[package]
+name = "uvm_install_graph"
+version = "0.1.0"
+authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
+description = "A graph view of a unity version manifest"
+repository = "https://github.com/Larusso/unity-version-manager"
+readme = "README.md"
+keywords = ["unity","version-manager"]
+categories = ["development-tools"]
+license = "Apache-2.0"
+edition = "2018"
+
+[badges]
+travis-ci = { repository = "Larusso/unity-version-manager", branch = "master" }
+appveyor = { repository = "Larusso/unity-version-manager", branch = "master", service = "github" }
+maintenance = { status = "experimental" }
+
+[dependencies]
+daggy = "0.6.0"
+fixedbitset = "0.1.8"
+itertools = "0.8.0"
+uvm_core = { path = "../uvm_core", version = "0.4.0" }
+[dev-dependencies]
+cfg-if = "0.1.9"
+stringreader = "0.1.1"

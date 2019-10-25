@@ -3,6 +3,7 @@
 members = [
   "uvm_core",
   "uvm_cli",
+  "uvm_install_graph",
   "commands/*",
   "install/*"
 ]
