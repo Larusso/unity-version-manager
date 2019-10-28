@@ -1907,7 +1907,7 @@ dependencies = [
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -1918,7 +1918,7 @@ dependencies = [
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -1929,7 +1929,7 @@ dependencies = [
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -1938,7 +1938,7 @@ version = "2.3.0"
 dependencies = [
  "console 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -1952,7 +1952,7 @@ dependencies = [
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -1970,7 +1970,7 @@ dependencies = [
  "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "stringreader 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -1988,7 +1988,7 @@ dependencies = [
  "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "stringreader 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -1997,7 +1997,7 @@ version = "2.3.0"
 dependencies = [
  "console 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -2011,7 +2011,7 @@ dependencies = [
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -2025,7 +2025,7 @@ dependencies = [
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -2039,7 +2039,7 @@ dependencies = [
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -2048,7 +2048,7 @@ version = "2.3.0"
 dependencies = [
  "console 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -2060,7 +2060,7 @@ dependencies = [
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -2075,7 +2075,7 @@ dependencies = [
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -2087,7 +2087,7 @@ dependencies = [
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -2096,7 +2096,7 @@ version = "2.3.0"
 dependencies = [
  "console 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -2111,7 +2111,7 @@ dependencies = [
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_cli 2.0.1",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
@@ -2125,12 +2125,12 @@ dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
 name = "uvm_core"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "cfg-if 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "cluFlock 1.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2171,7 +2171,7 @@ dependencies = [
  "fixedbitset 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "stringreader 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "uvm_core 0.4.0",
+ "uvm_core 0.5.0",
 ]
 
 [[package]]
