@@ -9,7 +9,19 @@ use std::io::Write;
 use std::path::{Path,PathBuf};
 use std::process::{Command, Stdio};
 
-pub fn install_editor(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
+pub fn install_editor<P, D>(installer: P, destination: Option<D>) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    let installer = installer.as_ref();
+    let destination = destination.ok_or(io::Error::new(
+        io::ErrorKind::InvalidInput,
+        "Missing destination path",
+    ))?;
+
+    let destination = destination.as_ref();
+
     _install_editor(installer, destination).map_err(|err| {
         if destination.exists() {
             debug!(
@@ -60,52 +72,77 @@ where
     ))
 }
 
-pub fn install_module(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
-    _install_module(installer, destination).map_err(|err| {
-        if destination.exists() {
-            debug!(
-                "Delete destination directory after failure {}",
-                destination.display()
-            );
-            fs::remove_dir_all(destination).unwrap_or_else(|err| {
-                error!("Failed to cleanup destination {}", destination.display());
-                error!("{}", err);
-            })
-        }
-        err
-    })
+pub fn install_module<P, D>(installer: P, destination: Option<D>) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    _install_module(installer, destination)
 }
 
-fn _install_module<P, D>(installer: P, destination: D) -> io::Result<()>
+fn _install_module<P, D>(installer: P, destination: Option<D>) -> io::Result<()>
 where
     P: AsRef<Path>,
     D: AsRef<Path>,
 {
     let installer = installer.as_ref();
-    let destination = destination.as_ref();
+    let destination = match destination {
+        Some(ref d) => Some(d.as_ref()),
+        _ => None,
+    };
 
-    debug!(
-        "install component {} to {}",
-        &installer.display(),
-        &destination.display()
-    );
+    debug!("install component {}", installer.display(),);
+    if let Some(destination) = destination {
+        debug!("to {}", destination.display());
+    }
 
     match installer.extension() {
         Some(ext) if ext == "zip" => {
+            let destination = destination.ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Missing destination path for zip intaller",
+                )
+            })?;
+
             install_module_from_zip(installer, destination).map_err(|err| {
                 cleanup_directory_failable(destination);
                 err
             })
         }
 
-        Some(ext) if ext == "xz" => install_module_from_xz(installer, destination).map_err(|err| {
-            cleanup_directory_failable(destination);
-            err
-        }),
+        Some(ext) if ext == "xz" => {
+            let destination = destination.ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Missing destination path for xz intaller",
+                )
+            })?;
 
-        Some(ext) if ext == "po" => install_po_file(installer, destination),
+            install_module_from_xz(installer, destination).map_err(|err| {
+                cleanup_directory_failable(destination);
+                err
+            })
+        },
+
+        Some(ext) if ext == "po" => {
+            let destination = destination.ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Missing destination path for po module",
+                )
+            })?;
+            install_po_file(installer, destination)
+        }
 
         Some(ext) if ext == "pkg" => {
+            let destination = destination.ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Missing destination path for pkg intaller",
+                )
+            })?;
+
             install_module_from_pkg(installer, destination).map_err(|err| {
                 cleanup_directory_failable(destination);
                 err

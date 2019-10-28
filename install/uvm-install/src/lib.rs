@@ -251,22 +251,20 @@ impl UvmCommand {
             }
         }
 
-        let destination = install_object.clone().destination.ok_or_else(|| {
-            io::Error::new(io::ErrorKind::Other, "Missing installation destination")
-        })?;
+        let destination = install_object.clone().destination;
 
         pb.set_message(&format!("{}", style("installing").yellow()));
         debug!(
-            "install {} to {}",
-            &install_object.variant,
-            &destination.display()
+            "install {}",
+            &install_object.variant
         );
+
         let install_f = match &install_object.variant {
             InstallVariant::Editor => install::install_editor,
             _ => install::install_module,
         };
 
-        install_f(&installer, &destination)
+        install_f(&installer, destination.as_ref())
             .map(|result| {
                 debug!("installation finished {}.", &install_object.variant);
                 pb.finish_with_message(&format!("{}", style("done").green().bold()));
