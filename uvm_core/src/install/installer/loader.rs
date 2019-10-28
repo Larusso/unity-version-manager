@@ -74,7 +74,11 @@ impl<'a> Loader<'a> {
         self.progress_handle = Some(Box::new(progress_handle));
     }
 
+
+
     pub fn download(&self) -> Result<PathBuf> {
+        use crate::utils::UrlUtils;
+
         let manifest = &self.manifest;
         debug!(
             "download installer for component: {} and version: {}",
@@ -105,7 +109,8 @@ impl<'a> Loader<'a> {
                     "Unable to fetch cache installer directory",
                 )
             })?;
-        let file_name = component_url.as_str().rsplit('/').next().unwrap();
+
+        let file_name = UrlUtils::get_file_name_from_url(&component_url)?;
 
         let temp_file_name = format!("{}.part", file_name);
 
