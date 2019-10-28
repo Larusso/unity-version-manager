@@ -57,7 +57,7 @@ impl UvmCommand {
     }
 
     pub fn exec(&self, options: &Options) -> io::Result<()> {
-        install::install_editor(options.installer(), options.destination())?;
+        install::install_editor(options.installer(), Some(options.destination()))?;
         self.stderr
             .write_line(&format!("{}", style("success").green().bold()))
     }

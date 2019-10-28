@@ -1,10 +1,22 @@
 use std::io;
 use std::io::Write as IoWrite;
-use std::path::PathBuf;
+use std::path::Path;
 use std::process::{Command, Stdio};
 use tempfile::Builder;
 
-pub fn install_editor(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
+pub fn install_editor<P, D>(installer: P, destination: Option<D>) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    let installer = installer.as_ref();
+    let destination = destination.ok_or(io::Error::new(
+        io::ErrorKind::InvalidInput,
+        "Missing destination path",
+    ))?;
+
+    let destination = destination.as_ref();
+
     debug!(
         "install editor to destination: {} with installer: {}",
         &destination.display(),
@@ -13,16 +25,60 @@ pub fn install_editor(installer: &PathBuf, destination: &PathBuf) -> io::Result<
     install_from_exe(installer, destination)
 }
 
-pub fn install_module(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
-    debug!(
-        "install component {} to {}",
-        &installer.display(),
-        &destination.display()
-    );
-    install_from_exe(installer, destination)
+pub fn install_module<P, D>(installer: P, destination: Option<D>) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    _install_module(installer, destination)
 }
 
-fn install_from_exe(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
+fn _install_module<P, D>(installer: P, destination: Option<D>) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    let installer = installer.as_ref();
+    let destination = match destination {
+        Some(ref d) => Some(d.as_ref()),
+        _ => None,
+    };
+
+    debug!("install component {}", installer.display(),);
+    if let Some(destination) = destination {
+        debug!("to {}", destination.display());
+    }
+
+    match installer.extension() {
+        Some(ext) if ext == "exe" => {
+            let destination = destination.ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Missing destination path for exe intaller",
+                )
+            })?;
+
+            install_from_exe(installer, destination)
+        }
+
+        _ => Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!(
+                "Wrong installer. Expect .exe {}",
+                &installer.display()
+            ),
+        )),
+    }
+}
+
+fn install_from_exe<P, D>(installer: P, destination: D) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    let installer = installer.as_ref();
+    let destination = destination.as_ref();
+
     debug!("install unity from installer exe");
     let mut install_helper = Builder::new().suffix(".cmd").rand_bytes(20).tempfile()?;
 

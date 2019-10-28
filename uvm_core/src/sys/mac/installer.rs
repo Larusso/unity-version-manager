@@ -6,7 +6,19 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-pub fn install_editor(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
+pub fn install_editor<P, D>(installer: P, destination: Option<D>) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
+    let installer = installer.as_ref();
+    let destination = destination.ok_or(io::Error::new(
+        io::ErrorKind::InvalidInput,
+        "Missing destination path",
+    ))?;
+
+    let destination = destination.as_ref();
+
     _install_editor(installer, destination).map_err(|err| {
         if destination.exists() {
             debug!(
@@ -52,42 +64,69 @@ where
     ))
 }
 
-pub fn install_module(installer: &PathBuf, destination: &PathBuf) -> io::Result<()> {
+pub fn install_module<P, D>(installer: P, destination: Option<D>) -> io::Result<()>
+where
+    P: AsRef<Path>,
+    D: AsRef<Path>,
+{
     _install_module(installer, destination)
 }
 
-fn _install_module<P, D>(installer: P, destination: D) -> io::Result<()>
+fn _install_module<P, D>(installer: P, destination: Option<D>) -> io::Result<()>
 where
     P: AsRef<Path>,
     D: AsRef<Path>,
 {
     let installer = installer.as_ref();
-    let destination = destination.as_ref();
+    let destination = match destination {
+        Some(ref d) => Some(d.as_ref()),
+        _ => None,
+    };
 
-    debug!(
-        "install component {} to {}",
-        installer.display(),
-        destination.display()
-    );
+    debug!("install component {}", installer.display(),);
+    if let Some(destination) = destination {
+        debug!("to {}", destination.display());
+    }
 
     match installer.extension() {
         Some(ext) if ext == "pkg" => {
-            install_module_from_pkg(installer, destination).map_err(|err| {
-                cleanup_directory_failable(destination);
-                err
-            })
+            if let Some(destination) = destination {
+                install_module_from_pkg(installer, destination).map_err(|err| {
+                    cleanup_directory_failable(destination);
+                    err
+                })
+            } else {
+                install_module_from_pkg_native(installer)
+            }
         }
 
         Some(ext) if ext == "zip" => {
+            let destination = destination.ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Missing destination path for zip intaller",
+                )
+            })?;
             install_module_from_zip(installer, destination).map_err(|err| {
                 cleanup_directory_failable(destination);
                 err
             })
         }
 
-        Some(ext) if ext == "po" => install_po_file(installer, destination),
+        Some(ext) if ext == "po" => {
+            let destination = destination.ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Missing destination path for po module",
+                )
+            })?;
+            install_po_file(installer, destination)
+        }
 
-        Some(ext) if ext == "dmg" => install_module_from_dmg(installer, destination),
+        Some(ext) if ext == "dmg" => {
+            let destination = destination.unwrap_or_else(|| Path::new("/Applications"));
+            install_module_from_dmg(installer, destination)
+        }
 
         _ => Err(io::Error::new(
             io::ErrorKind::Other,
@@ -144,6 +183,38 @@ where
     })?;
 
     copy_dir(app_path, destination)?;
+    Ok(())
+}
+
+fn install_module_from_pkg_native<P: AsRef<Path>>(installer: P) -> io::Result<()> {
+    let installer = installer.as_ref();
+
+    debug!(
+        "install from pkg {}",
+        installer.display()
+    );
+
+    let child = Command::new("sudo")
+        .arg("installer")
+        .arg("-package")
+        .arg(installer)
+        .arg("-target")
+        .arg("/")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+
+    let output = child.wait_with_output()?;
+    if !output.status.success() {
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!(
+                "failed to install {}\n{}",
+                installer.display(),
+                String::from_utf8_lossy(&output.stderr)
+            ),
+        ));
+    }
     Ok(())
 }
 
