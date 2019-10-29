@@ -44,10 +44,15 @@ pub struct Module {
     pub visible: bool,
     pub selected: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub cmd: Option<String>,
+    #[serde(serialize_with = "path_serialize::serialize")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     destination: Option<PathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "path_serialize::serialize")]
     rename_to: Option<PathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "path_serialize::serialize")]
     rename_from: Option<PathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub checksum: Option<MD5>,
@@ -70,6 +75,7 @@ impl PartialEq for Module {
             && self.description == other.description
             && self.download_url == other.download_url
             && self.category == other.category
+            && self.cmd == other.cmd
             && self.visible == other.visible
             && self.selected == other.selected
             && self.destination == other.destination
@@ -91,6 +97,7 @@ impl Hash for Module {
         self.description.hash(state);
         self.download_url.hash(state);
         self.category.hash(state);
+        self.cmd.hash(state);
         self.visible.hash(state);
         self.selected.hash(state);
         self.destination.hash(state);
@@ -363,6 +370,25 @@ impl ModuleBuilder {
                 )
             })
     }
+
+    pub fn cmd(cmd: Option<String>, category: Category) -> Option<String> {
+        cmd.and_then(|cmd| {
+            if category != Category::Plugins && category != Category::DevTools {
+                return None;
+            }
+
+            if cmd.as_str() == "/S /D={INSTDIR}" {
+                return None;
+            }
+
+            if cmd.is_empty() {
+                return None;
+            }
+
+            let cmd = cmd.replace(r#""{FILENAME}" "#, "");
+            Some(cmd)
+        })
+    }
 }
 
 impl From<ManifestIteratorItem<'_>> for Module {
@@ -372,6 +398,7 @@ impl From<ManifestIteratorItem<'_>> for Module {
         module.name = data.title.clone();
         module.category = component.category(version);
         module.description = data.description.clone();
+        module.cmd = ModuleBuilder::cmd(data.cmd, module.category);
         module.download_size = if cfg![windows] {
             data.size * 1024
         } else {
@@ -495,6 +522,29 @@ impl From<HashMap<Component, Module>> for ModulesMap {
 impl From<Vec<Module>> for Modules {
     fn from(modules: Vec<Module>) -> Self {
         Modules(modules)
+    }
+}
+
+mod path_serialize {
+    use serde::Serializer;
+    use std::path::PathBuf;
+
+    pub fn serialize<S>(path: &Option<PathBuf>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match path {
+            Some(path) => {
+                let s = path.to_str().unwrap();
+                if cfg![target_os = "windows"] {
+                    let s = s.replace('/', "\\");
+                    serializer.serialize_str(&s)
+                } else {
+                    serializer.serialize_str(s)
+                }
+            }
+            None => serializer.serialize_unit(),
+        }
     }
 }
 

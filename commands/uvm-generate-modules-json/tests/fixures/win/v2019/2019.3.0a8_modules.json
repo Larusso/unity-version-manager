@@ -147,6 +147,7 @@
     "downloadSize": 1363148800,
     "visible": true,
     "selected": true,
+    "cmd": "--productId \"Microsoft.VisualStudio.Product.Community\" --add \"Microsoft.VisualStudio.Workload.ManagedGame\" --add \"Microsoft.VisualStudio.Workload.NativeDesktop\" --add \"Microsoft.VisualStudio.Component.VC.Tools.x86.x64\" --add \"Microsoft.VisualStudio.Component.Windows10SDK.16299.Desktop\" --campaign \"Unity3d_Unity\" --passive --norestart --wait",
     "eulaUrl1": "https://go.microsoft.com/fwlink/?linkid=2092534",
     "eulaLabel1": "Visual Studio 2019 Community License Terms",
     "eulaMessage": "Please review and accept the license terms before downloading and installing Microsoft Visual Studio."
@@ -175,6 +176,7 @@
     "downloadSize": 1024000000,
     "visible": false,
     "selected": false,
+    "cmd": "--add \"Microsoft.VisualStudio.Workload.ManagedGame\" --add \"Microsoft.VisualStudio.Workload.NativeDesktop\" --add \"Microsoft.VisualStudio.Component.VC.Tools.x86.x64\" --add \"Microsoft.VisualStudio.Component.Windows10SDK.16299.Desktop\" --passive --norestart --wait",
     "eulaUrl1": "https://go.microsoft.com/fwlink/?LinkId=617019",
     "eulaLabel1": "Visual Studio Tools for Unity License Terms",
     "eulaMessage": "Please review and accept the license terms before downloading and installing Unity Game Development for Microsoft Visual Studio Enterprise 2019."
@@ -189,6 +191,7 @@
     "downloadSize": 1024000000,
     "visible": false,
     "selected": false,
+    "cmd": "--add \"Microsoft.VisualStudio.Workload.ManagedGame\" --add \"Microsoft.VisualStudio.Workload.NativeDesktop\" --add \"Microsoft.VisualStudio.Component.VC.Tools.x86.x64\" --add \"Microsoft.VisualStudio.Component.Windows10SDK.16299.Desktop\" --passive --norestart --wait",
     "eulaUrl1": "https://go.microsoft.com/fwlink/?linkid=617019",
     "eulaLabel1": "Visual Studio Tools for Unity License Terms",
     "eulaMessage": "Please review and accept the license terms before downloading and installing Unity Game Development for Microsoft Visual Studio Professional 2019."
