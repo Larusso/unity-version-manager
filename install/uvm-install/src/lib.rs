@@ -264,8 +264,13 @@ impl UvmCommand {
             _ => install::install_module,
         };
 
-        install_f(&installer, destination.as_ref())
-            .map(|result| {
+        {
+            #[cfg(windows)]
+            let r = install_f(&installer, destination.as_ref(),None);
+            #[cfg(unix)]
+            let r = install_f(&installer, destination.as_ref());
+            r
+        }.map(|result| {
                 debug!("installation finished {}.", &install_object.variant);
                 pb.finish_with_message(&format!("{}", style("done").green().bold()));
                 if install_object.variant == InstallVariant::Editor {

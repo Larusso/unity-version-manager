@@ -1,39 +1,46 @@
+use crate::sys::shared::installer::*;
 use std::io;
 use std::io::Write as IoWrite;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use tempfile::Builder;
 
-pub fn install_editor<P, D>(installer: P, destination: Option<D>) -> io::Result<()>
+pub fn install_editor<P, D>(
+    installer: P,
+    destination: Option<D>,
+    cmd: Option<&str>,
+) -> io::Result<()>
 where
     P: AsRef<Path>,
     D: AsRef<Path>,
 {
     let installer = installer.as_ref();
-    let destination = destination.ok_or(io::Error::new(
-        io::ErrorKind::InvalidInput,
-        "Missing destination path",
-    ))?;
+    let destination = match destination {
+        Some(ref d) => Some(d.as_ref()),
+        _ => None,
+    };
 
-    let destination = destination.as_ref();
+    debug!("install editor {}", installer.display(),);
+    if let Some(destination) = destination {
+        debug!("to {}", destination.display());
+    }
 
-    debug!(
-        "install editor to destination: {} with installer: {}",
-        &destination.display(),
-        &installer.display()
-    );
-    install_from_exe(installer, destination)
+    install_from_exe(installer, destination, cmd)
 }
 
-pub fn install_module<P, D>(installer: P, destination: Option<D>) -> io::Result<()>
+pub fn install_module<P, D>(
+    installer: P,
+    destination: Option<D>,
+    cmd: Option<&str>,
+) -> io::Result<()>
 where
     P: AsRef<Path>,
     D: AsRef<Path>,
 {
-    _install_module(installer, destination)
+    _install_module(installer, destination, cmd)
 }
 
-fn _install_module<P, D>(installer: P, destination: Option<D>) -> io::Result<()>
+fn _install_module<P, D>(installer: P, destination: Option<D>, cmd: Option<&str>) -> io::Result<()>
 where
     P: AsRef<Path>,
     D: AsRef<Path>,
@@ -50,34 +57,60 @@ where
     }
 
     match installer.extension() {
-        Some(ext) if ext == "exe" => {
+        Some(ext) if ext == "exe" => install_from_exe(installer, destination, cmd),
+        Some(ext) if ext == "zip" => {
             let destination = destination.ok_or_else(|| {
                 io::Error::new(
                     io::ErrorKind::InvalidInput,
-                    "Missing destination path for exe intaller",
+                    "Missing destination path for zip intaller",
                 )
             })?;
 
-            install_from_exe(installer, destination)
+            install_module_from_zip(installer, destination).map_err(|err| {
+                cleanup_directory_failable(destination);
+                err
+            })
+        }
+        Some(ext) if ext == "msi" => {
+            let cmd = cmd.ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Missing cmd parameter path for msi intaller",
+                )
+            })?;
+
+            install_from_msi(installer, cmd)
+        }
+        Some(ext) if ext == "po" => {
+            let destination = destination.ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Missing destination path for po module",
+                )
+            })?;
+            install_po_file(installer, destination)
         }
 
         _ => Err(io::Error::new(
             io::ErrorKind::Other,
             format!(
-                "Wrong installer. Expect .exe {}",
+                "Wrong installer. Expect .exe, .msi, .zip or .po {}",
                 &installer.display()
             ),
         )),
     }
 }
 
-fn install_from_exe<P, D>(installer: P, destination: D) -> io::Result<()>
+fn install_from_exe<P, D>(installer: P, destination: Option<D>, cmd: Option<&str>) -> io::Result<()>
 where
     P: AsRef<Path>,
     D: AsRef<Path>,
 {
     let installer = installer.as_ref();
-    let destination = destination.as_ref();
+    let destination = match destination {
+        Some(ref d) => Some(d.as_ref()),
+        _ => None,
+    };
 
     debug!("install unity from installer exe");
     let mut install_helper = Builder::new().suffix(".cmd").rand_bytes(20).tempfile()?;
@@ -86,26 +119,49 @@ where
         "create install helper script {}",
         install_helper.path().display()
     );
+
     {
         let script = install_helper.as_file_mut();
+        let parameter_option = match cmd {
+            Some(parameters) => parameters,
+            _ => "/S",
+        };
+
+        let destination_option = match destination {
+            Some(destination) => format!("/D={}", destination.display()),
+            _ => "".to_string(),
+        };
+
         let install_command = format!(
-            r#"CALL "{}" /S /D={}"#,
-            installer.display(),
-            destination.display()
+            r#"CALL "{installer}" {parameters} {destination}"#,
+            installer = installer.display(),
+            parameters = parameter_option,
+            destination = destination_option
         );
+
         trace!("install helper script content:");
         writeln!(script, "ECHO OFF")?;
         trace!("{}", &install_command);
         writeln!(script, "{}", install_command)?;
     }
 
-    info!(
-        "install {} to {}",
-        installer.display(),
-        destination.display()
-    );
+    info!("install {}", installer.display());
+    if let Some(destination) = destination {
+        info!("to {}", destination.display());
+    }
+
     let installer_script = install_helper.into_temp_path();
-    let install_process = Command::new(&installer_script)
+    install_from_temp_command(&installer_script)?;
+    installer_script.close()?;
+    Ok(())
+}
+
+fn install_from_temp_command<P>(command: P) -> io::Result<()>
+where
+    P: AsRef<Path>,
+{
+    let command = command.as_ref();
+    let install_process = Command::new(command)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -114,7 +170,6 @@ where
             err
         })?;
     let output = install_process.wait_with_output()?;
-    installer_script.close()?;
     if !output.status.success() {
         return Err(io::Error::new(
             io::ErrorKind::Other,
@@ -125,5 +180,38 @@ where
             ),
         ));
     }
+    Ok(())
+}
+
+fn install_from_msi<P>(installer: P, cmd: &str) -> io::Result<()>
+where
+    P: AsRef<Path>,
+{
+    let installer = installer.as_ref();
+
+    debug!("install unity module from installer msi");
+    let mut install_helper = Builder::new().suffix(".cmd").rand_bytes(20).tempfile()?;
+
+    info!(
+        "create install helper script {}",
+        install_helper.path().display()
+    );
+
+    {
+        let script = install_helper.as_file_mut();
+
+        let install_command = cmd.replace("/i", &format!(r#"/i "{}""#, installer.display()));
+
+        trace!("install helper script content:");
+        writeln!(script, "ECHO OFF")?;
+        trace!("{}", &install_command);
+        writeln!(script, "{}", install_command)?;
+    }
+
+    info!("install {}", installer.display());
+
+    let installer_script = install_helper.into_temp_path();
+    install_from_temp_command(&installer_script)?;
+    installer_script.close()?;
     Ok(())
 }
