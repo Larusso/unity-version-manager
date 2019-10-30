@@ -9,18 +9,20 @@ main() {
       cargo=cross
     fi
 
-    $cargo build --target $TARGET
-    $cargo build --target $TARGET --release
+    local release=''
+    if [ $RELEASE = YES ]; then
+      release=--release
+    fi
+
+    $cargo build --target $TARGET $release
 
     if [ ! -z $DISABLE_TESTS ]; then
         return
     fi
 
-    $cargo test --target $TARGET --release
-    $cargo test --target $TARGET
+    $cargo test --target $TARGET $release
 
-    $cargo run --target $TARGET --bin uvm -- --help
-    $cargo run --target $TARGET --bin uvm --release -- --help
+    $cargo run --target $TARGET --bin uvm $release -- --help
  }
 
 # we don't run the "test phase" when doing deploys
