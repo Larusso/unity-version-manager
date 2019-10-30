@@ -56,7 +56,11 @@ impl UvmCommand {
     }
 
     pub fn exec(&self, options: &Options) -> io::Result<()> {
+        #[cfg(windows)]
+        install::install_module(options.installer(), Some(options.destination()), None)?;
+        #[cfg(unix)]
         install::install_module(options.installer(), Some(options.destination()))?;
+
         self.stderr
             .write_line(&format!("{}", style("success").green().bold()))
     }
