@@ -65,6 +65,12 @@ matrix:
     - env: TARGET=x86_64-apple-darwin
       os: osx
 
+    - env:
+      - TARGET=x86_64-apple-darwin
+      - INSTALLER_TESTS=1
+      - RUST_LOG="warn,uvm_core=info,uvm_install2=info"
+      os: osx
+
     # # *BSD
     # - env: TARGET=i686-unknown-freebsd DISABLE_TESTS=1
     # - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
