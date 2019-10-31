@@ -35,6 +35,11 @@ fn recursive_file_count<P: AsRef<Path>>(dir: P) -> io::Result<u64> {
 pub fn move_dir<S: AsRef<Path>, D: AsRef<Path>>(source: S, destination: D) -> io::Result<()> {
     let destination = destination.as_ref();
     let source = source.as_ref();
+
+    if !source.is_dir() {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "from parameter must be a directory"));
+    }
+
     if source.starts_with(destination) {
         trace!("attempt to move files some levels up!");
         let tempdir = tempdir()?;
@@ -55,11 +60,12 @@ pub fn move_dir<S: AsRef<Path>, D: AsRef<Path>>(source: S, destination: D) -> io
     } else {
         trace!("rename dir");
         if destination.exists() {
-            if recursive_file_count(destination)? > 0 {
-                return Err(io::Error::from(io::ErrorKind::AlreadyExists));
-            } else {
+            if destination.is_dir() && recursive_file_count(destination)? == 0 {
                 fs::remove_dir_all(destination)?;
                 move_dir(source, destination)?;
+            }
+            else {
+                return Err(io::Error::from(io::ErrorKind::AlreadyExists));
             }
         } else {
             #[cfg(unix)]
