@@ -1,7 +1,7 @@
 use console::style;
 use log::{info, trace};
 use std::fs::OpenOptions;
-use std::io::{Result, Write};
+use std::io::Result;
 use std::process;
 use uvm_cli;
 use uvm_core;
@@ -46,23 +46,19 @@ fn generate_for_installation(options: Options) -> Result<()> {
         let mut manifest = Manifest::load(i.version()).expect("a manifest");
         let c = i.installed_components();
         manifest.mark_installed_modules(c);
-        let modules = manifest.into_modules();
-        let j = serde_json::to_string_pretty(&modules).expect("export json");
         let output_path = i.path().join("modules.json");
         if options.dry_run() {
             eprintln!("modules json for {}", &i.version());
             eprintln!("output path: {}", output_path.display());
-            println!("{}", j);
+            println!("{}", manifest.modules_json()?);
         } else {
             info!("{}", style(format!("write {}", output_path.display())).green());
-            let output_path = i.path().join("modules.json");
             let mut f = OpenOptions::new()
                 .write(true)
                 .truncate(true)
                 .create(true)
                 .open(output_path)?;
-            write!(f, "{}", j)?;
-            trace!("{}", j);
+            manifest.write_modules_json(&mut f)?;
         }
     }
     Ok(())
