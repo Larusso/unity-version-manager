@@ -25,7 +25,7 @@ macro_rules! generate_modules_json {
                 let version = $version;
                 let reader = StringReader::new(fixures::manifest::$fixture_name);
                 let manifest = Manifest::from_reader(&version, reader).expect("a manifest");
-                let mut a:Modules = manifest.into();
+                let mut a:Modules = manifest.into_modules();
                 let mut b:Modules = serde_json::from_str(fixures::module::$fixture_name).expect("a deserialized module");
 
                 a.sort();

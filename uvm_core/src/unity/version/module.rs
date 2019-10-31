@@ -1,11 +1,12 @@
 use crate::sys::unity::version::module::get_android_open_jdk_download_info;
 use crate::sys::unity::version::module::get_android_sdk_ndk_download_info;
 use crate::unity::component::Category;
-use crate::unity::InstalledComponents;
 use crate::unity::MD5;
 use crate::unity::{
-    Component, IniManifest, Localization, Manifest, ManifestIteratorItem, Version, VersionType,
+    Component, IniManifest, IniData, Localization, Version, VersionType,
 };
+
+use std::iter::FromIterator;
 use reqwest::{Client, IntoUrl};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -16,6 +17,8 @@ use std::path::{Path, PathBuf};
 lazy_static! {
     static ref UNITY_BASE_PATTERN: &'static Path = { Path::new("{UNITY_PATH}") };
 }
+
+type ManifestIteratorItem<'a> = ((Component, IniData), &'a Version);
 
 impl AsRef<Path> for UNITY_BASE_PATTERN {
     fn as_ref(&self) -> &Path {
@@ -214,8 +217,7 @@ impl ModuleBuilder {
                 }
             })
             .map(Module::from)
-            .collect::<Vec<Module>>()
-            .into();
+            .collect();
 
         modules.append(&mut Self::generate_missing_modules_for_version(
             version,
@@ -426,27 +428,6 @@ impl From<ManifestIteratorItem<'_>> for Module {
 #[serde(transparent)]
 pub struct Modules(Vec<Module>);
 
-impl From<Manifest<'_>> for Modules {
-    fn from(manifest: Manifest) -> Self {
-        let version = manifest.version().to_owned();
-        ModuleBuilder::from(manifest.into(), version)
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(transparent)]
-pub struct ModulesMap(HashMap<Component, Module>);
-
-impl ModulesMap {
-    pub fn mark_installed_modules(&mut self, components: InstalledComponents) {
-        for component in components {
-            if let Some(m) = self.0.get_mut(&component) {
-                m.selected = true;
-            }
-        }
-    }
-}
-
 impl Deref for Modules {
     type Target = Vec<Module>;
 
@@ -469,6 +450,10 @@ impl IntoIterator for Modules {
         self.0.into_iter()
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(transparent)]
+pub struct ModulesMap(HashMap<Component, Module>);
 
 impl Deref for ModulesMap {
     type Target = HashMap<Component, Module>;
@@ -493,13 +478,34 @@ impl IntoIterator for ModulesMap {
     }
 }
 
-impl From<Modules> for ModulesMap {
-    fn from(modules: Modules) -> Self {
+impl FromIterator<Module> for ModulesMap {
+    fn from_iter<I: IntoIterator<Item=Module>>(iter: I) -> Self {
+        let mut map:HashMap<_, _> = HashMap::new();
+        for m in iter {
+            map.insert(m.id, m);
+        }
+
+        ModulesMap(map)
+    }
+}
+
+impl FromIterator<Module> for Modules {
+    fn from_iter<I: IntoIterator<Item=Module>>(iter: I) -> Self {
+        let mut v:Vec<_> = Vec::new();
+        for m in iter {
+            v.push(m);
+        }
+
+        Modules(v)
+    }
+}
+
+impl From<Vec<Module>> for ModulesMap
+{
+    fn from(modules:Vec<Module>) -> Self {
         modules
             .into_iter()
-            .filter_map(|module| Some((module.id, module)))
-            .collect::<HashMap<Component, Module>>()
-            .into()
+            .collect()
     }
 }
 
@@ -508,20 +514,13 @@ impl From<ModulesMap> for Modules {
         modules
             .into_iter()
             .map(|(_, module)| module)
-            .collect::<Vec<Module>>()
-            .into()
+            .collect()
     }
 }
 
-impl From<HashMap<Component, Module>> for ModulesMap {
-    fn from(modules: HashMap<Component, Module>) -> Self {
-        ModulesMap(modules)
-    }
-}
-
-impl From<Vec<Module>> for Modules {
-    fn from(modules: Vec<Module>) -> Self {
-        Modules(modules)
+impl From<Modules> for ModulesMap {
+    fn from(modules: Modules) -> Self {
+        modules.into_iter().collect()
     }
 }
 
@@ -633,6 +632,7 @@ mod id_serialize_optional_sync {
 
 #[cfg(test)]
 mod tests {
+    use crate::unity::Manifest;
     use super::*;
     use stringreader::StringReader;
 
@@ -770,7 +770,7 @@ optsync_webgl=WebGL"#;
         let version = Version::f(2018, 4, 0, 1);
         let test_ini = StringReader::new(TEST_INI);
         let manifest = Manifest::from_reader(&version, test_ini).expect("a manifest from reader");
-        let _modules: Modules = manifest.into();
+        let _modules: Modules = manifest.into_modules();
     }
 
     #[test]
@@ -778,22 +778,22 @@ optsync_webgl=WebGL"#;
         let version = Version::f(2018, 4, 0, 1);
         let test_ini = StringReader::new(TEST_INI);
         let manifest = Manifest::from_reader(&version, test_ini).expect("a manifest from reader");
-        let modules: Modules = manifest.into();
+        let modules: Modules = manifest.into_modules();
         let _modules_map: ModulesMap = modules.into();
     }
 
     #[test]
-    fn can_create_modulesfrom_modules_map() {
+    fn can_create_modules_from_modules_map() {
         let version = Version::f(2018, 4, 0, 1);
         let test_ini = StringReader::new(TEST_INI);
         let manifest = Manifest::from_reader(&version, test_ini).expect("a manifest from reader");
 
-        let modules_1: Modules = manifest.into();
+        let modules_1: Modules = manifest.into_modules();
 
         let test_ini = StringReader::new(TEST_INI);
         let manifest = Manifest::from_reader(&version, test_ini).expect("a manifest from reader");
 
-        let mut modules_2: Modules = manifest.into();
+        let mut modules_2: Modules = manifest.into_modules();
 
         let modules_map: ModulesMap = modules_1.into();
         let mut modules_3: Modules = modules_map.into();

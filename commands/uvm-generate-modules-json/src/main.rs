@@ -4,7 +4,7 @@ use std::io::{Result, Write};
 use std::process;
 use uvm_cli;
 use uvm_core;
-use uvm_core::unity::{Manifest, Modules};
+use uvm_core::unity::Manifest;
 use uvm_generate_modules_json::Options;
 
 const USAGE: &str = "
@@ -30,7 +30,7 @@ fn generate_modules(options: Options) -> Result<()> {
         let output_path = options.output_path(&version);
 
         let manifest = Manifest::load(version).unwrap();
-        let modules: Modules = manifest.into();
+        let modules = manifest.into_modules();
         let j = serde_json::to_string_pretty(&modules)?;
 
         if let Some(output_path) = output_path {

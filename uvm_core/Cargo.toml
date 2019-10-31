@@ -44,7 +44,6 @@ cluFlock = "1.2.5"
 winapi = { version = "0.3", features = ["winver","memoryapi"] }
 widestring = "0.4.0"
 libc = "0.2.43"
-tempfile = "3"
 
 [dev-dependencies]
 proptest = "0.9.4"

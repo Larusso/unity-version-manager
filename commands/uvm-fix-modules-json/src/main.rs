@@ -1,11 +1,11 @@
 use console::style;
-use log::{debug, info, trace};
+use log::{info, trace};
 use std::fs::OpenOptions;
 use std::io::{Result, Write};
 use std::process;
 use uvm_cli;
 use uvm_core;
-use uvm_core::unity::{Installations, Manifest, Modules, ModulesMap};
+use uvm_core::unity::{Installations, Manifest};
 use uvm_fix_modules_json::Options;
 
 const USAGE: &str = "
@@ -43,12 +43,10 @@ fn generate_for_installation(options: Options) -> Result<()> {
 
     for i in installations {
         info!("{}", style(format!("generate modules.json for installation: {}", i.path().display())).yellow());
-        let manifest = Manifest::load(i.version()).expect("a manifest");
+        let mut manifest = Manifest::load(i.version()).expect("a manifest");
         let c = i.installed_components();
-        let modules: Modules = manifest.into();
-        let mut modules: ModulesMap = modules.into();
-        modules.mark_installed_modules(c);
-        let modules: Modules = modules.into();
+        manifest.mark_installed_modules(c);
+        let modules = manifest.into_modules();
         let j = serde_json::to_string_pretty(&modules).expect("export json");
         let output_path = i.path().join("modules.json");
         if options.dry_run() {
