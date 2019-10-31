@@ -1,39 +1,38 @@
 use super::ini::IniManifest;
 use crate::error::*;
 use crate::unity::urls::DownloadURL;
-use crate::unity::{Component, Module, Version};
+use crate::unity::{Component, Module, Modules, ModulesMap, Version};
 use reqwest::Url;
 use std::collections::hash_map::Iter;
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
-type Modules = HashMap<Component, Module>;
-
 #[derive(Debug)]
 pub struct Manifest<'a> {
     version: &'a Version,
     base_url: DownloadURL,
-    modules: Modules,
-    editor: Module
+    modules: ModulesMap,
+    editor: Module,
 }
 
 impl<'a> Manifest<'a> {
     pub fn load(version: &'a Version) -> Result<Manifest<'a>> {
         let mut components = IniManifest::load(version)?;
-        let editor = components.remove(&Component::Editor).ok_or(UvmErrorKind::ManifestReadError)?;
+        let editor = components
+            .remove(&Component::Editor)
+            .ok_or(UvmErrorKind::ManifestReadError)?;
         let editor = Module::from(((Component::Editor, editor), version));
 
-        let modules: Modules = Self::get_modules(components, version);
+        let modules: ModulesMap = Self::get_modules(components, version);
         let base_url = DownloadURL::new(&version)?;
 
         Ok(Manifest {
             version,
             base_url,
             modules,
-            editor
+            editor,
         })
     }
 
@@ -48,16 +47,17 @@ impl<'a> Manifest<'a> {
     pub fn from_reader<R: Read>(version: &'a Version, manifest: R) -> Result<Manifest<'a>> {
         let base_url = DownloadURL::new(&version)?;
         let mut components = IniManifest::from_reader(version, manifest)?;
-        let editor = components.remove(&Component::Editor).ok_or(UvmErrorKind::ManifestReadError)?;
+        let editor = components
+            .remove(&Component::Editor)
+            .ok_or(UvmErrorKind::ManifestReadError)?;
         let editor = Module::from(((Component::Editor, editor), version));
-        let modules: Modules = Self::get_modules(components, version);
-
+        let modules: ModulesMap = Self::get_modules(components, version);
 
         Ok(Manifest {
             version,
             base_url,
             modules,
-            editor
+            editor,
         })
     }
 
@@ -66,14 +66,11 @@ impl<'a> Manifest<'a> {
         Self::from_reader(version, manifest)
     }
 
-    fn get_modules(components: IniManifest, version: &Version) -> HashMap<Component, Module> {
+    fn get_modules(components: IniManifest, version: &Version) -> ModulesMap {
         use crate::unity::version::module::ModuleBuilder;
 
         let modules = ModuleBuilder::from(components, version);
-        modules
-            .into_iter()
-            .map(|module| (module.id, module))
-            .collect()
+        modules.into_iter().collect()
     }
 
     pub fn url(&self, component: Component) -> Option<Url> {
@@ -96,23 +93,47 @@ impl<'a> Manifest<'a> {
     pub fn get(&self, component: &Component) -> Option<&Module> {
         match component {
             Component::Editor => Some(&self.editor),
-            _ => self.modules.get(component)
+            _ => self.modules.get(component),
         }
     }
 
     pub fn get_mut(&mut self, component: &Component) -> Option<&mut Module> {
         match component {
             Component::Editor => Some(&mut self.editor),
-            _ => self.modules.get_mut(component)
+            _ => self.modules.get_mut(component),
         }
+    }
+
+    pub fn mark_installed_modules<C>(&mut self, components: C)
+    where
+        C: IntoIterator<Item = Component>,
+    {
+        for component in components {
+            if let Some(m) = self.get_mut(&component) {
+                m.selected = true;
+            }
+        }
+    }
+
+    pub fn modules_map(&self) -> &ModulesMap {
+        &self.modules
+    }
+
+    /// Takes ownership of the `Manifest` and returns the internal `Modules` map.
+    pub fn into_modules_map(self) -> ModulesMap {
+        self.modules
+    }
+
+    pub fn into_modules(self) -> Modules {
+        self.modules.into()
     }
 }
 
 impl Deref for Manifest<'_> {
-    type Target = Modules;
+    type Target = ModulesMap;
 
     fn deref(&self) -> &Self::Target {
-        &self.modules
+        self.modules_map()
     }
 }
 

@@ -84,6 +84,6 @@ impl<'a> Module<'a> {
 pub fn load_modules<V: AsRef<Version>>(version:V) -> Result<Modules> {
     let version = version.as_ref();
     let manifest = Manifest::load(version)?;
-    let modules:Modules = manifest.into();
+    let modules:Modules = manifest.into_modules();
     Ok(modules)
 }
