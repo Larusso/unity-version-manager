@@ -5,7 +5,7 @@ use crate::unity::{Component, Module, Modules, ModulesMap, Version};
 use reqwest::Url;
 use std::collections::hash_map::Iter;
 use std::fs::File;
-use std::io::Read;
+use std::io::{self, Read, Write};
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
@@ -113,6 +113,19 @@ impl<'a> Manifest<'a> {
                 m.selected = true;
             }
         }
+    }
+
+    pub fn modules_json(&self) -> io::Result<String> {
+        let modules: Vec<&Module> = self.modules_map().values().collect();
+        let j = serde_json::to_string_pretty(&modules)?;
+        Ok(j)
+    }
+
+    pub fn write_modules_json<W: Write>(&self, writer:&mut W) -> io::Result<()> {
+        let json = self.modules_json()?;
+        write!(writer, "{}", json)?;
+        trace!("{}", json);
+        Ok(())
     }
 
     pub fn modules_map(&self) -> &ModulesMap {

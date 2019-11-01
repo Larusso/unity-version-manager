@@ -1,6 +1,6 @@
 use console::style;
 use log::{info, trace};
-use std::io::{Result, Write};
+use std::io;
 use std::process;
 use uvm_cli;
 use uvm_core;
@@ -24,19 +24,19 @@ Options:
   -h, --help                        show this help message and exit
 ";
 
-fn generate_modules(options: Options) -> Result<()> {
+fn generate_modules(options: Options) -> io::Result<()> {
     for version in options.version() {
         let mut output_handle = options.output(&version)?;
         let output_path = options.output_path(&version);
 
-        let manifest = Manifest::load(version).unwrap();
-        let modules = manifest.into_modules();
-        let j = serde_json::to_string_pretty(&modules)?;
+        let manifest = Manifest::load(version).map_err(|_| {
+            io::Error::new(io::ErrorKind::NotFound, "Unable to load manifest")
+        })?;
 
         if let Some(output_path) = output_path {
             info!("write modules to {}", output_path.display());
         }
-        output_handle.write_all(j.as_bytes())?;
+        manifest.write_modules_json(&mut output_handle)?;
     }
     Ok(())
 }
