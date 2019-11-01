@@ -4,6 +4,7 @@ use std::io::Write as IoWrite;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use tempfile::Builder;
+use crate::utils;
 
 pub fn install_editor<P, D>(
     installer: P,
@@ -16,9 +17,10 @@ where
 {
     let installer = installer.as_ref();
     let destination = match destination {
-        Some(ref d) => Some(d.as_ref()),
+        Some(ref d) => Some(utils::prepend_long_path_support(d)),
         _ => None,
     };
+    let destination = destination.as_ref();
 
     debug!("install editor {}", installer.display(),);
     if let Some(destination) = destination {
@@ -47,9 +49,10 @@ where
 {
     let installer = installer.as_ref();
     let destination = match destination {
-        Some(ref d) => Some(d.as_ref()),
+        Some(ref d) => Some(utils::prepend_long_path_support(d)),
         _ => None,
     };
+    let destination = destination.as_ref();
 
     debug!("install component {}", installer.display(),);
     if let Some(destination) = destination {

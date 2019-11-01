@@ -7,6 +7,9 @@ use std::fs::File;
 use std::io;
 use std::path::Path;
 
+#[cfg(windows)]
+use std::path::PathBuf;
+
 #[cfg(unix)]
 pub fn lock_process_or_wait<'a>(lock_file: &'a File) -> io::Result<FlockLock<&'a File>> {
     match lock_file.try_lock() {
@@ -27,6 +30,19 @@ pub fn lock_process_or_wait<'a>(lock_file: &'a File) -> io::Result<FlockLock<&'a
 #[cfg(windows)]
 pub fn lock_process_or_wait(_: &File) -> io::Result<()> {
     Ok(())
+}
+
+#[cfg(windows)]
+pub fn prepend_long_path_support<P:AsRef<Path>>(path:P) -> PathBuf {
+    let path = path.as_ref();
+    if !path.to_str().map(|s| s.starts_with(r#"\\?\"#)).unwrap_or(false) {
+        trace!(r#"prepend path with \\?\"#);
+        let new_path = Path::new(&format!(r#"\\?\{}"#, path.display())).to_path_buf();
+        trace!("{} -> {}", path.display(), new_path.display());
+        new_path
+    } else {
+        path.to_path_buf()
+    }
 }
 
 pub struct UrlUtils {}
@@ -134,5 +150,21 @@ mod tests {
     fn parse_file_name_from_url_without_file_name_part_and_content_disposition3() {
         let url = Url::parse("https://new-translate.unity3d.jp/v1/live/54/2019.3/zh-hant").unwrap();
         assert_eq!(UrlUtils::get_file_name_from_url(&url).unwrap(), "zh-hant.po".to_string());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn prepend_long_path_prefix_when_missing() {
+        let path = Path::new(r#"c://path/to/some/file.txt"#);
+        let new_path = prepend_long_path_support(&path);
+        assert!(new_path.to_string_lossy().starts_with(r#"\\?\"#));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn prepend_long_path_prefix_returns_same_path_when_already_prefixed() {
+        let path = Path::new(r#"\\?\c://path/to/some/file.txt"#);
+        let new_path = prepend_long_path_support(&path);
+        assert_eq!(path.to_str(), new_path.to_str());
     }
 }
