@@ -72,6 +72,10 @@ pub fn move_dir<S: AsRef<Path>, D: AsRef<Path>>(source: S, destination: D) -> io
             fs::DirBuilder::new()
                 .recursive(true)
                 .create(destination)?;
+            #[cfg(windows)]
+            fs::DirBuilder::new()
+                .recursive(true)
+                .create(destination.parent().unwrap())?;
             #[cfg(unix)]
             fs::rename(source, destination)?;
             #[cfg(windows)]
