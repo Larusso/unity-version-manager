@@ -300,7 +300,7 @@
     "visible": false,
     "sync": "android-sdk-ndk-tools",
     "selected": false,
-    "destination": "{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/build-tools",
+    "destination": "{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK",
     "renameTo": "{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/build-tools/28.0.3",
     "renameFrom": "{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/android-9"
   },
@@ -315,7 +315,7 @@
     "visible": false,
     "sync": "android-sdk-ndk-tools",
     "selected": false,
-    "destination": "{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platforms",
+    "destination": "{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK",
     "renameTo": "{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platforms/android-28",
     "renameFrom": "{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/android-9"
   },

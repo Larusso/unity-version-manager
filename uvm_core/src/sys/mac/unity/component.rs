@@ -1,7 +1,7 @@
 use crate::unity::Component;
 use std::path::{Path, PathBuf};
 
-pub fn installpath(component:Component) -> Option<PathBuf> {
+pub fn installpath(component: Component) -> Option<PathBuf> {
     use Component::*;
     let path = match component {
         Mono | VisualStudio | FacebookGameRoom => None,
@@ -33,14 +33,24 @@ pub fn installpath(component:Component) -> Option<PathBuf> {
     path.map(|p| Path::new(p).to_path_buf())
 }
 
-pub fn install_location(component:Component) -> Option<PathBuf> {
-    self::installpath(component)
+pub fn install_location(component: Component) -> Option<PathBuf> {
+    use Component::*;
+    let path = match component {
+        AndroidSdkPlatformTools => {
+            Some("PlaybackEngines/AndroidPlayer/SDK/platform-tools")
+        }
+        AndroidSdkNdkTools => {
+            Some("PlaybackEngines/AndroidPlayer/SDK/tools")
+        }
+        _ => None,
+    };
+    path.map(|p| Path::new(p).to_path_buf()).or_else(|| installpath(component))
 }
 
-pub fn selected(component:Component) -> bool {
+pub fn selected(component: Component) -> bool {
     use Component::*;
     match component {
         MonoDevelop | Documentation | ExampleProject | Example | VisualStudio => true,
-        _ => false
+        _ => false,
     }
 }
