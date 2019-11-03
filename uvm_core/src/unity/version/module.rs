@@ -125,6 +125,12 @@ impl Ord for Module {
     }
 }
 
+impl AsRef<Component> for Module {
+    fn as_ref(&self) -> &Component {
+        &self.id
+    }
+}
+
 impl Module {
     #[cfg(not(windows))]
     fn destination(component: Component, _: &str) -> Option<PathBuf> {
