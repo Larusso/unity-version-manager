@@ -4,7 +4,7 @@ version = "2.3.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 edition = "2018"
 [dependencies]
-console = "0.9.0"
+console = "0.9.1"
 regex = "0.2"
 itertools = "0.8.0"
 serde = "1.0"
