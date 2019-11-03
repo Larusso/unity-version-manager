@@ -263,6 +263,12 @@ impl Component {
     }
 }
 
+impl AsRef<Component> for Component {
+    fn as_ref(&self) -> &Component {
+        self
+    }
+}
+
 impl Default for Component {
     fn default() -> Self {
         Component::Editor
