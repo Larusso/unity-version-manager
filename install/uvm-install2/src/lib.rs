@@ -4,7 +4,8 @@ use log::*;
 use std::collections::HashSet;
 use std::io;
 use std::path::Path;
-use uvm_core::unity::{hub, v2::Manifest, Component, Installation, Version};
+use uvm_core::unity::{hub, Manifest, Component, Installation, Version};
+pub use uvm_core::unity;
 use uvm_install_graph::{InstallGraph, InstallStatus, Walker};
 use uvm_move_dir::*;
 pub mod error;
@@ -33,6 +34,16 @@ fn print_graph(graph: &InstallGraph) {
     }
 }
 
+/// Installs Unity Editor with optional modules to a destination.
+///
+/// ```no_run
+/// use uvm_install2::unity::{Component, Version};
+/// let version = Version::b(2019, 3, 0, 8);
+/// let components = [Component::Android, Component::Ios];
+/// let install_sync_modules = true
+/// uvm_install2::install(&version, Some(&components), install_sync_modules, Some("/install/path"))?;
+/// # Ok::<(), uvm_install2::error::Error>(())
+/// ```
 pub fn install<V, P, I>(
     version: V,
     requested_modules: Option<I>,
