@@ -9,18 +9,18 @@ main() {
       cargo=cross
     fi
 
-    $cargo build --target $TARGET
     $cargo build --target $TARGET --release
 
     if [ ! -z $DISABLE_TESTS ]; then
         return
     fi
 
-    $cargo test --target $TARGET --release
-    $cargo test --target $TARGET
-
-    $cargo run --target $TARGET --bin uvm -- --help
-    $cargo run --target $TARGET --bin uvm --release -- --help
+    if [ ! -z $INSTALLER_TESTS ]; then
+      $cargo test installs_editor_and_modules_ --target $TARGET --release -- --nocapture --ignored
+    else
+      $cargo test --target $TARGET --release
+      $cargo run --target $TARGET --bin uvm --release -- --help
+    fi
  }
 
 # we don't run the "test phase" when doing deploys

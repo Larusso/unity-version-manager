@@ -1,0 +1,205 @@
+use self::error::Result;
+use console::style;
+use log::*;
+use std::collections::HashSet;
+use std::io;
+use std::path::Path;
+use uvm_core::unity::{hub, v2::Manifest, Component, Installation, Version};
+use uvm_install_graph::{InstallGraph, InstallStatus, Walker};
+use uvm_move_dir::*;
+pub mod error;
+use uvm_core::install::Loader;
+
+fn print_graph(graph: &InstallGraph) {
+    use console::Style;
+
+    for node in graph.topo().iter(graph.context()) {
+        let component = graph.component(node).unwrap();
+        let install_status = graph.install_status(node).unwrap();
+        let prefix: String = [' '].iter().cycle().take(graph.depth(node) * 2).collect();
+
+        let style = match install_status {
+            InstallStatus::Unknown => Style::default().dim(),
+            InstallStatus::Missing => Style::default().yellow().blink(),
+            InstallStatus::Installed => Style::default().green(),
+        };
+
+        info!(
+            "{}- {} ({})",
+            prefix,
+            component,
+            style.apply_to(install_status)
+        );
+    }
+}
+
+pub fn install<V, P, I>(
+    version: V,
+    requested_modules: Option<I>,
+    install_sync: bool,
+    destination: Option<P>,
+) -> Result<()>
+where
+    V: AsRef<Version>,
+    P: AsRef<Path>,
+    I: IntoIterator,
+    I::Item: AsRef<Component>,
+{
+    let version = version.as_ref();
+    let mut manifest = Manifest::load(version)?;
+    let mut graph = InstallGraph::from(&manifest);
+
+    let base_dir = if let Some(destination) = destination {
+        let destination = destination.as_ref();
+        if destination.exists() && !destination.is_dir() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Requested destination is not a directory.",
+            )
+            .into());
+        }
+        destination.to_path_buf()
+    } else {
+        hub::paths::install_path()
+            .map(|path| path.join(format!("{}", version)))
+            .or_else(|| {
+                {
+                    #[cfg(any(target_os = "windows", target_os = "macos"))]
+                    let application_path = dirs_2::application_dir();
+                    #[cfg(target_os = "linux")]
+                    let application_path = dirs_2::executable_dir();
+                    application_path
+                }
+                .map(|path| path.join(format!("Unity-{}", version)))
+            })
+            .expect("default installation directory")
+    };
+
+    let installation = Installation::new(base_dir.clone());
+
+    if let Ok(installation) = installation {
+        let mut installed_components: HashSet<Component> =
+            installation.installed_components().collect();
+        installed_components.insert(Component::Editor);
+        graph.mark_installed(&installed_components);
+    } else {
+        info!("\nFresh install");
+        graph.mark_all_missing();
+    }
+
+    info!("All available modules for Unity {}", version);
+    print_graph(&graph);
+    let base_iterator = [Component::Editor].into_iter().map(|c| *c);
+    let all_components: HashSet<Component> = match requested_modules {
+        Some(modules) => modules
+            .into_iter()
+            .flat_map(|component| {
+                let component = component.as_ref();
+                let node = graph.get_node_id(*component).unwrap();
+                let mut out = vec![((*component, InstallStatus::Unknown), node)];
+                out.append(&mut graph.get_dependend_modules(node));
+                if install_sync {
+                    out.append(&mut graph.get_sub_modules(node));
+                }
+                out
+            })
+            .map(|((c, _), _)| c)
+            .chain(base_iterator)
+            .collect(),
+        None => base_iterator.collect(),
+    };
+
+    debug!("\nAll requested components");
+    for c in all_components.iter() {
+        debug!("- {}", c);
+    }
+
+    graph.keep(&all_components);
+
+    info!("\nInstall Graph");
+    print_graph(&graph);
+
+    install_module_and_dependencies(&graph, &base_dir)?;
+
+    manifest.mark_installed_modules(all_components);
+    write_modules_json(&manifest, base_dir)?;
+    Ok(())
+}
+
+fn write_modules_json<P: AsRef<Path>>(manifest: &Manifest, output_path: P) -> io::Result<()> {
+    use std::fs::OpenOptions;
+
+    let output_path = output_path.as_ref();
+    info!(
+        "{}",
+        style(format!("write {}", output_path.display())).green()
+    );
+    let output_path = output_path.join("modules.json");
+    let mut f = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(output_path)?;
+    manifest.write_modules_json(&mut f)?;
+    Ok(())
+}
+
+fn install_module_and_dependencies<P: AsRef<Path>>(
+    graph: &InstallGraph,
+    base_dir: P,
+) -> Result<()> {
+    let base_dir = base_dir.as_ref();
+    for node in graph.topo().iter(graph.context()) {
+        if let Some(InstallStatus::Missing) = graph.install_status(node) {
+            let component = graph.component(node).unwrap();
+            info!("install {}", component);
+
+            info!("download installer for {}", component);
+            let loader = Loader::new(*component, graph.manifest());
+            let installer = loader.download()?;
+
+            #[cfg(windows)]
+            let installer_url = graph.manifest().url(*component).ok_or_else(|| {
+                io::Error::new(io::ErrorKind::Other, "Failed to fetch installer url")
+            })?;
+            #[cfg(windows)]
+            let destination =
+                component.installpath_with_installer_url(&installer_url.into_string());
+
+            #[cfg(unix)]
+            let destination = component.installpath();
+            let destination = destination.map(|location| base_dir.join(location));
+
+            #[cfg(windows)]
+            let module = graph.manifest().get(component).unwrap();
+
+            if component == &Component::Editor {
+                #[cfg(windows)]
+                uvm_core::install::install_editor(
+                    &installer,
+                    Some(&base_dir),
+                    module.cmd.as_ref().map(|s| s.as_str()),
+                )?;
+                #[cfg(unix)]
+                uvm_core::install::install_editor(&installer, Some(&base_dir))?;
+            } else {
+                #[cfg(windows)]
+                uvm_core::install::install_module(
+                    &installer,
+                    destination.as_ref(),
+                    module.cmd.as_ref().map(|s| s.as_str()),
+                )?;
+                #[cfg(unix)]
+                uvm_core::install::install_module(&installer, destination.as_ref())?;
+
+                let module = graph.manifest().get(&component).unwrap();
+                if let Some((from, to)) = module.install_rename_from_to(&base_dir) {
+                    info!("move {} to {}", from.display(), to.display());
+                    move_dir(&from, &to)?;
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
