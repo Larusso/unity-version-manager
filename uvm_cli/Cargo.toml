@@ -10,5 +10,5 @@ docopt = "1.0"
 serde = "1.0"
 serde_derive = "1.0"
 uvm_core = { path = "../uvm_core" }
-console = "0.9.0"
+console = "0.9.1"
 cli_core = "0.1.0"
