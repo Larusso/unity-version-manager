@@ -7,6 +7,7 @@ use std::path::Path;
 use uvm_core::unity::{hub, Manifest, Component, Installation, Version};
 pub use uvm_core::*;
 pub use uvm_core::error as uvm_core_error;
+use uvm_core::unity::hub::editors::{EditorInstallation, Editors};
 use uvm_install_graph::{InstallGraph, InstallStatus, Walker};
 use uvm_move_dir::*;
 pub mod error;
@@ -61,6 +62,7 @@ where
     let mut manifest = Manifest::load(version)?;
     let mut graph = InstallGraph::from(&manifest);
 
+    let mut editor_installation: Option<EditorInstallation> = None;
     let base_dir = if let Some(destination) = destination {
         let destination = destination.as_ref();
         if destination.exists() && !destination.is_dir() {
@@ -70,6 +72,11 @@ where
             )
             .into());
         }
+
+        editor_installation = Some(EditorInstallation::new(
+            version.to_owned(),
+            destination.to_path_buf(),
+        ));
         destination.to_path_buf()
     } else {
         hub::paths::install_path()
@@ -101,7 +108,7 @@ where
 
     info!("All available modules for Unity {}", version);
     print_graph(&graph);
-    let base_iterator = [Component::Editor].into_iter().map(|c| *c);
+    let base_iterator = [Component::Editor].iter().copied();
     let all_components: HashSet<Component> = match requested_modules {
         Some(modules) => modules
             .into_iter()
@@ -137,6 +144,16 @@ where
     write_modules_json(&manifest, &base_dir)?;
 
     let installation = installation.or_else(|_| Installation::new(&base_dir))?;
+
+    //write new unity hub editor installation
+    if let Some(installation) = editor_installation {
+        let mut _editors = Editors::load().and_then(|mut editors| {
+            editors.add(&installation);
+            editors.flush()?;
+            Ok(())
+        });
+    }
+
     Ok(installation)
 }
 
