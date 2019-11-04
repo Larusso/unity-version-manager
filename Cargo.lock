@@ -2122,7 +2122,7 @@ dependencies = [
  "tempfile 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "test-env-log 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_core 0.6.0",
- "uvm_install_graph 0.1.0",
+ "uvm_install_graph 0.2.0",
  "uvm_move_dir 0.1.0",
 ]
 
@@ -2249,7 +2249,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_install_graph"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cfg-if 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "daggy 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",

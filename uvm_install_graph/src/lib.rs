@@ -9,7 +9,7 @@ pub use daggy::Walker;
 use itertools::Itertools;
 use std::collections::HashSet;
 use std::fmt;
-use uvm_core::unity::{v2::Manifest, Component, Version};
+use uvm_core::unity::{Manifest, Component, Version};
 
 /// `InstallStatus` is a marker enum to mark nodes in the `InstallGraph` based on the known
 /// installation status. The default is **Unknown**.
