@@ -6,6 +6,7 @@ use std::io;
 use std::path::Path;
 use uvm_core::unity::{hub, Manifest, Component, Installation, Version};
 pub use uvm_core::*;
+pub use uvm_core::error as uvm_core_error;
 use uvm_install_graph::{InstallGraph, InstallStatus, Walker};
 use uvm_move_dir::*;
 pub mod error;
@@ -40,8 +41,8 @@ fn print_graph(graph: &InstallGraph) {
 /// use uvm_install2::unity::{Component, Version};
 /// let version = Version::b(2019, 3, 0, 8);
 /// let components = [Component::Android, Component::Ios];
-/// let install_sync_modules = true
-/// uvm_install2::install(&version, Some(&components), install_sync_modules, Some("/install/path"))?;
+/// let install_sync_modules = true;
+/// let installation = uvm_install2::install(&version, Some(&components), install_sync_modules, Some("/install/path"))?;
 /// # Ok::<(), uvm_install2::error::Error>(())
 /// ```
 pub fn install<V, P, I>(
@@ -49,7 +50,7 @@ pub fn install<V, P, I>(
     requested_modules: Option<I>,
     install_sync: bool,
     destination: Option<P>,
-) -> Result<()>
+) -> Result<Installation>
 where
     V: AsRef<Version>,
     P: AsRef<Path>,
@@ -86,9 +87,9 @@ where
             .expect("default installation directory")
     };
 
-    let installation = Installation::new(base_dir.clone());
+    let installation = Installation::new(&base_dir);
 
-    if let Ok(installation) = installation {
+    if let Ok(ref installation) = installation {
         let mut installed_components: HashSet<Component> =
             installation.installed_components().collect();
         installed_components.insert(Component::Editor);
@@ -133,8 +134,10 @@ where
     install_module_and_dependencies(&graph, &base_dir)?;
 
     manifest.mark_installed_modules(all_components);
-    write_modules_json(&manifest, base_dir)?;
-    Ok(())
+    write_modules_json(&manifest, &base_dir)?;
+
+    let installation = installation.or_else(|_| Installation::new(&base_dir))?;
+    Ok(installation)
 }
 
 fn write_modules_json<P: AsRef<Path>>(manifest: &Manifest, output_path: P) -> io::Result<()> {
