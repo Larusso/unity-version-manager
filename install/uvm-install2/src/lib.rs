@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::io;
 use std::path::Path;
 use uvm_core::unity::{hub, Manifest, Component, Installation, Version};
-pub use uvm_core::unity;
+pub use uvm_core::*;
 use uvm_install_graph::{InstallGraph, InstallStatus, Walker};
 use uvm_move_dir::*;
 pub mod error;
