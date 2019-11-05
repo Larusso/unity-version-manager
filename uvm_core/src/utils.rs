@@ -6,9 +6,8 @@ use reqwest::Url;
 use std::fs::File;
 use std::io;
 use std::path::Path;
-
 #[cfg(windows)]
-use std::path::PathBuf;
+use std::path::{Component, Prefix, PathBuf};
 
 #[cfg(unix)]
 pub fn lock_process_or_wait<'a>(lock_file: &'a File) -> io::Result<FlockLock<&'a File>> {
@@ -33,12 +32,31 @@ pub fn lock_process_or_wait(_: &File) -> io::Result<()> {
 }
 
 #[cfg(windows)]
+fn get_path_prefix(path: &Path) -> Prefix {
+    match path.components().next().unwrap() {
+        Component::Prefix(prefix_component) => prefix_component.kind(),
+        _ => panic!(),
+    }
+}
+
+#[cfg(windows)]
 pub fn prepend_long_path_support<P:AsRef<Path>>(path:P) -> PathBuf {
+    use std::ffi::OsString;
+
     let path = path.as_ref();
-    if !path.to_str().map(|s| s.starts_with(r#"\\?\"#)).unwrap_or(false) {
+    if (path.has_root() && !path.is_absolute()) || (path.is_absolute() && !get_path_prefix(path).is_verbatim()) {
         trace!(r#"prepend path with \\?\"#);
-        let new_path = Path::new(&format!(r#"\\?\{}"#, path.display())).to_path_buf();
-        trace!("{} -> {}", path.display(), new_path.display());
+        let mut components = path.components();
+        let mut new_prefix = OsString::new();
+        let mut new_path = PathBuf::new();
+
+        new_prefix.push(r"\\?\");
+        new_prefix.push(components.next().unwrap());
+
+        new_path.push(new_prefix);
+        while let Some(component) = components.next() {
+            new_path.push(component);
+        }
         new_path
     } else {
         path.to_path_buf()
@@ -155,15 +173,39 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn prepend_long_path_prefix_when_missing() {
-        let path = Path::new(r#"c://path/to/some/file.txt"#);
+        let path = Path::new(r#"c:/path/to/some/file.txt"#);
+        let new_path = prepend_long_path_support(&path);
+        assert!(new_path.to_string_lossy().starts_with(r#"\\?\c:\"#));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn prepend_long_path_prefix_when_missing2() {
+        let path = Path::new(r#"/path/to/some/file.txt"#);
         let new_path = prepend_long_path_support(&path);
         assert!(new_path.to_string_lossy().starts_with(r#"\\?\"#));
     }
 
     #[cfg(windows)]
     #[test]
+    fn prepend_long_path_changes_path_separator() {
+        let path = Path::new(r#"c:/path/to/some/file.txt"#);
+        let new_path = prepend_long_path_support(&path);
+        assert_eq!(new_path.to_string_lossy() , r#"\\?\c:\path\to\some\file.txt"#);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn prepend_long_path_prefix_only_absolute_paths() {
+        let path = Path::new(r#"./some/file.txt"#);
+        let new_path = prepend_long_path_support(&path);
+        assert!(!new_path.to_string_lossy().starts_with(r#"\\?\"#));
+    }
+
+    #[cfg(windows)]
+    #[test]
     fn prepend_long_path_prefix_returns_same_path_when_already_prefixed() {
-        let path = Path::new(r#"\\?\c://path/to/some/file.txt"#);
+        let path = Path::new(r#"\\?\c:/path/to/some/file.txt"#);
         let new_path = prepend_long_path_support(&path);
         assert_eq!(path.to_str(), new_path.to_str());
     }
