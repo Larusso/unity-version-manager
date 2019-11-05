@@ -37,10 +37,10 @@ pub fn install_location(component: Component) -> Option<PathBuf> {
     use Component::*;
     let path = match component {
         AndroidSdkPlatformTools => {
-            Some("PlaybackEngines/AndroidPlayer/SDK/platform-tools")
+            Some("Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platform-tools")
         }
         AndroidSdkNdkTools => {
-            Some("PlaybackEngines/AndroidPlayer/SDK/tools")
+            Some("Editor/Data/PlaybackEngines/AndroidPlayer/SDK/tools")
         }
         _ => None,
     };

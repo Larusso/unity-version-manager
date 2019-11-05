@@ -1,6 +1,6 @@
 [package]
 name = "uvm_core"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "The core functionality for the unity version manager commandline client."
 repository = "https://github.com/Larusso/unity-version-manager"

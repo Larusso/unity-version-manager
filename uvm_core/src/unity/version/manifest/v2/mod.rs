@@ -155,3 +155,9 @@ impl DerefMut for Manifest<'_> {
         &mut self.modules
     }
 }
+
+impl AsRef<Version> for Manifest<'_> {
+    fn as_ref(&self) -> &Version {
+        self.version
+    }
+}
