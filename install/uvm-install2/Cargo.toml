@@ -1,6 +1,6 @@
 [package]
 name = "uvm-install2"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "A unity3d installer"
 repository = "https://github.com/Larusso/unity-version-manager"
