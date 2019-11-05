@@ -226,6 +226,12 @@ fn install_module_and_dependencies<P: AsRef<Path>>(
                 let module = graph.manifest().get(&component).unwrap();
                 if let Some((from, to)) = module.install_rename_from_to(&base_dir) {
                     info!("move {} to {}", from.display(), to.display());
+
+                    #[cfg(windows)]
+                    let from = uvm_core::utils::prepend_long_path_support(from);
+                    #[cfg(windows)]
+                    let to = uvm_core::utils::prepend_long_path_support(to);
+
                     move_dir(&from, &to)?;
                 }
             }
