@@ -2,7 +2,7 @@ use log::*;
 use std::fs;
 use std::io;
 use std::path::Path;
-use tempfile::tempdir;
+use tempfile::tempdir_in;
 
 #[cfg(windows)]
 mod win_move_file;
@@ -42,21 +42,27 @@ pub fn move_dir<S: AsRef<Path>, D: AsRef<Path>>(source: S, destination: D) -> io
 
     if source.starts_with(destination) {
         trace!("attempt to move files some levels up!");
-        let tempdir = tempdir()?;
-        let sub = tempdir.path().join("sub");
-        #[cfg(unix)]
-        fs::DirBuilder::new().create(&sub)?;
-        #[cfg(unix)]
-        fs::rename(source, &sub)?;
-        #[cfg(windows)]
-        win_move_file::rename(source, &sub)?;
+        if let Some(parent) = destination.parent() {
+            let tempdir = tempdir_in(parent)?;
+            let sub = tempdir.path().join("sub");
+            trace!("create temp directory at: {}", tempdir.path().display());
 
-        move_dir(&sub, destination).map_err(|err|{
-            match fs::rename(&sub,source) {
-                Err(err) => err,
-                _ => err
-            }
-        })?;
+            #[cfg(unix)]
+            fs::DirBuilder::new().create(&sub)?;
+            #[cfg(unix)]
+            fs::rename(source, &sub)?;
+            #[cfg(windows)]
+            win_move_file::rename(source, &sub)?;
+
+            move_dir(&sub, destination).map_err(|err|{
+                match fs::rename(&sub,source) {
+                    Err(err) => err,
+                    _ => err
+                }
+            })?;
+        } else {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "Destination has no parent"));
+        }
     } else {
         trace!("rename dir");
         if destination.exists() {
