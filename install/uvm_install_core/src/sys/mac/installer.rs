@@ -5,6 +5,7 @@ use std::fs::DirBuilder;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use log::*;
 
 pub fn install_editor<P, D>(installer: P, destination: Option<D>) -> io::Result<()>
 where

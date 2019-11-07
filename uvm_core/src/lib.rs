@@ -54,7 +54,6 @@ macro_rules! cargo_version {
 }
 
 pub mod error;
-pub mod install;
 pub mod unity;
 
 pub use self::error::*;

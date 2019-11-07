@@ -14,7 +14,7 @@ use std::io::Write;
 use uvm_cli::ColorOption;
 use uvm_cli::Options;
 use uvm_core::error::*;
-use uvm_core::install::InstallVariant;
+use uvm_install_core::InstallVariant;
 use uvm_core::unity;
 use uvm_core::unity::Component;
 use uvm_core::unity::Version;

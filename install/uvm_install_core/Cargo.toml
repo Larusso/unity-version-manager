@@ -1,0 +1,26 @@
+[package]
+name = "uvm_install_core"
+version = "0.1.0"
+authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
+description = "Base crate with installer functions to install Unity3D and its support modules"
+repository = "https://github.com/Larusso/unity-version-manager"
+readme = "README.md"
+keywords = ["unity","version-manager"]
+categories = ["development-tools"]
+license = "Apache-2.0"
+edition = "2018"
+
+[dependencies]
+cfg-if = "0.1.9"
+uvm_core = { path = "../../uvm_core", version = "0.7.0" }
+log = "0.4.5"
+reqwest = "0.9.22"
+tempfile = "3"
+md-5 = { version = "0.8.0", features = ["std"] }
+hex-serde = "0.1.0"
+hex = "0.4.0"
+error-chain = "0.12.0"
+zip = "0.5.3"
+derive_deref = "1.1.0"
+[target.'cfg(target_os="macos")'.dependencies]
+dmg = "0.1.1"
