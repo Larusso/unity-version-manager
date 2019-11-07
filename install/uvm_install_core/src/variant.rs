@@ -1,5 +1,5 @@
 use std::fmt;
-use crate::unity::Component;
+use uvm_core::unity::Component;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum InstallVariant {

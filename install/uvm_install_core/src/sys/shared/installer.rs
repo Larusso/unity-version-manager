@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 use std::fs::DirBuilder;
+use log::*;
 
 pub fn install_po_file<P, D>(po: P, destination: D) -> io::Result<()>
 where

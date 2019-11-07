@@ -8,7 +8,7 @@ use console::Term;
 use std::io;
 use std::path::PathBuf;
 use uvm_cli::ColorOption;
-use uvm_core::install;
+use uvm_install_core as install;
 
 #[derive(Debug, Deserialize)]
 pub struct Options {

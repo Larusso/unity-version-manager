@@ -4,7 +4,9 @@ use std::io::Write as IoWrite;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use tempfile::Builder;
-use crate::utils;
+use log::*;
+
+use uvm_core::utils;
 
 pub fn install_editor<P, D>(
     installer: P,

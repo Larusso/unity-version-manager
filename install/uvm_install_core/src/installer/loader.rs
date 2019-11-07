@@ -1,7 +1,7 @@
-use crate::install::error::Result;
-use crate::progress::ProgressHandler;
-use crate::unity::hub::paths;
-use crate::unity::{v2::Manifest, Component, MD5};
+use crate::error::Result;
+use uvm_core::progress::ProgressHandler;
+use uvm_core::unity::hub::paths;
+use uvm_core::unity::{v2::Manifest, Component, MD5};
 use log::*;
 use md5::{Digest, Md5};
 use reqwest::header::{RANGE, USER_AGENT};
@@ -77,7 +77,7 @@ impl<'a> Loader<'a> {
 
 
     pub fn download(&self) -> Result<PathBuf> {
-        use crate::utils::UrlUtils;
+        use uvm_core::utils::UrlUtils;
 
         let manifest = &self.manifest;
         debug!(

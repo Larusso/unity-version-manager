@@ -11,7 +11,7 @@ use uvm_core::unity::hub::editors::{EditorInstallation, Editors};
 use uvm_install_graph::{InstallGraph, InstallStatus, Walker};
 use uvm_move_dir::*;
 pub mod error;
-use uvm_core::install::Loader;
+use uvm_install_core::Loader;
 
 fn print_graph(graph: &InstallGraph) {
     use console::Style;
@@ -206,22 +206,22 @@ fn install_module_and_dependencies<P: AsRef<Path>>(
 
             if component == &Component::Editor {
                 #[cfg(windows)]
-                uvm_core::install::install_editor(
+                uvm_install_core::install_editor(
                     &installer,
                     Some(&base_dir),
                     module.cmd.as_ref().map(|s| s.as_str()),
                 )?;
                 #[cfg(unix)]
-                uvm_core::install::install_editor(&installer, Some(&base_dir))?;
+                uvm_install_core::install_editor(&installer, Some(&base_dir))?;
             } else {
                 #[cfg(windows)]
-                uvm_core::install::install_module(
+                uvm_install_core::install_module(
                     &installer,
                     destination.as_ref(),
                     module.cmd.as_ref().map(|s| s.as_str()),
                 )?;
                 #[cfg(unix)]
-                uvm_core::install::install_module(&installer, destination.as_ref())?;
+                uvm_install_core::install_module(&installer, destination.as_ref())?;
 
                 let module = graph.manifest().get(&component).unwrap();
                 if let Some((from, to)) = module.install_rename_from_to(&base_dir) {
