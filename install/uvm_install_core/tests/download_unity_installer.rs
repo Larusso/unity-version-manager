@@ -4,10 +4,13 @@ cfg_if::cfg_if! {
 
         #[test]
         fn downloads_editor_installer_for_version() {
-            let variant = uvm_install_core::InstallVariant::Editor;
+            let component = unity::Component::Editor;
             let version = unity::Version::f(2018, 2, 6, 1);
+            let manifest = unity::Manifest::load(&version).expect("a unity manifest");
 
-            let installer_path = uvm_install_core::download_installer(variant, &version).expect("path to installer");
+            let loader = uvm_install_core::Loader::new(component, &manifest);
+
+            let installer_path = loader.download().expect("path to installer");
             assert!(installer_path.exists());
         }
     }

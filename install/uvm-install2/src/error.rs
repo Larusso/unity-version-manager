@@ -1,9 +1,8 @@
 use error_chain::error_chain;
-use uvm_install_core::error as install_error;
 error_chain! {
     links {
         UvmError(uvm_core::error::UvmError, uvm_core::error::UvmErrorKind);
-        UvmInstallError(install_error::UvmInstallError, install_error::UvmInstallErrorKind);
+        UvmInstallCoreError(uvm_install_core::error::Error, uvm_install_core::error::ErrorKind);
     }
 
     foreign_links {

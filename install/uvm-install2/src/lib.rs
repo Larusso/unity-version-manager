@@ -1,15 +1,15 @@
-use self::error::Result;
+use self::error::{Error, Result, ResultExt};
 use console::style;
 use log::*;
 use std::collections::HashSet;
 use std::io;
 use std::path::Path;
-use uvm_core::unity::{hub, Manifest, Component, Installation, Version};
-pub use uvm_core::*;
 pub use uvm_core::error as uvm_core_error;
 use uvm_core::unity::hub::editors::{EditorInstallation, Editors};
+use uvm_core::unity::{hub, Component, Installation, Manifest, Version};
+pub use uvm_core::*;
+use uvm_install_core::create_installer;
 use uvm_install_graph::{InstallGraph, InstallStatus, Walker};
-use uvm_move_dir::*;
 pub mod error;
 use uvm_install_core::Loader;
 
@@ -184,57 +184,17 @@ fn install_module_and_dependencies<P: AsRef<Path>>(
         if let Some(InstallStatus::Missing) = graph.install_status(node) {
             let component = graph.component(node).unwrap();
             info!("install {}", component);
-
             info!("download installer for {}", component);
             let loader = Loader::new(*component, graph.manifest());
             let installer = loader.download()?;
 
-            #[cfg(windows)]
-            let installer_url = graph.manifest().url(*component).ok_or_else(|| {
-                io::Error::new(io::ErrorKind::Other, "Failed to fetch installer url")
-            })?;
-            #[cfg(windows)]
-            let destination =
-                component.installpath_with_installer_url(&installer_url.into_string());
-
-            #[cfg(unix)]
-            let destination = component.installpath();
-            let destination = destination.map(|location| base_dir.join(location));
-
-            #[cfg(windows)]
-            let module = graph.manifest().get(component).unwrap();
-
-            if component == &Component::Editor {
-                #[cfg(windows)]
-                uvm_install_core::install_editor(
-                    &installer,
-                    Some(&base_dir),
-                    module.cmd.as_ref().map(|s| s.as_str()),
-                )?;
-                #[cfg(unix)]
-                uvm_install_core::install_editor(&installer, Some(&base_dir))?;
-            } else {
-                #[cfg(windows)]
-                uvm_install_core::install_module(
-                    &installer,
-                    destination.as_ref(),
-                    module.cmd.as_ref().map(|s| s.as_str()),
-                )?;
-                #[cfg(unix)]
-                uvm_install_core::install_module(&installer, destination.as_ref())?;
-
-                let module = graph.manifest().get(&component).unwrap();
-                if let Some((from, to)) = module.install_rename_from_to(&base_dir) {
-                    info!("move {} to {}", from.display(), to.display());
-
-                    #[cfg(windows)]
-                    let from = uvm_core::utils::prepend_long_path_support(from);
-                    #[cfg(windows)]
-                    let to = uvm_core::utils::prepend_long_path_support(to);
-
-                    move_dir(&from, &to)?;
-                }
-            }
+            info!("create installer for {}", component);
+            let module = graph.manifest().get(&component).unwrap();
+            let installer = create_installer(base_dir, installer, module)?;
+            info!("install");
+            installer
+                .install()
+                .chain_err(|| Error::from(format!("failed to install {}", component)))?;
         }
     }
 

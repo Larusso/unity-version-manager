@@ -1,7 +1,4 @@
 use crate::error::Result;
-use uvm_core::progress::ProgressHandler;
-use uvm_core::unity::hub::paths;
-use uvm_core::unity::{v2::Manifest, Component, MD5};
 use log::*;
 use md5::{Digest, Md5};
 use reqwest::header::{RANGE, USER_AGENT};
@@ -11,6 +8,9 @@ use std::io;
 use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
+use uvm_core::progress::ProgressHandler;
+use uvm_core::unity::hub::paths;
+use uvm_core::unity::{v2::Manifest, Component, MD5};
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
 enum CheckSumResult {
@@ -73,8 +73,6 @@ impl<'a> Loader<'a> {
     pub fn set_progress_handle<P: 'a + ProgressHandler>(&mut self, progress_handle: &'a P) {
         self.progress_handle = Some(Box::new(progress_handle));
     }
-
-
 
     pub fn download(&self) -> Result<PathBuf> {
         use uvm_core::utils::UrlUtils;

@@ -1,4 +1,3 @@
-pub mod shared;
 cfg_if::cfg_if! {
     if #[cfg(target_os = "macos")] {
         mod mac;

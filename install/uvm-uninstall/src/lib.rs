@@ -1,10 +1,6 @@
 #[macro_use]
 extern crate serde_derive;
 
-
-
-
-
 use console::style;
 use console::Term;
 use std::collections::HashSet;
@@ -14,7 +10,6 @@ use std::io::Write;
 use uvm_cli::ColorOption;
 use uvm_cli::Options;
 use uvm_core::error::*;
-use uvm_install_core::InstallVariant;
 use uvm_core::unity;
 use uvm_core::unity::Component;
 use uvm_core::unity::Version;
@@ -40,36 +35,36 @@ impl UninstallOptions {
         &self.arg_version
     }
 
-    pub fn install_variants(&self) -> HashSet<InstallVariant> {
-        let mut variants: HashSet<InstallVariant> = HashSet::with_capacity(6);
+    pub fn install_variants(&self) -> HashSet<Component> {
+        let mut variants: HashSet<Component> = HashSet::with_capacity(6);
 
         if self.flag_android || self.flag_mobile || self.flag_all {
-            variants.insert(InstallVariant::Android);
+            variants.insert(Component::Android);
         }
 
         if self.flag_ios || self.flag_mobile || self.flag_all {
-            variants.insert(InstallVariant::Ios);
+            variants.insert(Component::Ios);
         }
 
         if self.flag_webgl || self.flag_mobile || self.flag_all {
-            variants.insert(InstallVariant::WebGl);
+            variants.insert(Component::WebGl);
         }
 
         if self.flag_windows || self.flag_desktop || self.flag_all {
-            variants.insert(InstallVariant::Windows);
+            variants.insert(Component::Windows);
         }
 
         if self.flag_linux || self.flag_desktop || self.flag_all {
-            variants.insert(InstallVariant::Linux);
+            variants.insert(Component::Linux);
         }
 
         if self.flag_all || variants.is_empty() {
-            variants.insert(InstallVariant::Editor);
-            variants.insert(InstallVariant::Android);
-            variants.insert(InstallVariant::Ios);
-            variants.insert(InstallVariant::WebGl);
-            variants.insert(InstallVariant::Windows);
-            variants.insert(InstallVariant::Linux);
+            variants.insert(Component::Editor);
+            variants.insert(Component::Android);
+            variants.insert(Component::Ios);
+            variants.insert(Component::WebGl);
+            variants.insert(Component::Windows);
+            variants.insert(Component::Linux);
         }
         variants
     }
@@ -102,11 +97,7 @@ impl UvmCommand {
         let installation = unity::find_installation(&options.version())?;
         let installed: HashSet<Component> = installation.installed_components().collect();
 
-        let to_uninstall: HashSet<Component> = options
-            .install_variants()
-            .into_iter()
-            .map(|v| v.into())
-            .collect();
+        let to_uninstall: HashSet<Component> = options.install_variants();
 
         if to_uninstall.contains(&Component::Editor) {
             writeln!(
@@ -114,7 +105,8 @@ impl UvmCommand {
                 "{}: {}",
                 style("uninstall unity version").green(),
                 options.version()
-            ).ok();
+            )
+            .ok();
             remove_dir_all(installation.path())?
         } else {
             if options.verbose() {
@@ -123,7 +115,8 @@ impl UvmCommand {
                     "{}: {}",
                     style("uninstall unity components").green(),
                     options.version()
-                ).ok();
+                )
+                .ok();
                 writeln!(stderr, "{}", style("Components to uninstall:").green()).ok();
                 for c in &to_uninstall {
                     writeln!(stderr, "{}", style(c).cyan()).ok();

@@ -1,4 +1,3 @@
-use std::error::Error;
 use console::style;
 use clap::{arg_enum, crate_authors, crate_version, value_t, values_t, App, Arg};
 use console::Style;
@@ -86,25 +85,32 @@ modules for a given version using `uvm-modules`",
         log_spec_builder
             .module("uvm_core", LevelFilter::Trace)
             .module("uvm_install2", LevelFilter::Trace)
+            .module("uvm_install_core", LevelFilter::Trace)
     } else if matches.is_present("verbose") {
         log_spec_builder
             .module("uvm_core", LevelFilter::Info)
             .module("uvm_install2", LevelFilter::Info)
+            .module("uvm_install_core", LevelFilter::Info)
     } else {
         log_spec_builder
         .module("uvm_core", LevelFilter::Warn)
         .module("uvm_install2", LevelFilter::Warn)
+        .module("uvm_install_core", LevelFilter::Warn)
     };
 
     let log_spec = log_spec_builder.build();
     Logger::with(log_spec).format(format_logs).start().unwrap();
 
     uvm_install2::install(version, modules.as_ref(), install_sync, destination).unwrap_or_else(|err| {
-        let message = "Failure during installation";
-        eprintln!("{}", style(message).red());
-        info!("{}", &format!("{}", style(&err).red()));
-        if let Some(source) = err.source() {
-            info!("{}", &format!("{}", style(source).red()));
+        error!("Failure during installation");
+        error!("{}", &err);
+
+        for e in err.iter().skip(1) {
+            debug!("{}", &format!("caused by: {}", style(&e).red()));
+        }
+
+        if let Some(backtrace) = err.backtrace() {
+            debug!("backtrace: {:?}", backtrace);
         }
         process::exit(1);
     });

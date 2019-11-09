@@ -1,9 +1,3 @@
-use uvm_core::unity::v2::Manifest;
-use uvm_core::unity::Version;
-use std::path::PathBuf;
-
-pub mod error;
-
 #[cfg(unix)]
 macro_rules! lock_process {
     ($lock_path:expr) => {
@@ -17,21 +11,51 @@ macro_rules! lock_process {
     ($lock_path:expr) => {};
 }
 
-mod installer;
-mod variant;
+use log::*;
+use std::fs::DirBuilder;
+use std::fs::File;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::{fs, io};
+
+pub mod error;
+pub mod installer;
+mod loader;
+
 mod sys;
-pub use self::installer::Loader;
 
-pub use self::error::{Result, ResultExt, UvmInstallError, UvmInstallErrorKind};
+use self::installer::*;
+use error::*;
 
-pub use self::installer::install_editor;
-pub use self::installer::install_module;
-pub use self::variant::InstallVariant;
+pub use self::loader::Loader;
+pub use self::sys::*;
 
-pub fn download_installer(variant: InstallVariant, version: &Version) -> Result<PathBuf> {
-    let manifest: Result<Manifest> =
-        Manifest::load(version).map_err(|_| UvmInstallErrorKind::ManifestLoadFailed.into());
-    let manifest = manifest?;
-    let d = Loader::new(variant, &manifest);
-    d.download()
+pub struct UnityModule;
+pub struct UnityEditor;
+
+pub trait InstallHandler {
+    fn install_handler(&self) -> Result<()>;
+
+    fn install(&self) -> Result<()> {
+        self.before_install()
+            .chain_err(|| "pre install step failed")?;
+        self.install_handler()
+            .map_err(|err| {
+                self.error_handler();
+                err
+            })
+            .chain_err(|| "installation failed")?;
+        self.after_install()
+            .chain_err(|| "post install step failed")
+    }
+
+    fn error_handler(&self) {}
+
+    fn before_install(&self) -> Result<()> {
+        Ok(())
+    }
+
+    fn after_install(&self) -> Result<()> {
+        Ok(())
+    }
 }
