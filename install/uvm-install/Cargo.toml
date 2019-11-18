@@ -11,5 +11,5 @@ console = "0.9.1"
 serde = "1.0"
 serde_derive = "1.0"
 uvm_cli = { path = "../../uvm_cli" }
-uvm_core = { path = "../../uvm_core", version = "0.7.0" }
-uvm_install_core = {path = "../uvm_install_core", version = "0.1.0" }
+uvm_core = "0.7.0"
+uvm_install_core = "0.1.0"

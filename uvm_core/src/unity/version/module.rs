@@ -48,14 +48,11 @@ pub struct Module {
     pub selected: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cmd: Option<String>,
-    #[serde(serialize_with = "path_serialize::serialize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     destination: Option<PathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "path_serialize::serialize")]
     rename_to: Option<PathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "path_serialize::serialize")]
     rename_from: Option<PathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub checksum: Option<MD5>,
@@ -196,7 +193,13 @@ impl Module {
 
     pub fn install_destination<P: AsRef<Path>>(&self, base_dir: P) -> Option<PathBuf> {
         Some(Self::strip_unity_base_url(
-            self.destination.as_ref()?,
+            self.destination.as_ref().map(|destination| {
+                if self.id == Component::Ios {
+                    destination.join("iOSSupport")
+                } else {
+                    destination.to_path_buf()
+                }
+            })?,
             base_dir.as_ref(),
         ))
     }
@@ -527,29 +530,6 @@ impl From<ModulesMap> for Modules {
 impl From<Modules> for ModulesMap {
     fn from(modules: Modules) -> Self {
         modules.into_iter().collect()
-    }
-}
-
-mod path_serialize {
-    use serde::Serializer;
-    use std::path::PathBuf;
-
-    pub fn serialize<S>(path: &Option<PathBuf>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match path {
-            Some(path) => {
-                let s = path.to_str().unwrap();
-                if cfg![target_os = "windows"] {
-                    let s = s.replace('/', "\\");
-                    serializer.serialize_str(&s)
-                } else {
-                    serializer.serialize_str(s)
-                }
-            }
-            None => serializer.serialize_unit(),
-        }
     }
 }
 
