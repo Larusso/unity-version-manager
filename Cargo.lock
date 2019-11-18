@@ -2112,7 +2112,7 @@ dependencies = [
 
 [[package]]
 name = "uvm-install2"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "clap 2.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "console 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
