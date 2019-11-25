@@ -1,10 +1,7 @@
 [workspace]
 
 members = [
-  "uvm_core",
-  "uvm_cli",
-  "uvm_install_graph",
-  "uvm_move_dir",
+  "uvm_*",
   "commands/*",
   "install/*"
 ]

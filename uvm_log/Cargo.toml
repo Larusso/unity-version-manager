@@ -1,0 +1,10 @@
+[package]
+name = "uvm_log"
+version = "0.1.0"
+authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
+edition = "2018"
+
+[dependencies]
+flexi_logger = {version = "0.14.4", features = ["colors", "syslog_writer"]}
+dirs-2 = "1.1.0"
+console = "0.9.0"
