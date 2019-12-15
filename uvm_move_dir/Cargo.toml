@@ -12,7 +12,7 @@ edition = "2018"
 
 [dependencies]
 tempfile = "3"
-log = "0.4.8"
+log = "0.4.9"
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["errhandlingapi"] }
 widestring = "0.4.0"

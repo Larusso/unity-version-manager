@@ -14,7 +14,7 @@ edition = "2018"
 cfg-if = "0.1.9"
 uvm_core = { path = "../../uvm_core", version = "0.7.0" }
 uvm_move_dir = {path = "../../uvm_move_dir", version = "0.1.0" }
-log = "0.4.5"
+log = "0.4.9"
 reqwest = "0.9.22"
 tempfile = "3"
 md-5 = { version = "0.8.0", features = ["std"] }
