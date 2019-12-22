@@ -25,5 +25,5 @@ uvm_install_core = {path = "../uvm_install_core", version = "0.2.0" }
 
 [dev-dependencies]
 tempfile = "3.1.0"
-test-env-log = "0.1.1"
+test-env-log = "0.2.0"
 env_logger = "0.7"

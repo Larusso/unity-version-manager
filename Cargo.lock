@@ -1703,7 +1703,7 @@ dependencies = [
 
 [[package]]
 name = "test-env-log"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2123,7 +2123,7 @@ dependencies = [
  "indicatif 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "test-env-log 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "test-env-log 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_core 0.7.0",
  "uvm_install_core 0.2.0",
  "uvm_install_graph 0.2.1",
@@ -2686,7 +2686,7 @@ dependencies = [
 "checksum tempfile 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7a6e24d9338a0a5be79593e2fa15a648add6138caa803e2d5bc782c371732ca9"
 "checksum termcolor 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)" = "96d6098003bde162e4277c70665bd87c326f5a0c3f3fbfb285787fa482d54e6e"
 "checksum termios 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "72b620c5ea021d75a735c943269bb07d30c9b77d6ac6b236bc8b5c496ef05625"
-"checksum test-env-log 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "515962a8c9b1d057f433695cb76db04a4d3d408247a21da9ba3af72fa23c318a"
+"checksum test-env-log 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e74821c71a300d376ff6f9c19899124fa479e999c919bd64fd63624264a6c5f7"
 "checksum textwrap 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d326610f408c7a4eb6f51c37c330e496b08506c9457c9d34287ecc38809fb060"
 "checksum thread_local 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "c6b53e329000edc2b34dbe8545fd20e55a333362d0a321909685a19bd28c3f1b"
 "checksum time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "db8dcfca086c1143c9270ac42a2bbd8a7ee477b78ac8e45b19abfb0cbede4b6f"
