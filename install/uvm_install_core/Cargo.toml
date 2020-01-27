@@ -1,6 +1,6 @@
 [package]
 name = "uvm_install_core"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Base crate with installer functions to install Unity3D and its support modules"
 repository = "https://github.com/Larusso/unity-version-manager"
@@ -12,7 +12,7 @@ edition = "2018"
 
 [dependencies]
 cfg-if = "0.1.9"
-uvm_core = { path = "../../uvm_core", version = "0.7.0" }
+uvm_core = { path = "../../uvm_core", version = "0.8.0" }
 uvm_move_dir = {path = "../../uvm_move_dir", version = "0.1.0" }
 log = "0.4.5"
 reqwest = "0.9.22"

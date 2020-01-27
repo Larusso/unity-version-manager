@@ -1,6 +1,6 @@
 [package]
 name = "uvm-install2"
-version = "0.3.4"
+version = "0.4.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "A unity3d installer"
 repository = "https://github.com/Larusso/unity-version-manager"
@@ -18,10 +18,10 @@ flexi_logger = "0.14.4"
 indicatif = "0.12.0"
 log = "0.4.5"
 dirs-2 = "1.1.0"
-uvm_core = { path = "../../uvm_core", version = "0.7.0" }
-uvm_install_graph = { path = "../../uvm_install_graph", version = "0.2.0" }
+uvm_core = { path = "../../uvm_core", version = "0.8.0" }
+uvm_install_graph = { path = "../../uvm_install_graph", version = "0.3.0" }
 
-uvm_install_core = {path = "../uvm_install_core", version = "0.2.0" }
+uvm_install_core = {path = "../uvm_install_core", version = "0.3.0" }
 
 [dev-dependencies]
 tempfile = "3.1.0"
