@@ -17,7 +17,7 @@ maintenance = { status = "experimental" }
 
 [dependencies]
 daggy = "0.6.0"
-fixedbitset = "0.1.8"
+fixedbitset = "0.3.0"
 itertools = "0.8.1"
 uvm_core = { path = "../uvm_core", version = "0.8.0" }
 [dev-dependencies]
