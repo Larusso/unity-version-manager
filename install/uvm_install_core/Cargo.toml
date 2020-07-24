@@ -15,7 +15,7 @@ cfg-if = "0.1.9"
 uvm_core = { path = "../../uvm_core", version = "0.8.0" }
 uvm_move_dir = {path = "../../uvm_move_dir", version = "0.1.0" }
 log = "0.4.5"
-reqwest = "0.9.22"
+reqwest = "0.10.7"
 tempfile = "3"
 md-5 = { version = "0.8.0", features = ["std"] }
 hex-serde = "0.1.0"
