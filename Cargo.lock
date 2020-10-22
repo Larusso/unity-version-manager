@@ -546,15 +546,6 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44533bbbb3bb3c1fa17d9f2e4e38bbbaf8396ba82193c4cb1b6445d711445d36"
-dependencies = [
- "log 0.4.8",
-]
-
-[[package]]
-name = "env_logger"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54532e3223c5af90a6a757c90b5c5521564b07e5e7a958681bcd2afad421cdcd"
@@ -1909,11 +1900,10 @@ dependencies = [
 
 [[package]]
 name = "test-env-log"
-version = "0.1.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "515962a8c9b1d057f433695cb76db04a4d3d408247a21da9ba3af72fa23c318a"
+checksum = "f984204ada5004c4e43a414b4145b81ae84a7445ba42fe54de4fc1a9e8f887bf"
 dependencies = [
- "env_logger 0.7.1",
  "proc-macro2 1.0.24",
  "quote 1.0.2",
  "syn 1.0.45",
@@ -2342,7 +2332,7 @@ dependencies = [
  "clap",
  "console 0.9.1",
  "dirs-2",
- "env_logger 0.8.1",
+ "env_logger",
  "error-chain",
  "flexi_logger 0.14.4",
  "indicatif",
