@@ -888,9 +888,9 @@ checksum = "a61202fbe46c4a951e9404a720a0180bcf3212c750d735cb5c4ba4dc551299f3"
 
 [[package]]
 name = "indicatif"
-version = "0.12.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8d596a9576eaa1446996092642d72bfef35cf47243129b7ab883baf5faec31e"
+checksum = "7baab56125e25686df467fe470785512329883aab42696d661247aca2a2896e4"
 dependencies = [
  "console 0.9.1",
  "lazy_static 1.4.0",
