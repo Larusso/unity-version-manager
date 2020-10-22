@@ -10,6 +10,6 @@ itertools = "0.8.1"
 serde = "1.0"
 log = "0.4.5"
 serde_derive = "1.0"
-indicatif = "0.12.0"
+indicatif = "0.15.0"
 uvm_cli = { path = "../../uvm_cli" }
 uvm_core = { path = "../../uvm_core" }
