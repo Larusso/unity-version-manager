@@ -486,17 +486,6 @@ dependencies = [
 
 [[package]]
 name = "dirs-2"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50b7e2b65c73137ec48935d50a5ae89b03150df566b7e14a1371df044e76765c"
-dependencies = [
- "libc",
- "redox_users",
- "winapi 0.3.8",
-]
-
-[[package]]
-name = "dirs-2"
 version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77a8ea7942b7e715ee77e0bcb03910628a08ac2669f4cc84e904e86dc5e347f4"
@@ -2238,7 +2227,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "uvm_cli",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2249,7 +2238,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "uvm_cli",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2260,7 +2249,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "uvm_cli",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2269,7 +2258,7 @@ version = "2.3.0"
 dependencies = [
  "console 0.9.1",
  "uvm_cli",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2283,7 +2272,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "uvm_cli",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2300,7 +2289,7 @@ dependencies = [
  "serde_derive",
  "stringreader",
  "uvm_cli",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2318,7 +2307,7 @@ dependencies = [
  "serde_json",
  "stringreader",
  "uvm_cli",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2327,7 +2316,7 @@ version = "2.3.0"
 dependencies = [
  "console 0.9.1",
  "uvm_cli",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2335,44 +2324,15 @@ name = "uvm-install"
 version = "2.3.0"
 dependencies = [
  "console 0.9.1",
+ "error-chain",
  "flexi_logger 0.14.4",
  "indicatif",
  "log 0.4.8",
  "serde",
  "serde_derive",
  "uvm_cli",
- "uvm_core 0.7.0",
- "uvm_install_core 0.1.0",
-]
-
-[[package]]
-name = "uvm-install-editor"
-version = "2.3.0"
-dependencies = [
- "console 0.9.1",
- "flexi_logger 0.14.4",
- "indicatif",
- "log 0.4.8",
- "serde",
- "serde_derive",
- "uvm_cli",
- "uvm_core 0.8.0",
- "uvm_install_core 0.1.0",
-]
-
-[[package]]
-name = "uvm-install-module"
-version = "2.3.0"
-dependencies = [
- "console 0.9.1",
- "flexi_logger 0.14.4",
- "indicatif",
- "log 0.4.8",
- "serde",
- "serde_derive",
- "uvm_cli",
- "uvm_core 0.8.0",
- "uvm_install_core 0.1.0",
+ "uvm_core",
+ "uvm_install_core",
 ]
 
 [[package]]
@@ -2381,7 +2341,7 @@ version = "0.4.0"
 dependencies = [
  "clap",
  "console 0.9.1",
- "dirs-2 3.0.1",
+ "dirs-2",
  "env_logger 0.8.1",
  "error-chain",
  "flexi_logger 0.14.4",
@@ -2389,8 +2349,8 @@ dependencies = [
  "log 0.4.8",
  "tempfile",
  "test-env-log",
- "uvm_core 0.8.0",
- "uvm_install_core 0.3.0",
+ "uvm_core",
+ "uvm_install_core",
  "uvm_install_graph",
 ]
 
@@ -2400,7 +2360,7 @@ version = "2.3.0"
 dependencies = [
  "console 0.9.1",
  "uvm_cli",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2412,7 +2372,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "uvm_cli",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2427,7 +2387,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "uvm_cli",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2439,8 +2399,8 @@ dependencies = [
  "serde",
  "serde_derive",
  "uvm_cli",
- "uvm_core 0.8.0",
- "uvm_install_core 0.3.0",
+ "uvm_core",
+ "uvm_install_core",
 ]
 
 [[package]]
@@ -2449,7 +2409,7 @@ version = "2.3.0"
 dependencies = [
  "console 0.9.1",
  "uvm_cli",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2464,7 +2424,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "uvm_cli",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2478,41 +2438,7 @@ dependencies = [
  "log 0.4.8",
  "serde",
  "serde_derive",
- "uvm_core 0.8.0",
-]
-
-[[package]]
-name = "uvm_core"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2348df62dd2dd7456dfaad301c99e3d9fa1d1820935e2f5b1a31616ff715352b"
-dependencies = [
- "cfg-if",
- "cluFlock",
- "derive_deref",
- "dirs-2 1.1.0",
- "dmg",
- "error-chain",
- "hex 0.4.0",
- "hex-serde",
- "itertools",
- "lazy_static 1.4.0",
- "libc",
- "log 0.4.8",
- "md-5",
- "plist 0.3.0",
- "regex 1.3.1",
- "reqwest",
- "semver",
- "serde",
- "serde_derive",
- "serde_ini",
- "serde_json",
- "serde_yaml",
- "tempfile",
- "widestring",
- "winapi 0.3.8",
- "zip",
+ "uvm_core",
 ]
 
 [[package]]
@@ -2522,7 +2448,7 @@ dependencies = [
  "cfg-if",
  "cluFlock",
  "derive_deref",
- "dirs-2 3.0.1",
+ "dirs-2",
  "dmg",
  "error-chain",
  "hex 0.4.0",
@@ -2552,26 +2478,6 @@ dependencies = [
 
 [[package]]
 name = "uvm_install_core"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed64026f8a9798e3bd407ace5436d839aa0c317a1736506b63eb9381216d6962"
-dependencies = [
- "cfg-if",
- "derive_deref",
- "dmg",
- "error-chain",
- "hex 0.4.0",
- "hex-serde",
- "log 0.4.8",
- "md-5",
- "reqwest",
- "tempfile",
- "uvm_core 0.7.0",
- "zip",
-]
-
-[[package]]
-name = "uvm_install_core"
 version = "0.3.0"
 dependencies = [
  "cfg-if",
@@ -2584,7 +2490,7 @@ dependencies = [
  "md-5",
  "reqwest",
  "tempfile",
- "uvm_core 0.8.0",
+ "uvm_core",
  "uvm_move_dir",
  "zip",
 ]
@@ -2598,7 +2504,7 @@ dependencies = [
  "fixedbitset",
  "itertools",
  "stringreader",
- "uvm_core 0.8.0",
+ "uvm_core",
 ]
 
 [[package]]
