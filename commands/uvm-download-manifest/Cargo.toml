@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 console = "0.9.1"
-flexi_logger = "0.14.4"
+flexi_logger = "0.16.1"
 log = "0.4.5"
 reqwest = "0.9.22"
 serde = "1.0"
