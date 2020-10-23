@@ -6,7 +6,7 @@ edition = "2018"
 [dependencies]
 console = "0.9.1"
 regex = "0.2"
-itertools = "0.8.1"
+itertools = "0.9.0"
 serde = "1.0"
 log = "0.4.5"
 serde_derive = "1.0"
