@@ -13,4 +13,4 @@ serde_derive = "1.0"
 uvm_cli = { path = "../../uvm_cli" }
 uvm_core = { path = "../../uvm_core", version = "0.8.0" }
 uvm_install_core = {path = "../uvm_install_core", version = "0.3.0" }
-error-chain = "0.12.0"
+error-chain = "0.12.4"
