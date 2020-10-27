@@ -375,7 +375,7 @@ dependencies = [
  "cookie",
  "failure",
  "idna 0.1.5",
- "log 0.4.8",
+ "log 0.4.11",
  "publicsuffix",
  "serde",
  "serde_json",
@@ -549,7 +549,7 @@ checksum = "54532e3223c5af90a6a757c90b5c5521564b07e5e7a958681bcd2afad421cdcd"
 dependencies = [
  "atty",
  "humantime 2.0.1",
- "log 0.4.8",
+ "log 0.4.11",
  "regex",
  "termcolor",
 ]
@@ -611,7 +611,7 @@ checksum = "7992096ba2290bd35b86b282e72edae518a25aa9a067ff417bc017ae63ac5e22"
 dependencies = [
  "chrono",
  "glob 0.2.11",
- "log 0.4.8",
+ "log 0.4.11",
  "regex",
 ]
 
@@ -625,7 +625,7 @@ dependencies = [
  "chrono",
  "glob 0.3.0",
  "lazy_static 1.4.0",
- "log 0.4.8",
+ "log 0.4.11",
  "regex",
  "thiserror",
  "yansi",
@@ -734,7 +734,7 @@ dependencies = [
  "futures",
  "http",
  "indexmap",
- "log 0.4.8",
+ "log 0.4.11",
  "slab",
  "string",
  "tokio-io",
@@ -821,7 +821,7 @@ dependencies = [
  "httparse",
  "iovec",
  "itoa",
- "log 0.4.8",
+ "log 0.4.11",
  "net2",
  "rustc_version",
  "time",
@@ -964,14 +964,14 @@ version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e19e8d5c34a3e0e2223db8e060f9e8264aeeb5c5fc64a4ee9965c062211c024b"
 dependencies = [
- "log 0.4.8",
+ "log 0.4.11",
 ]
 
 [[package]]
 name = "log"
-version = "0.4.8"
+version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14b6052be84e6b71ab17edffc2eeabf5c2c3ae1fdb464aae35ac50c67a44e1f7"
+checksum = "4fabed175da42fed1fa0746b0ea71f412aa9d35e76e95e59b192c64b9dc2bf8b"
 dependencies = [
  "cfg-if 0.1.10",
 ]
@@ -1044,7 +1044,7 @@ dependencies = [
  "iovec",
  "kernel32-sys",
  "libc",
- "log 0.4.8",
+ "log 0.4.11",
  "miow",
  "net2",
  "slab",
@@ -1071,7 +1071,7 @@ checksum = "4b2df1a4c22fd44a62147fd8f13dd0f95c9d8ca7b2610299b2a2f9cf8964274e"
 dependencies = [
  "lazy_static 1.4.0",
  "libc",
- "log 0.4.8",
+ "log 0.4.11",
  "openssl",
  "openssl-probe",
  "openssl-sys",
@@ -1575,7 +1575,7 @@ dependencies = [
  "http",
  "hyper",
  "hyper-tls",
- "log 0.4.8",
+ "log 0.4.11",
  "mime",
  "mime_guess",
  "native-tls",
@@ -2021,7 +2021,7 @@ checksum = "5090db468dad16e1a7a54c8c67280c5e4b544f3d3e018f0b913b400261f85926"
 dependencies = [
  "bytes",
  "futures",
- "log 0.4.8",
+ "log 0.4.11",
 ]
 
 [[package]]
@@ -2033,7 +2033,7 @@ dependencies = [
  "crossbeam-utils",
  "futures",
  "lazy_static 1.4.0",
- "log 0.4.8",
+ "log 0.4.11",
  "mio",
  "num_cpus",
  "parking_lot",
@@ -2077,7 +2077,7 @@ dependencies = [
  "crossbeam-queue",
  "crossbeam-utils",
  "futures",
- "log 0.4.8",
+ "log 0.4.11",
  "num_cpus",
  "rand 0.6.5",
  "slab",
@@ -2256,7 +2256,7 @@ version = "0.1.0"
 dependencies = [
  "console 0.9.1",
  "flexi_logger 0.16.1",
- "log 0.4.8",
+ "log 0.4.11",
  "reqwest",
  "serde",
  "serde_derive",
@@ -2273,7 +2273,7 @@ dependencies = [
  "flexi_logger 0.16.1",
  "indicatif",
  "lazy_static 1.4.0",
- "log 0.4.8",
+ "log 0.4.11",
  "serde",
  "serde_derive",
  "stringreader",
@@ -2290,7 +2290,7 @@ dependencies = [
  "flexi_logger 0.16.1",
  "indicatif",
  "lazy_static 1.4.0",
- "log 0.4.8",
+ "log 0.4.11",
  "serde",
  "serde_derive",
  "serde_json",
@@ -2316,7 +2316,7 @@ dependencies = [
  "error-chain",
  "flexi_logger 0.16.1",
  "indicatif",
- "log 0.4.8",
+ "log 0.4.11",
  "serde",
  "serde_derive",
  "uvm_cli",
@@ -2335,7 +2335,7 @@ dependencies = [
  "error-chain",
  "flexi_logger 0.16.1",
  "indicatif",
- "log 0.4.8",
+ "log 0.4.11",
  "tempfile",
  "test-env-log",
  "uvm_core",
@@ -2357,7 +2357,7 @@ name = "uvm-list"
 version = "2.3.0"
 dependencies = [
  "console 0.9.1",
- "log 0.4.8",
+ "log 0.4.11",
  "serde",
  "serde_derive",
  "uvm_cli",
@@ -2372,7 +2372,7 @@ dependencies = [
  "flexi_logger 0.16.1",
  "indicatif",
  "itertools",
- "log 0.4.8",
+ "log 0.4.11",
  "serde",
  "serde_derive",
  "uvm_cli",
@@ -2384,7 +2384,7 @@ name = "uvm-uninstall"
 version = "2.3.0"
 dependencies = [
  "console 0.9.1",
- "log 0.4.8",
+ "log 0.4.11",
  "serde",
  "serde_derive",
  "uvm_cli",
@@ -2408,7 +2408,7 @@ dependencies = [
  "console 0.9.1",
  "indicatif",
  "itertools",
- "log 0.4.8",
+ "log 0.4.11",
  "regex",
  "serde",
  "serde_derive",
@@ -2424,7 +2424,7 @@ dependencies = [
  "console 0.9.1",
  "docopt",
  "flexi_logger 0.16.1",
- "log 0.4.8",
+ "log 0.4.11",
  "serde",
  "serde_derive",
  "uvm_core",
@@ -2445,7 +2445,7 @@ dependencies = [
  "itertools",
  "lazy_static 1.4.0",
  "libc",
- "log 0.4.8",
+ "log 0.4.11",
  "md-5",
  "plist 0.3.0",
  "proptest",
@@ -2475,7 +2475,7 @@ dependencies = [
  "error-chain",
  "hex 0.4.2",
  "hex-serde",
- "log 0.4.8",
+ "log 0.4.11",
  "md-5",
  "reqwest",
  "tempfile",
@@ -2500,7 +2500,7 @@ dependencies = [
 name = "uvm_move_dir"
 version = "0.1.1"
 dependencies = [
- "log 0.4.8",
+ "log 0.4.11",
  "tempfile",
  "widestring",
  "winapi 0.3.8",
@@ -2552,7 +2552,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6395efa4784b027708f7451087e647ec73cc74f5d9bc2e418404248d679a230"
 dependencies = [
  "futures",
- "log 0.4.8",
+ "log 0.4.11",
  "try-lock",
 ]
 
