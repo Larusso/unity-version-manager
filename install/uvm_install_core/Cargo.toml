@@ -11,7 +11,7 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-cfg-if = "0.1.9"
+cfg-if = "1.0.0"
 uvm_core = { path = "../../uvm_core", version = "0.8.0" }
 uvm_move_dir = {path = "../../uvm_move_dir", version = "0.1.0" }
 log = "0.4.5"
