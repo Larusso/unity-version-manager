@@ -1,65 +1,106 @@
-
-use uvm_cli;
-use uvm_core;
-
+use anyhow::{Context, Result};
 use console::style;
+use log::*;
 use std::env;
-use std::path::Path;
+use std::io;
+use std::path::{Path, PathBuf};
 use std::process;
-use uvm_cli::{LaunchOptions, Options};
-use uvm_core::Result;
+use structopt::{
+    clap::arg_enum, clap::crate_authors, clap::crate_description, clap::crate_version, StructOpt,
+};
+use uvm_cli::{options::ColorOption, set_colors_enabled, set_loglevel};
 
-const USAGE: &str = "
-uvm-launch - Launch the current active version of unity.
+#[derive(StructOpt, Debug)]
+#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!())]
+struct Opts {
+    /// the build platform to open the project with
+    #[structopt(short, long, possible_values = &UnityPlatform::variants(), case_insensitive = true)]
+    platform: Option<UnityPlatform>,
 
-Usage:
-  uvm-launch [options] [<project-path>]
-  uvm-launch (-h | --help)
+    /// print more output
+    #[structopt(short, long, parse(from_occurrences))]
+    verbose: i32,
 
-Options:
-  -v, --verbose                 print more output
-  -r, --recursive               Detects a unity project recursivly from current working or <project-path> directory.
-  -f, --force-project-version   Will launch try to launch the project with the Unity version the project was created from.
-  -p, --platform=<platform>     the build platform to open the project with
-                                possible values:
-                                win32, win64, osx, linux, linux64, ios, android, web,
-                                webstreamed, webgl, xboxone, ps4, psp2, wsaplayer, tizen, samsungtv
-  --color WHEN      Coloring: auto, always, never [default: auto]
-  -h, --help                    show this help message and exit
-";
+    /// Detects a unity project recursivly from current working or <project-path> directory.
+    #[structopt(short, long)]
+    recursive: bool,
+
+    /// Will launch try to launch the project with the Unity version the project was created from.
+    #[structopt(short, long)]
+    force_project_version: bool,
+
+    /// Color:.
+    #[structopt(short, long, possible_values = &ColorOption::variants(), case_insensitive = true, default_value)]
+    color: ColorOption,
+
+    /// Path to the Unity Project
+    #[structopt(parse(from_os_str))]
+    project_path: Option<PathBuf>,
+}
+
+fn main() -> Result<()> {
+    let opt = Opts::from_args_safe().map(|opt| {
+        set_colors_enabled(&opt.color);
+        set_loglevel(opt.verbose);
+        opt
+    })?;
+    launch(&opt).context("failed to launch Unity")?;
+    Ok(())
+}
+
+arg_enum! {
+#[derive(Debug, Clone)]
+pub enum UnityPlatform {
+    Win32,
+    Win64,
+    OSX,
+    Linux,
+    Linux64,
+    IOS,
+    Android,
+    Web,
+    WebStreamed,
+    WebGl,
+    XboxOne,
+    PS4,
+    PSP2,
+    WsaPlayer,
+    Tizen,
+    SamsungTV,
+}
+}
 
 fn get_installation(
     project_path: &Path,
     use_project_version: bool,
-) -> Result<uvm_core::Installation> {
+) -> uvm_core::error::Result<uvm_core::Installation> {
     if use_project_version {
         let version = uvm_core::dectect_project_version(&project_path, None)?;
-        return uvm_core::find_installation(&version);
+        let installation = uvm_core::find_installation(&version)?;
+        return Ok(installation);
     }
 
-    uvm_core::current_installation()
+    let installation = uvm_core::current_installation()?;
+    Ok(installation)
 }
 
-fn launch(options: &LaunchOptions) -> Result<()> {
-    let project_path = uvm_core::detect_unity_project_dir(
-        options
-            .project_path()
-            .unwrap_or(&env::current_dir().unwrap()),
-        options.recursive(),
-    )?;
+fn launch(options: &Opts) -> Result<()> {
+    let project_path = options
+        .project_path
+        .as_ref()
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(|| env::current_dir().expect("current working directory"));
+    let project_path = uvm_core::detect_unity_project_dir(&project_path, options.recursive)?;
 
-    if options.verbose() {
-        eprintln!("launch project: {}", style(&project_path.display()).cyan())
-    }
+    info!("launch project: {}", style(&project_path.display()).cyan());
 
-    let installtion = get_installation(&project_path, options.force_project_version())?;
+    let installtion = get_installation(&project_path, options.force_project_version)
+        .map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to fetch unity installation!"))?;
 
-    if options.verbose() {
-        eprintln!(
-            "launch unity version: {}",
-            style(installtion.version().to_string()).cyan()
-        )
-    }
+    info!(
+        "launch unity version: {}",
+        style(installtion.version().to_string()).cyan()
+    );
 
     let mut command = process::Command::new(
         installtion
@@ -70,7 +111,7 @@ fn launch(options: &LaunchOptions) -> Result<()> {
             .unwrap(),
     );
 
-    if let Some(ref platform) = options.platform() {
+    if let Some(ref platform) = options.platform {
         command.arg("-buildTarget").arg(platform.to_string());
     };
 
@@ -80,15 +121,4 @@ fn launch(options: &LaunchOptions) -> Result<()> {
 
     command.spawn()?;
     Ok(())
-}
-
-fn main() {
-    let o: LaunchOptions = uvm_cli::get_options(USAGE).unwrap();
-
-    launch(&o).unwrap_or_else(|err| {
-        let message = "Unable to launch unity";
-        eprintln!("{}", style(message).red());
-        eprintln!("{}", style(err).red());
-        process::exit(1);
-    });
 }
