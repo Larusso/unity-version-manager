@@ -25,6 +25,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.38"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "afddf7f520a80dbf76e6f50a35bca42a2331ef227a28b3b6dc5c2e2338d114b1"
+
+[[package]]
 name = "argon2rs"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -632,6 +638,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "flexi_logger"
+version = "0.17.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33ab94b6ac8eb69f1496a6993f26f785b5fd6d99b7416023eb2a6175c0b242b1"
+dependencies = [
+ "atty",
+ "chrono",
+ "glob 0.3.0",
+ "lazy_static 1.4.0",
+ "log 0.4.11",
+ "regex",
+ "thiserror",
+ "yansi",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -738,6 +760,15 @@ dependencies = [
  "slab",
  "string",
  "tokio-io",
+]
+
+[[package]]
+name = "heck"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87cbf45460356b7deeb5e3415b5563308c0a9b057c85e12b06ad551f98d0a6ac"
+dependencies = [
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -1269,6 +1300,30 @@ name = "ppv-lite86"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3cbf9f658cdb5000fcf6f362b8ea2ba154b9f146a61c7a20d647034c6b6561b"
+
+[[package]]
+name = "proc-macro-error"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"
+dependencies = [
+ "proc-macro-error-attr",
+ "proc-macro2 1.0.24",
+ "quote 1.0.2",
+ "syn 1.0.45",
+ "version_check 0.9.2",
+]
+
+[[package]]
+name = "proc-macro-error-attr"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
+dependencies = [
+ "proc-macro2 1.0.24",
+ "quote 1.0.2",
+ "version_check 0.9.2",
+]
 
 [[package]]
 name = "proc-macro2"
@@ -1838,6 +1893,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "032c03039aae92b350aad2e3779c352e104d919cb192ba2fabbd7b831ce4f0f6"
 
 [[package]]
+name = "structopt"
+version = "0.3.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5277acd7ee46e63e5168a80734c9f6ee81b1367a7d8772a2d765df2a3705d28c"
+dependencies = [
+ "clap",
+ "lazy_static 1.4.0",
+ "structopt-derive",
+]
+
+[[package]]
+name = "structopt-derive"
+version = "0.4.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ba9cdfda491b814720b6b06e0cac513d922fc407582032e8706e9f137976f90"
+dependencies = [
+ "heck",
+ "proc-macro-error",
+ "proc-macro2 1.0.24",
+ "quote 1.0.2",
+ "syn 1.0.45",
+]
+
+[[package]]
 name = "syn"
 version = "0.15.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2151,6 +2230,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "unicode-segmentation"
+version = "1.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb0d2e7be6ae3a5fa87eed5fb451aff96f2573d2694942e40543ae0bbe19c796"
+
+[[package]]
 name = "unicode-width"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2345,9 +2430,12 @@ dependencies = [
 
 [[package]]
 name = "uvm-launch"
-version = "2.3.0"
+version = "2.4.0"
 dependencies = [
+ "anyhow",
  "console 0.9.1",
+ "log 0.4.11",
+ "structopt",
  "uvm_cli",
  "uvm_core",
 ]
@@ -2423,10 +2511,11 @@ dependencies = [
  "cli_core",
  "console 0.9.1",
  "docopt",
- "flexi_logger 0.16.1",
+ "flexi_logger 0.17.1",
  "log 0.4.11",
  "serde",
  "serde_derive",
+ "structopt",
  "uvm_core",
 ]
 
