@@ -4,14 +4,12 @@ extern crate log;
 extern crate serde_derive;
 
 mod detect;
-mod help;
 mod use_version;
 mod utils;
 mod uvm;
 use flexi_logger::{DeferredNow, Level, LevelFilter, LogSpecification, Logger, Record};
 
 pub use self::detect::*;
-pub use self::help::*;
 pub use self::use_version::*;
 pub use self::utils::find_sub_commands;
 pub use self::utils::print_error_and_exit;

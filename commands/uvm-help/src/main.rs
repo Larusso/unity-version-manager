@@ -1,27 +1,18 @@
-
+use anyhow::{Context, Result};
+use structopt::{clap::crate_authors, clap::crate_description, clap::crate_version, StructOpt};
 use uvm_cli;
 
+#[derive(StructOpt, Debug)]
+#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!())]
+struct Opts {
+    /// Command name to print help text for
+    command: String,
+}
 
-use std::process;
-use uvm_cli::HelpOptions;
-
-const USAGE: &str = "
-uvm-help - Prints help page for command.
-
-Usage:
-  uvm-help <command>
-  uvm-help (-h | --help)
-
-Options:
-  -h, --help        show this help message and exit
-";
-
-fn main() {
-    let args: HelpOptions = uvm_cli::get_options(USAGE).unwrap();
-    let command =
-        uvm_cli::sub_command_path(args.command()).unwrap_or_else(uvm_cli::print_error_and_exit);
-
-    let exit_code = uvm_cli::exec_command(command, vec!["--help"])
-        .unwrap_or_else(uvm_cli::print_error_and_exit);
-    process::exit(exit_code)
+fn main() -> Result<()> {
+    let opt = Opts::from_args();
+    let command = uvm_cli::sub_command_path(&opt.command)
+        .context(format!("failed to lookup command {}", opt.command))?;
+    uvm_cli::exec_command(command, vec!["--help"])?;
+    Ok(())
 }
