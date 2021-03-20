@@ -599,6 +599,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "86d4de0081402f5e88cdac65c8dcdcc73118c1a7a465e2a05f0da05843a8ea33"
 
 [[package]]
+name = "fixedbitset"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "398ea4fabe40b9b0d885340a2a991a44c8a645624075ad966d21f88688e2b69e"
+
+[[package]]
 name = "flate2"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1261,7 +1267,7 @@ version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c3659d1ee90221741f65dd128d9998311b0e40c5d3c23a62445938214abce4f"
 dependencies = [
- "fixedbitset",
+ "fixedbitset 0.1.9",
 ]
 
 [[package]]
@@ -2386,7 +2392,7 @@ dependencies = [
 
 [[package]]
 name = "uvm-help"
-version = "2.3.0"
+version = "2.4.0"
 dependencies = [
  "anyhow",
  "console 0.9.1",
@@ -2444,7 +2450,7 @@ dependencies = [
 
 [[package]]
 name = "uvm-list"
-version = "2.3.0"
+version = "2.4.0"
 dependencies = [
  "anyhow",
  "console 0.9.1",
@@ -2583,7 +2589,7 @@ version = "0.3.0"
 dependencies = [
  "cfg-if 1.0.0",
  "daggy",
- "fixedbitset",
+ "fixedbitset 0.4.0",
  "itertools",
  "stringreader",
  "uvm_core",
