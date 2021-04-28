@@ -1,0 +1,24 @@
+version: 2
+updates:
+- package-ecosystem: cargo
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "04:00"
+  open-pull-requests-limit: 10
+  allow:
+  - dependency-type: direct
+  ignore:
+  - dependency-name: serde_yaml
+    versions:
+    - 0.8.15
+    - 0.8.16
+  - dependency-name: fixedbitset
+    versions:
+    - 0.3.2
+  - dependency-name: reqwest
+    versions:
+    - 0.11.0
+  - dependency-name: proptest
+    versions:
+    - 0.10.1
