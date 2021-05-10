@@ -12,6 +12,8 @@ use uvm_install_core::create_installer;
 use uvm_install_graph::{InstallGraph, InstallStatus, Walker};
 pub mod error;
 use uvm_install_core::Loader;
+use std::fs;
+use uvm_core::unity::hub::paths;
 
 fn print_graph(graph: &InstallGraph) {
     use console::Style;
@@ -59,6 +61,13 @@ where
     I::Item: AsRef<Component>,
 {
     let version = version.as_ref();
+    let locks_dir = paths::locks_dir().ok_or_else(|| {
+        io::Error::new(io::ErrorKind::NotFound, "Unable to locate locks directory.")
+    })?;
+
+    fs::DirBuilder::new().recursive(true).create(&locks_dir)?;
+    lock_process!(locks_dir.join(format!("{}.lock", version)));
+
     let mut manifest = Manifest::load(version)?;
     let mut graph = InstallGraph::from(&manifest);
 
