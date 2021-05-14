@@ -4,5 +4,5 @@ version = "2.3.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 edition = "2018"
 [dependencies]
-console = "0.9.1"
+console = "0.11.2"
 uvm_cli = { path = "../../uvm_cli" }

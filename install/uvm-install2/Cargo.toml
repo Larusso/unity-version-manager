@@ -12,7 +12,7 @@ edition = "2018"
 
 [dependencies]
 clap = {version = "2.33.3", features = ["suggestions", "color"]}
-console = "0.9.0"
+console = "0.11.2"
 error-chain = "0.12.4"
 flexi_logger = "0.16.1"
 indicatif = "0.15.0"

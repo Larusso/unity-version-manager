@@ -7,7 +7,7 @@ edition = "2018"
 flexi_logger = "0.16.1"
 indicatif = "0.15.0"
 log = "0.4.11"
-console = "0.9.1"
+console = "0.11.2"
 serde = "1.0"
 serde_derive = "1.0"
 uvm_cli = { path = "../../uvm_cli" }
