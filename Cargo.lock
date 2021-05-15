@@ -2444,7 +2444,7 @@ dependencies = [
 
 [[package]]
 name = "uvm-list"
-version = "2.4.0"
+version = "2.5.0"
 dependencies = [
  "anyhow",
  "console 0.9.1",
