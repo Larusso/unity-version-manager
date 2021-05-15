@@ -5,7 +5,7 @@ use std::process;
 use uvm_cli::UvmOptions;
 
 const USAGE: &str = "
-uvm - Tool that just manipulates a link to the current unity version
+uvm - cli utility to install and manage unity versions
 
 Usage:
   uvm [options] <command> [<args>...]
@@ -19,13 +19,11 @@ Options:
   -h, --help        show this help message and exit
 
 Commands:
-  clear             Clear active unity version
-  current           Prints current activated version of unity
   detect            Find which version of unity was used to generate a project
   launch            Launch the current active version of unity
   list              List unity versions available
-  use               Use specific version of unity
   install           Install specified unity version
+  install2          Install specified unity version
   uninstall         Uninstall specified unity version
   versions          List available Unity versions to install
   help              show command help and exit
