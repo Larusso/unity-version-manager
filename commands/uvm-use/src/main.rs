@@ -7,7 +7,7 @@ use std::process;
 use uvm_cli::UseOptions;
 
 const USAGE: &str = "
-uvm-use - Use specific version of unity.
+uvm-use - [DEPRECATED] Use specific version of unity.
 
 Usage:
   uvm-use [options] <version>

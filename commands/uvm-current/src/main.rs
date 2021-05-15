@@ -4,7 +4,7 @@ use uvm_current;
 use uvm_current::CurrentOptions;
 
 const USAGE: &str = "
-uvm-current - Prints current activated version of unity.
+uvm-current - [DEPRECATED] Prints current activated version of unity.
 
 Usage:
   uvm-current [options]

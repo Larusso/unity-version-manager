@@ -6,7 +6,7 @@ use uvm_cli;
 use uvm_clear::ClearOptions;
 
 const USAGE: &str = "
-uvm-clear - Remove the link so you can install a new version without overwriting.
+uvm-clear - [DEPRECATED] Remove the link so you can install a new version without overwriting.
 
 Usage:
   uvm-clear [options]
