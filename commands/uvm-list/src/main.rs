@@ -21,13 +21,17 @@ struct Opts {
     #[structopt(short, long)]
     debug: bool,
 
-    /// print unity hub installations
+    /// print unity hub installations [default listing]
     #[structopt(long = "hub")]
     use_hub: bool,
 
     /// print all unity installations
     #[structopt(long)]
     all: bool,
+
+    /// print unity installations at default installation location
+    #[structopt(long)]
+    system: bool,
 
     /// Color:.
     #[structopt(short, long, possible_values = &ColorOption::variants(), case_insensitive = true, default_value)]
@@ -47,15 +51,15 @@ fn main() -> Result<()> {
 
 fn list(options: &Opts) -> io::Result<()> {
     let current_version = uvm_core::current_installation().ok();
-    let list_function = if options.all {
+    let list_function = if options.system {
+        info!("fetch system installations");
+        uvm_core::list_installations
+    } else if options.all {
         info!("fetch all installations");
         uvm_core::list_all_installations
-    } else if options.use_hub {
+    } else {
         info!("fetch installations from unity hub");
         uvm_core::list_hub_installations
-    } else {
-        info!("fetch installations from uvm");
-        uvm_core::list_installations
     };
 
     if let Ok(installations) = list_function() {

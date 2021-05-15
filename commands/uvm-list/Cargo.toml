@@ -1,6 +1,6 @@
 [package]
 name = "uvm-list"
-version = "2.4.0"
+version = "2.5.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 edition = "2018"
 description = "List installed unity versions"
