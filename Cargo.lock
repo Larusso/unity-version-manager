@@ -2004,18 +2004,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.21"
+version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "318234ffa22e0920fe9a40d7b8369b5f649d490980cf7aadcf1eb91594869b42"
+checksum = "e0f4a65597094d4483ddaed134f409b2cb7c1beccf25201a9f73c719254fa98e"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.21"
+version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cae2447b6282786c3493999f40a9be2a6ad20cb8bd268b0a0dbf5a065535c0ab"
+checksum = "7765189610d8241a44529806d6fd1f2e0a08734313a35d5b3a556f92b381f3c0"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.2",
@@ -2415,16 +2415,18 @@ dependencies = [
 name = "uvm-install2"
 version = "0.4.1"
 dependencies = [
- "clap",
  "console 0.9.1",
  "dirs-2",
  "env_logger",
  "error-chain",
- "flexi_logger 0.16.1",
  "indicatif",
  "log 0.4.11",
+ "serde",
+ "serde_derive",
+ "structopt",
  "tempfile",
  "test-env-log",
+ "uvm_cli",
  "uvm_core",
  "uvm_install_core",
  "uvm_install_graph",
