@@ -2,7 +2,7 @@
 name = "uvm-install2"
 version = "0.4.1"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
-description = "A unity3d installer"
+description = "Install specified unity version."
 repository = "https://github.com/Larusso/unity-version-manager"
 readme = "README.md"
 keywords = ["unity","version-manager"]
@@ -11,17 +11,18 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-clap = {version = "2.33.3", features = ["suggestions", "color"]}
 console = "0.9.0"
 error-chain = "0.12.4"
-flexi_logger = "0.16.1"
+dirs-2 = "3.0.1"
 indicatif = "0.15.0"
 log = "0.4.11"
-dirs-2 = "3.0.1"
+serde = "1.0"
+serde_derive = "1.0"
+structopt = "0.3"
 uvm_core = { path = "../../uvm_core", version = "0.8.0" }
-uvm_install_graph = { path = "../../uvm_install_graph", version = "0.3.0" }
-
 uvm_install_core = {path = "../uvm_install_core", version = "0.3.0" }
+uvm_install_graph = { path = "../../uvm_install_graph", version = "0.3.0" }
+uvm_cli = { path = "../../uvm_cli" }
 
 [dev-dependencies]
 tempfile = "3.1.0"
