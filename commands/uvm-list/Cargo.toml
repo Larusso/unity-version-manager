@@ -7,7 +7,7 @@ description = "List installed unity versions"
 [dependencies]
 anyhow = "1.0.38"
 console = "0.9.1"
-log = "0.4.11"
+log = "0.4.14"
 serde = "1.0"
 serde_derive = "1.0"
 structopt = "0.3"

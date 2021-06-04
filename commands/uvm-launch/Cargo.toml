@@ -7,7 +7,7 @@ description = "Launch the current active version of unity"
 [dependencies]
 anyhow = "1.0.38"
 console = "0.9.1"
-log = "0.4.11"
+log = "0.4.14"
 structopt = "0.3"
 uvm_cli = { path = "../../uvm_cli" }
 uvm_core = { path = "../../uvm_core" }
