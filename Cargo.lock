@@ -475,7 +475,7 @@ checksum = "dcdbcee2d9941369faba772587a565f4f534e42cb8d17e5295871de730163b2b"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.2",
- "syn 1.0.45",
+ "syn 1.0.67",
 ]
 
 [[package]]
@@ -1310,7 +1310,7 @@ dependencies = [
  "proc-macro-error-attr",
  "proc-macro2 1.0.24",
  "quote 1.0.2",
- "syn 1.0.45",
+ "syn 1.0.67",
  "version_check 0.9.2",
 ]
 
@@ -1783,22 +1783,22 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.117"
+version = "1.0.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b88fa983de7720629c9387e9f517353ed404164b1e482c970a90c1a4aaf7dc1a"
+checksum = "ec7505abeacaec74ae4778d9d9328fe5a5d04253220a85c4ee022239fc996d03"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.117"
+version = "1.0.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbd1ae72adb44aab48f325a02444a5fc079349a8d804c1fc922aed3f7454c74e"
+checksum = "963a7dbc9895aeac7ac90e74f34a5d5261828f79df35cbed41e10189d3804d43"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.2",
- "syn 1.0.45",
+ "syn 1.0.67",
 ]
 
 [[package]]
@@ -1913,7 +1913,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2 1.0.24",
  "quote 1.0.2",
- "syn 1.0.45",
+ "syn 1.0.67",
 ]
 
 [[package]]
@@ -1929,9 +1929,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.45"
+version = "1.0.67"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea9c5432ff16d6152371f808fb5a871cd67368171b09bb21b43df8e4a47a3556"
+checksum = "6498a9efc342871f91cc2d0d694c674368b4ceb40f62b65a7a08c3792935e702"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.2",
@@ -1990,7 +1990,7 @@ checksum = "f984204ada5004c4e43a414b4145b81ae84a7445ba42fe54de4fc1a9e8f887bf"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.2",
- "syn 1.0.45",
+ "syn 1.0.67",
 ]
 
 [[package]]
@@ -2019,7 +2019,7 @@ checksum = "7765189610d8241a44529806d6fd1f2e0a08734313a35d5b3a556f92b381f3c0"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.2",
- "syn 1.0.45",
+ "syn 1.0.67",
 ]
 
 [[package]]
