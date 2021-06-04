@@ -1984,9 +1984,9 @@ dependencies = [
 
 [[package]]
 name = "test-env-log"
-version = "0.2.2"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f984204ada5004c4e43a414b4145b81ae84a7445ba42fe54de4fc1a9e8f887bf"
+checksum = "b3e4b132a630cc8a0d06cfcb400da67adef3d0087a94b3332d4692908f0c2544"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.2",

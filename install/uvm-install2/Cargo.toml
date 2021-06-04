@@ -26,5 +26,5 @@ uvm_cli = { path = "../../uvm_cli" }
 
 [dev-dependencies]
 tempfile = "3.1.0"
-test-env-log = "0.2.2"
+test-env-log = "0.2.7"
 env_logger = "0.8"
