@@ -47,5 +47,5 @@ libc = "0.2.80"
 
 [dev-dependencies]
 proptest = "0.9.4"
-rand = "0.7"
+rand = "0.8"
 stringreader = "0.1.1"
