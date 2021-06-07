@@ -10,6 +10,7 @@ target/release/uvm:
 install: install-uvm
 
 install-uvm: target/release/uvm
+	mkdir -p "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm-clear "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm-generate-modules-json "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm-fix-modules-json "$(DESTDIR)$(PREFIX)/bin/"
