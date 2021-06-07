@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::result;
 use std::str::FromStr;
 use crate::unity::Installation;
-
+use std::io;
 mod hash;
 pub mod manifest;
 pub mod module;
@@ -19,7 +19,7 @@ pub use self::hash::all_versions;
 
 //pub use self::version_impl::read_version_from_path;
 
-#[derive(PartialEq, Eq, Ord, Hash, Debug, Clone, Copy)]
+#[derive(PartialEq, Eq, Ord, Hash, Debug, Clone, Copy, Deserialize)]
 pub enum VersionType {
     Alpha,
     Beta,
@@ -177,6 +177,18 @@ impl Version {
         debug!("found version {}", &version);
         Ok(version)
     }
+
+    pub fn base(&self) -> &semver::Version {
+        &self.base
+    }
+
+    pub fn as_semver(&self) -> semver::Version {
+        let mut v = self.base.clone();
+        if self.release_type != VersionType::Final {
+            v.pre = semver::Prerelease::new(&format!("{}.{}", self.release_type, self.revision)).unwrap();
+        }
+        v
+    }
 }
 
 impl From<(u64, u64, u64, u64)> for Version {
@@ -219,6 +231,12 @@ impl fmt::Display for VersionType {
                 VersionType::Alpha => write!(f, "a"),
             }
         }
+    }
+}
+
+impl Default for VersionType {
+    fn default() -> VersionType {
+        VersionType::Final
     }
 }
 
@@ -308,10 +326,70 @@ impl FromStr for Version {
     }
 }
 
+impl FromStr for VersionType {
+    type Err = UvmVersionError;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "f" => Ok(VersionType::Final),
+            "p" => Ok(VersionType::Patch),
+            "b" => Ok(VersionType::Beta),
+            "a" => Ok(VersionType::Alpha),
+            "final" => Ok(VersionType::Final),
+            "patch" => Ok(VersionType::Patch),
+            "beta" => Ok(VersionType::Beta),
+            "alpha" => Ok(VersionType::Alpha),
+            _ => bail!("Failed to match version type"), 
+        }
+    }
+}
+
 impl From<Installation> for Version {
     fn from(item: Installation) -> Self {
         item.version_owned()
     }
+}
+
+pub fn fetch_matching_version<I: Iterator<Item = Version>>(
+    versions: I,
+    version_req: semver::VersionReq,
+    release_type: VersionType,
+) -> io::Result<Version> {
+    versions
+        .filter(|version| {
+            let semver_version = if version.release_type() < &release_type {
+                debug!(
+                    "version {} release type is smaller than specified type {:#}",
+                    version, release_type
+                );
+                let mut semver_version = version.base().clone();
+                semver_version.pre = semver::Prerelease::new(&format!("{}.{}", version.release_type, version.revision)).unwrap();
+                semver_version
+            } else {
+                let b = version.base().clone();
+                debug!(
+                    "use base semver version {} of {} for comparison",
+                    b, version
+                );
+                b
+            };
+
+            let is_match = version_req.matches(&semver_version);
+            if is_match {
+                info!("version {} is a match", version);
+            } else {
+                info!("version {} is not a match", version);
+            }
+
+            is_match
+        })
+        .max()
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                format!("no version found with req {}", version_req),
+            )
+        })
 }
 
 #[cfg(test)]
@@ -524,7 +602,7 @@ mod tests {
         #[test]
         fn parses_version_back_to_original(major in 0u64..9999, minor in 0u64..9999, patch in 0u64..9999, revision in 0u64..9999 ) {
             let v1 = Version {
-                base: (major,minor,patch).into(),
+                base: semver::Version::new(major, minor, patch),
                 revision,
                 release_type: VersionType::Final,
                 hash: None
@@ -537,7 +615,7 @@ mod tests {
         #[test]
         fn create_version_from_tuple(major in 0u64..9999, minor in 0u64..9999, patch in 0u64..9999, revision in 0u64..9999 ) {
             let v1 = Version {
-                base: (major,minor,patch).into(),
+                base: semver::Version::new(major, minor, patch),
                 revision,
                 release_type: VersionType::Final,
                 hash: None
@@ -550,7 +628,7 @@ mod tests {
         #[test]
         fn create_version_final_versions(major in 0u64..9999, minor in 0u64..9999, patch in 0u64..9999, revision in 0u64..9999 ) {
             let v1 = Version {
-                base: (major,minor,patch).into(),
+                base: semver::Version::new(major, minor, patch),
                 revision,
                 release_type: VersionType::Final,
                 hash: None
@@ -563,7 +641,7 @@ mod tests {
         #[test]
         fn create_version_beta_versions(major in 0u64..9999, minor in 0u64..9999, patch in 0u64..9999, revision in 0u64..9999 ) {
             let v1 = Version {
-                base: (major,minor,patch).into(),
+                base: semver::Version::new(major, minor, patch),
                 revision,
                 release_type: VersionType::Beta,
                 hash: None
@@ -576,7 +654,7 @@ mod tests {
         #[test]
         fn create_version_alpha_versions(major in 0u64..9999, minor in 0u64..9999, patch in 0u64..9999, revision in 0u64..9999 ) {
             let v1 = Version {
-                base: (major,minor,patch).into(),
+                base: semver::Version::new(major, minor, patch),
                 revision,
                 release_type: VersionType::Alpha,
                 hash: None
@@ -589,7 +667,7 @@ mod tests {
         #[test]
         fn create_version_patch_versions(major in 0u64..9999, minor in 0u64..9999, patch in 0u64..9999, revision in 0u64..9999 ) {
             let v1 = Version {
-                base: (major,minor,patch).into(),
+                base: semver::Version::new(major, minor, patch),
                 revision,
                 release_type: VersionType::Patch,
                 hash: None

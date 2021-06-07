@@ -1,0 +1,16 @@
+[package]
+name = "uvm-version"
+version = "2.1.0"
+authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
+edition = "2018"
+[dependencies]
+anyhow = "1.0.38"
+console = "0.6.1"
+log = "0.4.5"
+serde = "1.0"
+serde_derive = "1.0"
+structopt = "0.3"
+semver = "1.0.1"
+indicatif = "0.9.0"
+uvm_cli = { path = "../../uvm_cli" }
+uvm_core = { path = "../../uvm_core" }
