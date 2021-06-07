@@ -25,6 +25,7 @@ install-uvm: target/release/uvm
 	install -m755 -- target/release/uvm-modules "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm-uninstall "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm-versions "$(DESTDIR)$(PREFIX)/bin/"
+	install -m755 -- target/release/uvm-version "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm-commands "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm-modules "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm "$(DESTDIR)$(PREFIX)/bin/"
