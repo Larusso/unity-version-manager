@@ -1,9 +1,0 @@
-[package]
-name = "uvm-use"
-version = "2.3.0"
-authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
-edition = "2018"
-[dependencies]
-console = "0.9.1"
-uvm_cli = { path = "../../uvm_cli" }
-uvm_core = { path = "../../uvm_core" }
