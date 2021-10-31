@@ -2631,6 +2631,7 @@ dependencies = [
 name = "uvm-modules"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "console 0.9.2",
  "flexi_logger 0.16.3",
  "indicatif 0.15.0",
@@ -2638,6 +2639,7 @@ dependencies = [
  "log 0.4.14",
  "serde",
  "serde_derive",
+ "structopt",
  "uvm_cli",
  "uvm_core",
 ]
