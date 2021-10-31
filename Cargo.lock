@@ -1068,9 +1068,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.95"
+version = "0.2.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "789da6d93f1b866ffe175afc5322a4d76c038605a1c3319bb57b06967ca98a36"
+checksum = "a60553f9a9e039a333b4e9b20573b9e9b9c0bb3a11e201ccc48ef4283456d673"
 
 [[package]]
 name = "linked-hash-map"
@@ -2631,6 +2631,7 @@ dependencies = [
 name = "uvm-modules"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "console 0.9.2",
  "flexi_logger 0.16.3",
  "indicatif 0.15.0",
@@ -2638,6 +2639,7 @@ dependencies = [
  "log 0.4.14",
  "serde",
  "serde_derive",
+ "structopt",
  "uvm_cli",
  "uvm_core",
 ]
