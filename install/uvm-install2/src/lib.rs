@@ -1,4 +1,4 @@
-use self::error::{Error, Result, ResultExt};
+use self::error::{Error, ErrorKind, Result, ResultExt};
 use console::style;
 use log::*;
 use std::collections::HashSet;
@@ -123,19 +123,27 @@ where
             .into_iter()
             .flat_map(|component| {
                 let component = component.as_ref();
-                let node = graph.get_node_id(*component).unwrap();
-                let mut out = vec![((*component, InstallStatus::Unknown), node)];
-                out.append(&mut graph.get_dependend_modules(node));
-                if install_sync {
-                    out.append(&mut graph.get_sub_modules(node));
+                let node = graph.get_node_id(*component).ok_or_else(|| {
+                    debug!("Unsupported module '{}' for selected unity version {}", component, version);
+                    ErrorKind::UnsupportedModuleError(component.to_string(), version.to_string())
+                });
+
+                match node {
+                    Ok(node) => {
+                        let mut out = vec![Ok(*component)];
+                        out.append(&mut graph.get_dependend_modules(node).iter().map(|((c, _), _)| Ok(*c)).collect());
+                        if install_sync {
+                            out.append(&mut graph.get_sub_modules(node).iter().map(|((c, _), _)| Ok(*c)).collect());
+                        }
+                        out
+                    }
+                    Err(err) => vec![Err(err.into())]
                 }
-                out
             })
-            .map(|((c, _), _)| c)
-            .chain(base_iterator)
-            .collect(),
-        None => base_iterator.collect(),
-    };
+            .chain(base_iterator.map(|c| Ok(c)))
+            .collect::<Result<HashSet<_>>>(),
+        None => base_iterator.map(|c| Ok(c)).collect::<Result<HashSet<_>>>(),
+    }?;
 
     debug!("\nAll requested components");
     for c in all_components.iter() {
