@@ -3,12 +3,10 @@ extern crate log;
 #[macro_use]
 extern crate serde_derive;
 
-mod detect;
 mod utils;
 mod uvm;
 use flexi_logger::{DeferredNow, Level, LevelFilter, LogSpecification, Logger, Record};
 
-pub use self::detect::*;
 pub use self::utils::find_sub_commands;
 pub use self::utils::print_error_and_exit;
 pub use self::utils::sub_command_path;
