@@ -9,4 +9,11 @@ error_chain! {
         Fmt(::std::fmt::Error);
         Io(::std::io::Error);
     }
+
+    errors {
+        UnsupportedModuleError(c: String, v:String) {
+            description("unsupported unity module for unity version"),
+            display("unsupported module: '{}' for selected unity version {}", c, v),
+        }
+    }
 }
