@@ -1,38 +1,50 @@
+use anyhow::Result;
 
 use uvm_cli;
 use uvm_core;
 
 use console::style;
 use std::env;
-use std::process;
-use uvm_cli::DetectOptions;
+use std::path::PathBuf;
+use structopt::{clap::crate_authors, clap::crate_description, clap::crate_version, StructOpt};
+use uvm_cli::{options::ColorOption, set_colors_enabled, set_loglevel};
 
-const USAGE: &str = "
-uvm-detect - Find which version of unity was used to generate a project.
+#[derive(StructOpt, Debug)]
+#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!())]
+struct Opts {
 
-Usage:
-  uvm-detect [options] [<project-path>]
-  uvm-detect (-h | --help)
+    /// path to project directory. 
+    project_path: Option<PathBuf>,
 
-Options:
-  -r, --recursive               Detects a unity version recursivly from current working directory.
-                                With this flag set, the tool returns the first version it finds.
-  -v, --verbose                 print more output
-  --color WHEN                  Coloring: auto, always, never [default: auto]
-  -h, --help                    show this help message and exit
-";
+    /// Detects a unity version recursivly from current working directory.
+    /// With this flag set, the tool returns the first version it finds. 
+    #[structopt(short, long)]
+    recursive: bool,
 
-fn main() {
-    let options: DetectOptions = uvm_cli::get_options(USAGE).unwrap();
-    let project_version = uvm_core::dectect_project_version(
-        options
-            .project_path()
-            .unwrap_or(&env::current_dir().unwrap()),
-        Some(options.recursive()),
-    ).unwrap_or_else(|err| {
-        eprintln!("{}", style(err).red());
-        process::exit(1);
-    });
+    /// print debug output
+    #[structopt(short, long)]
+    debug: bool,
 
-    println!("{}", style(project_version.to_string()).green().bold());
+    /// print more output
+    #[structopt(short, long, parse(from_occurrences))]
+    verbose: i32,
+
+    /// Color:.
+    #[structopt(short, long, possible_values = &ColorOption::variants(), case_insensitive = true, default_value)]
+    color: ColorOption,
+}
+
+fn main() -> Result<()> {
+  let opt = Opts::from_args_safe().map(|opt| {
+      set_colors_enabled(&opt.color);
+      set_loglevel(opt.debug.then(|| 2).unwrap_or(opt.verbose));
+      opt
+  })?;
+
+  let project_version = uvm_core::dectect_project_version(
+        &opt.project_path.unwrap_or(env::current_dir()?),
+        Some(opt.recursive))?;
+
+  println!("{}", style(project_version.to_string()).green().bold());
+  Ok(())
 }
