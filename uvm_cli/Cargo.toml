@@ -1,14 +1,18 @@
 [package]
 name = "uvm_cli"
-version = "3.0.0"
+version = "0.1.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
+description = "Base crate for cli structs, enums and helpers for uvm"
+repository = "https://github.com/Larusso/unity-version-manager"
 edition = "2018"
+keywords = ["uvm", "unity", "cli"]
+license = "Apache-2.0"
 [dependencies]
 log = "0.4.11"
 docopt = "1.0"
 serde = "1.0"
 serde_derive = "1.0"
-uvm_core = { path = "../uvm_core" }
+uvm_core = { path = "../uvm_core", version = "0.9.0" }
 console = "0.9.1"
 cli_core = "0.1.0"
 flexi_logger = "0.17.1"

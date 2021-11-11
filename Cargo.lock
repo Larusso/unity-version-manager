@@ -2582,7 +2582,7 @@ dependencies = [
 
 [[package]]
 name = "uvm-install2"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "console 0.9.2",
  "dirs-2",
@@ -2692,7 +2692,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_cli"
-version = "3.0.0"
+version = "0.1.0"
 dependencies = [
  "cli_core",
  "console 0.9.2",
