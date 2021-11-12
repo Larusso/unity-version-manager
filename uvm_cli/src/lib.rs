@@ -4,13 +4,11 @@ extern crate log;
 extern crate serde_derive;
 
 mod utils;
-mod uvm;
 use flexi_logger::{DeferredNow, Level, LevelFilter, LogSpecification, Logger, Record};
 
 pub use self::utils::find_sub_commands;
 pub use self::utils::print_error_and_exit;
 pub use self::utils::sub_command_path;
-pub use self::uvm::*;
 use console::Style;
 
 use std::ffi::OsStr;
