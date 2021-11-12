@@ -2526,6 +2526,7 @@ dependencies = [
 name = "uvm-fix-modules-json"
 version = "1.0.0"
 dependencies = [
+ "anyhow",
  "cfg-if 1.0.0",
  "console 0.9.2",
  "flexi_logger 0.16.3",
@@ -2535,6 +2536,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "stringreader",
+ "structopt",
  "uvm_cli",
  "uvm_core",
 ]
