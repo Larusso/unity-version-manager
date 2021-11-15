@@ -39,11 +39,10 @@ struct Opts {
 }
 
 fn main() -> Result<()> {
-    let opt = Opts::from_args_safe().map(|opt| {
-        set_colors_enabled(&opt.color);
-        set_loglevel(opt.verbose);
-        opt
-    })?;
+    let opt = Opts::from_args();
+    set_colors_enabled(&opt.color);
+    set_loglevel(opt.verbose);
+    
     launch(&opt).context("failed to launch Unity")?;
     Ok(())
 }

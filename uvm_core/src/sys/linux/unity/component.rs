@@ -5,7 +5,7 @@ pub fn installpath(component:Component) -> Option<PathBuf> {
     use Component::*;
     let path = match component {
         Mono | VisualStudio | MonoDevelop => None,
-        LinuxMono | MacMono => Some(""),
+        LinuxMono | StandardAssets | Example => Some(""),
         Documentation => Some("Editor/Data/Documentation"),
         StandardAssets | ExampleProject | Example => None,
         Android => Some("Editor/Data/PlaybackEngines/AndroidPlayer"),
@@ -17,13 +17,13 @@ pub fn installpath(component:Component) -> Option<PathBuf> {
         Ios => Some("Editor/Data/PlaybackEngines/iOSSupport"),
         TvOs => Some("Editor/Data/PlaybackEngines/AppleTVSupport"),
         AppleTV => Some("Editor/Data/PlaybackEngines/AppleTVSupport"),
-        Linux => Some("Editor/Data/PlaybackEngines/LinuxStandaloneSupport"),
-        Mac | MacIL2CPP => Some("Editor/Data/PlaybackEngines/MacStandaloneSupport"),
+        Linux | LinuxIL2CPP | LinuxServer => Some("Editor/Data/PlaybackEngines/LinuxStandaloneSupport"),
+        Mac | MacIL2CPP | MacMono | MacServer => Some("Editor/Data/PlaybackEngines/MacStandaloneSupport"),
         Samsungtv | SamsungTV => Some("Editor/Data/PlaybackEngines/STVPlayer"),
         Tizen => Some("Editor/Data/PlaybackEngines/TizenPlayer"),
         Vuforia | VuforiaAR => Some("Editor/Data/PlaybackEngines/VuforiaSupport"),
         WebGl => Some("Editor/Data/PlaybackEngines/WebGLSupport"),
-        Windows | WindowsMono => Some("Editor/Data/PlaybackEngines/WindowsStandaloneSupport"),
+        Windows | WindowsMono | WindowsServer => Some("Editor/Data/PlaybackEngines/WindowsStandaloneSupport"),
         Facebook | FacebookGames => Some("Editor/Data/PlaybackEngines/Facebook"),
         Language(_) => Some("Editor/Data/Localization"),
         Lumin => None,
@@ -50,7 +50,7 @@ pub fn install_location(component: Component) -> Option<PathBuf> {
 pub fn selected(component:Component) -> bool {
     use Component::*;
     match component {
-        Documentation => true,
+        Documentation => false,
         _ => false
     }
 }

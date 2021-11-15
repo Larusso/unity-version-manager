@@ -50,11 +50,17 @@ pub enum Component {
     Linux,
     #[serde(rename = "Linux-Mono")]
     LinuxMono,
+    #[serde(rename = "Linux-IL2CPP")]
+    LinuxIL2CPP,
+    #[serde(rename = "Linux-Server")]
+    LinuxServer,
     Mac,
     #[serde(rename = "Mac-IL2CPP")]
     MacIL2CPP,
     #[serde(rename = "Mac-Mono")]
     MacMono,
+    #[serde(rename = "Mac-Server")]
+    MacServer,
     #[cfg(windows)]
     Metro,
     #[serde(rename = "UWP-IL2CPP")]
@@ -76,6 +82,8 @@ pub enum Component {
     Windows,
     #[serde(rename = "Windows-Mono")]
     WindowsMono,
+    #[serde(rename = "Windows-Server")]
+    WindowsServer,
     #[serde(rename = "Windows-IL2CPP")]
     #[cfg(windows)]
     WindowsIL2CCP,
@@ -92,9 +100,9 @@ pub enum Component {
 impl Component {
     pub fn iterator() -> Iter<'static, Component> {
         #[cfg(windows)]
-        const SIZE: usize = 41;
+        const SIZE: usize = 45;
         #[cfg(not(windows))]
-        const SIZE: usize = 34;
+        const SIZE: usize = 38;
 
         static COMPONENTS: [Component; SIZE] = [
             Mono,
@@ -120,9 +128,12 @@ impl Component {
             AppleTV,
             Linux,
             LinuxMono,
+            LinuxIL2CPP,
+            LinuxServer,
             Mac,
             MacIL2CPP,
             MacMono,
+            MacServer,
             #[cfg(windows)]
             Metro,
             #[cfg(windows)]
@@ -139,6 +150,7 @@ impl Component {
             WebGl,
             Windows,
             WindowsMono,
+            WindowsServer,
             #[cfg(windows)]
             WindowsIL2CCP,
             Facebook,
@@ -257,7 +269,7 @@ impl Component {
 
         match self {
             #[cfg(target_os = "linux")]
-            StandardAssets | Example | Documentation => Url::parse(download_url).ok(),
+            StandardAssets | Example | Documentation => base_url.join(download_url).ok(),
             _ => base_url.join(&self.add_version_to_url(download_url, version)).ok()
         }
     }
@@ -305,9 +317,12 @@ impl fmt::Display for Component {
             AppleTV => write!(f, "appletv"),
             Linux => write!(f, "linux"),
             LinuxMono => write!(f, "linux-mono"),
+            LinuxIL2CPP => write!(f, "linux-il2cpp"),
+            LinuxServer => write!(f, "linux-server"),
             Mac => write!(f, "mac"),
             MacIL2CPP => write!(f, "mac-il2cpp"),
             MacMono => write!(f, "mac-mono"),
+            MacServer => write!(f, "mac-server"),
             #[cfg(windows)]
             Metro => write!(f, "metro"),
             #[cfg(windows)]
@@ -324,6 +339,7 @@ impl fmt::Display for Component {
             WebGl => write!(f, "webgl"),
             Windows => write!(f, "windows"),
             WindowsMono => write!(f, "windows-mono"),
+            WindowsServer => write!(f, "windows-server"),
             #[cfg(windows)]
             WindowsIL2CCP => write!(f, "windows-il2cpp"),
             Facebook => write!(f, "facebook"),
@@ -363,9 +379,12 @@ impl FromStr for Component {
             "appletv" => Ok(AppleTV),
             "linux" => Ok(Linux),
             "linux-mono" => Ok(LinuxMono),
+            "linux-il2cpp" => Ok(LinuxIL2CPP),
+            "linux-server" => Ok(LinuxServer),
             "mac" => Ok(Mac),
             "mac-il2cpp" => Ok(MacIL2CPP),
             "mac-mono" => Ok(MacMono),
+            "mac-server" => Ok(MacServer),
             #[cfg(windows)]
             "metro" => Ok(Metro),
             #[cfg(windows)]
@@ -382,6 +401,7 @@ impl FromStr for Component {
             "webgl" => Ok(WebGl),
             "windows" => Ok(Windows),
             "windows-mono" => Ok(WindowsMono),
+            "windows-server" => Ok(WindowsServer),
             #[cfg(windows)]
             "windows-il2cpp" => Ok(WindowsIL2CCP),
             "facebook" => Ok(Facebook),

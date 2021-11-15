@@ -282,8 +282,7 @@ impl ModuleBuilder {
             let component = module_part.component;
             module.id = component;
             module.description = format!(
-                "Android {name} {version}",
-                name = &module_part.name,
+                "Android Open JDK {version}",
                 version = &module_part.version
             );
             module.name = module_part.name;
@@ -345,8 +344,11 @@ impl ModuleBuilder {
         module.id = component;
         module.name = "Documentation".to_string();
         module.description = "Offline Documentation".to_string();
+        let doc_url_base = "cloudmedia-docs.unity3d.com";
+
         module.download_url = format!(
-            "https://storage.googleapis.com/docscloudstorage/{major}.{minor}/UnityDocumentation.zip",
+            "https://{doc_url}/docscloudstorage/{major}.{minor}/UnityDocumentation.zip",
+            doc_url = doc_url_base,
             major = version.major(),
             minor = version.minor()
         );
