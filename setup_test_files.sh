@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 test_versions=("2022.1.0a13" "2021.1.28f1" "2021.2.2f1" "2020.1.17f1" "2020.2.7f1" "2020.3.22f1" "2019.1.14f1" "2019.2.21f1" "2019.3.15f1" "2019.4.32f1" "2018.4.36f1" "2018.3.14f1" "2018.2.21f1" "2018.1.9f2" "2017.4.40f1" "2017.3.1f1" "2017.2.5f1" "2017.1.5f1")
-platforms=("mac")
+platforms=("win")
 
 base_dir="./commands/uvm-generate-modules-json/tests/fixures"
 uvm="./target/debug/uvm"
@@ -16,6 +16,10 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
    local_platform='mac'
    rust_platform='macos'
    hub_install_dir="/Applications/Unity/Hub/Editor"
+elif [[ "$unamestr" == *"MINGW64_NT"* ]]; then
+   local_platform='win'
+   rust_platform='win'
+   hub_install_dir='/c/Program Files/Unity/Hub/Editor'
 fi
 
 MOD_FILE_TEMPLATE=$(cat << END

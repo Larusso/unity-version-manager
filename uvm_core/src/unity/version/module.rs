@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
+use relative_path::RelativePathBuf;
 
 lazy_static! {
     static ref UNITY_BASE_PATTERN: &'static Path = { Path::new("{UNITY_PATH}") };
@@ -49,11 +50,11 @@ pub struct Module {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cmd: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    destination: Option<PathBuf>,
+    destination: Option<RelativePathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    rename_to: Option<PathBuf>,
+    rename_to: Option<RelativePathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    rename_from: Option<PathBuf>,
+    rename_from: Option<RelativePathBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub checksum: Option<MD5>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -161,20 +162,20 @@ impl Module {
             })
     }
 
-    fn strip_unity_base_url<P: AsRef<Path>, Q: AsRef<Path>>(path: P, base_dir: Q) -> PathBuf {
+    fn strip_unity_base_url<P: AsRef<Path>, Q: AsRef<Path>>(path: P, base_dir: Q) -> RelativePath {
         let path = path.as_ref();
         base_dir
             .as_ref()
             .join(&path.strip_prefix(&UNITY_BASE_PATTERN).unwrap_or(path))
     }
 
-    pub fn install_rename_from<P: AsRef<Path>>(&self, base_dir: P) -> Option<PathBuf> {
+    pub fn install_rename_from<P: AsRef<Path>>(&self, base_dir: P) -> Option<RelativePath> {
         self.rename_from
             .as_ref()
             .map(|from| Self::strip_unity_base_url(from, base_dir))
     }
 
-    pub fn install_rename_to<P: AsRef<Path>>(&self, base_dir: P) -> Option<PathBuf> {
+    pub fn install_rename_to<P: AsRef<Path>>(&self, base_dir: P) -> Option<RelativePath> {
         self.rename_to
             .as_ref()
             .map(|to| Self::strip_unity_base_url(to, base_dir))
@@ -191,7 +192,7 @@ impl Module {
         ))
     }
 
-    pub fn install_destination<P: AsRef<Path>>(&self, base_dir: P) -> Option<PathBuf> {
+    pub fn install_destination<P: AsRef<Path>>(&self, base_dir: P) -> Option<RelativePath> {
         Some(Self::strip_unity_base_url(
             self.destination.as_ref().map(|destination| {
                 if self.id == Component::Ios {
