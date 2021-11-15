@@ -1,3 +1,21 @@
-#[cfg(target_os = "")]
+#[cfg(target_os = "macos")]
 generate_modules_json![
+    generates_modules_2022_1, Version::a(2022, 1, 0, 13), UNITY_2022_1_0_A_13,
+    generates_modules_2021_1, Version::f(2021, 1, 28, 1), UNITY_2021_1_28_F_1,
+    generates_modules_2021_2, Version::f(2021, 2, 2, 1), UNITY_2021_2_2_F_1,
+    generates_modules_2020_1, Version::f(2020, 1, 17, 1), UNITY_2020_1_17_F_1,
+    generates_modules_2020_2, Version::f(2020, 2, 7, 1), UNITY_2020_2_7_F_1,
+    generates_modules_2020_3, Version::f(2020, 3, 22, 1), UNITY_2020_3_22_F_1,
+    generates_modules_2019_1, Version::f(2019, 1, 14, 1), UNITY_2019_1_14_F_1,
+    generates_modules_2019_2, Version::f(2019, 2, 21, 1), UNITY_2019_2_21_F_1,
+    generates_modules_2019_3, Version::f(2019, 3, 15, 1), UNITY_2019_3_15_F_1,
+    generates_modules_2019_4, Version::f(2019, 4, 32, 1), UNITY_2019_4_32_F_1,
+    generates_modules_2018_4, Version::f(2018, 4, 36, 1), UNITY_2018_4_36_F_1,
+    generates_modules_2018_3, Version::f(2018, 3, 14, 1), UNITY_2018_3_14_F_1,
+    generates_modules_2018_2, Version::f(2018, 2, 21, 1), UNITY_2018_2_21_F_1,
+    generates_modules_2018_1, Version::f(2018, 1, 9, 2), UNITY_2018_1_9_F_2,
+    generates_modules_2017_4, Version::f(2017, 4, 40, 1), UNITY_2017_4_40_F_1,
+    generates_modules_2017_3, Version::f(2017, 3, 1, 1), UNITY_2017_3_1_F_1,
+    generates_modules_2017_2, Version::f(2017, 2, 5, 1), UNITY_2017_2_5_F_1,
+    generates_modules_2017_1, Version::f(2017, 1, 5, 1), UNITY_2017_1_5_F_1,
 ];

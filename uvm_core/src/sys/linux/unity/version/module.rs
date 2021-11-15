@@ -46,17 +46,17 @@ pub fn get_android_ndk_download_info<V: AsRef<Version>>(version:V) -> ModulePart
     } else {
         ( "r16b", 2_355_200_000, 626_000_000 )
     };
-        ModulePart {
-            component: Component::AndroidNdk,
-            name: "Android NDK".to_string(),
-            download_url: format!("https://dl.google.com/android/repository/android-ndk-{}-linux-x86_64.zip", version),
-            version: version.to_string(),
-            main: false,
-            installed_size: install_size,
-            download_size: download_size,
-            rename_from: Some(Path::new(&format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/NDK/android-ndk-{}" , version)).to_path_buf()),
-            rename_to: Some(Path::new("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/NDK").to_path_buf())
-        }
+    ModulePart {
+        component: Component::AndroidNdk,
+        name: "Android NDK".to_string(),
+        download_url: format!("https://dl.google.com/android/repository/android-ndk-{}-linux-x86_64.zip", version),
+        version: version.to_string(),
+        main: false,
+        installed_size: install_size,
+        download_size: download_size,
+        rename_from: Some(Path::new(&format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/NDK/android-ndk-{}" , version)).to_path_buf()),
+        rename_to: Some(Path::new("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/NDK").to_path_buf())
+    }
 }
 
 pub fn get_android_sdk_build_tools_download_info<V: AsRef<Version>>(version:V) -> ModulePart {
