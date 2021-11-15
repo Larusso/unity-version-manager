@@ -1,0 +1,9 @@
+pub mod modules {
+    //MODULE_JSON
+    pub const UNITY_2022_1_0_A_13:&str = include_str!("2022.1.0a13_modules.json");
+}
+
+pub mod manifests {
+    //MANIFEST_INI
+    pub const UNITY_2022_1_0_A_13:&str = include_str!("2022.1.0a13_manifest.ini");
+}
