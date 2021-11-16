@@ -1,36 +1,144 @@
-use log::{error, info, debug};
+use anyhow::Result;
+use log::{info, debug};
 use std::io;
+use std::fs::File;
+use std::io::Write;
 use std::io::prelude::*;
-use uvm_core::platform::Platform;
 use uvm_core::unity::urls::IniUrlBuilder;
 use uvm_core::Version;
-use uvm_download_manifest::Options;
 use console::style;
+use std::path::PathBuf;
+use uvm_core::platform::Platform;
+use uvm_cli::{options::ColorOption, set_colors_enabled, set_loglevel};
+use structopt::{clap::AppSettings, clap::crate_authors, clap::crate_description, clap::crate_version, StructOpt};
 
-const USAGE: &str = "
-uvm-download-manifest - Download the manifest.ini file for a given unity version.
+const SETTINGS: &'static [AppSettings] = &[AppSettings::ColoredHelp, AppSettings::DontCollapseArgsInUsage];
 
-Usage:
-  uvm-download-manifest [options] <version>
-  uvm-download-manifest (-h | --help)
+#[derive(StructOpt, Debug)]
+#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!(), settings = SETTINGS)]
+struct Opts {
+    /// The unity version to download the manifest.ini file for in the form of `2018.1.0f3`
+    version: Version,
 
-Options:
-  -o=PATH, --output-dir=PATH        the output path. default stdout
-  -n=NAME, --name=NAME              name of the output file. [default: unity-{version}-{platform}.ini]
-  -p=PLATFORM, --platform=PLATFORM  the platform to download (macos,win,linux). defaults to current platform.
-  -f, --force                       force override of existing files.
-  -v, --verbose                     print more output
-  -d, --debug                       print debug output
-  --color WHEN                      Coloring: auto, always, never [default: auto]
-  -h, --help                        show this help message and exit
-";
+    /// the output path. default stdout
+    #[structopt(short, long)]
+    output_dir: Option<PathBuf>,
 
-fn main() {
-    run().unwrap_or_else(|err| {
-        error!("failed to download manifest");
-        error!("{}", err);
-    })
+    /// name of the output file.
+    #[structopt(short, long, default_value = "unity-{version}-{platform}.ini")]
+    name: String,
+
+    /// the platform to download (macos,win,linux).
+    #[structopt(short, long)]
+    platform: Option<Platform>,
+
+    /// force override of existing files. 
+    #[structopt(short, long)]
+    force: bool,
+    
+    /// print debug output
+    #[structopt(short, long)]
+    debug: bool,
+
+    /// print more output
+    #[structopt(short, long, parse(from_occurrences))]
+    verbose: i32,
+
+    /// Color:.
+    #[structopt(short, long, possible_values = &ColorOption::variants(), case_insensitive = true, default_value)]
+    color: ColorOption,
 }
+
+pub enum Output {
+    File(File),
+    Stdout,
+}
+
+impl Default for Output {
+    fn default() -> Self {
+        Output::Stdout
+    }
+}
+
+impl Write for Output {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        use Output::*;
+        match self {
+            File(x) => x.write(buf),
+            _ => console::Term::stdout().write(buf),
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        use Output::*;
+        match self {
+            File(x) => x.flush(),
+            _ => console::Term::stdout().flush(),
+        }
+    }
+}
+
+impl Opts {
+    pub fn output(&self) -> io::Result<impl Write> {
+        use std::fs::OpenOptions;
+        if let Some(path) = &self.output_dir {
+            if !path.is_dir() {
+                Err(io::Error::new(io::ErrorKind::InvalidInput, "output path is not a directory"))
+            } else {
+                OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .create_new(!self.force)
+                    .open(path.join(self.name()))
+                    .and_then(|f| Ok(Output::File(f)))
+            }
+
+        } else {
+            Ok(Output::default())
+        }
+    }
+
+    pub fn platform(&self) -> Platform {
+        self.platform.unwrap_or_default()
+    }
+
+    pub fn name(&self) -> String {
+        let name = &self.name;
+        let name = name.as_str().replace("{version}", &self.version.to_string());
+        let name = name.as_str().replace("{platform}", &self.platform().to_string());
+        name
+    }
+
+    pub fn output_path(&self) -> Option<PathBuf> {
+        let path = self.output_dir.as_ref()?;
+        if !path.is_dir() {
+            None
+        } else {
+            Some(path.join(self.name()))
+        }
+    }
+}
+
+fn main() -> Result<()> {
+    let opt = Opts::from_args();
+  
+    set_colors_enabled(&opt.color);
+    set_loglevel(opt.debug.then(|| 2).unwrap_or(opt.verbose));
+   
+    info!(
+        "download manifest for version {} and platform {}",
+        opt.version,
+        opt.platform()
+    );
+
+    let output_handle = opt.output()?;
+    if let Some(output_path) = opt.output_path() {
+        info!("write manifest to {}", output_path.display());
+    }
+    download_manifest(&opt.version, opt.platform(), output_handle)?;
+
+    Ok(())
+  }
 
 fn download_manifest<V, W>(version: V, platform: Platform, output: W) -> io::Result<()>
 where
@@ -54,19 +162,4 @@ where
         style("Download complete").cyan(),
     );
     Ok(())
-}
-
-fn run() -> io::Result<()> {
-    let options: Options = uvm_cli::get_options(USAGE).unwrap();
-    debug!("{:?}", options);
-    info!(
-        "download manifest for version {} and platform {}",
-        options.version(),
-        options.platform()
-    );
-    let output_handle = options.output()?;
-    if let Some(output_path) = options.output_path() {
-        info!("write manifest to {}", output_path.display());
-    }
-    download_manifest(options.version(), options.platform(), output_handle)
 }

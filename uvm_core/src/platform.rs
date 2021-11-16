@@ -39,6 +39,34 @@ impl Default for Platform {
     }
 }
 
+pub mod error {
+    error_chain! {
+        types {
+            ParsePlatformError, ParsePlatformErrorKind, ResultExt, Result;
+        }
+
+        errors {
+            Unsupported(t: String) {
+                description("unsupported platform"),
+                display("unsupported platform: '{}'", t),
+            }
+        }
+    }
+}
+
+impl std::str::FromStr for Platform {
+    type Err = self::error::ParsePlatformError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "osx" => Ok(Platform::MacOs),
+            "linux" => Ok(Platform::Linux),
+            "win" => Ok(Platform::Win),
+            x => Err(self::error::ParsePlatformErrorKind::Unsupported(x.to_string()).into())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
