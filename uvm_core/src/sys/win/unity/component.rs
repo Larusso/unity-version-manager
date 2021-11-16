@@ -1,12 +1,12 @@
 use crate::unity::Component;
-use std::path::{Path, PathBuf};
+use relative_path::{RelativePath, RelativePathBuf};
 
 pub enum InstallerType {
     Exe,
     Zip,
 }
 
-pub fn installpath(component: Component, installer_type: InstallerType) -> Option<PathBuf> {
+pub fn installpath(component: Component, installer_type: InstallerType) -> Option<RelativePathBuf> {
     use Component::*;
     use InstallerType::*;
     match installer_type {
@@ -29,7 +29,7 @@ pub fn installpath(component: Component, installer_type: InstallerType) -> Optio
                 _ => Some(r""),
             };
 
-            path.map(|p| Path::new(p).to_path_buf())
+            path.map(|p| RelativePath::new(p).to_relative_path_buf())
         }
         Zip => {
             let path = match component {
@@ -40,12 +40,12 @@ pub fn installpath(component: Component, installer_type: InstallerType) -> Optio
                 _ => None,
             };
 
-            path.map(|p| Path::new(p).to_path_buf()).or_else(|| install_location(component))
+            path.map(|p| RelativePath::new(p).to_relative_path_buf()).or_else(|| install_location(component))
         }
     }
 }
 
-pub fn install_location(component: Component) -> Option<PathBuf> {
+pub fn install_location(component: Component) -> Option<RelativePathBuf> {
     use Component::*;
     let path = match component {
         VisualStudio
@@ -86,7 +86,7 @@ pub fn install_location(component: Component) -> Option<PathBuf> {
         _ => None,
     };
 
-    path.map(|p| Path::new(p).to_path_buf())
+    path.map(|p| RelativePath::new(p).to_relative_path_buf())
 }
 
 pub fn selected(component: Component) -> bool {

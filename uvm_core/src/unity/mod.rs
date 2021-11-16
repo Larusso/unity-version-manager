@@ -107,7 +107,7 @@ impl Iterator for InstalledComponents {
                 trace!(
                     "found component {:?} installed at {}",
                     &c,
-                    &c.install_location().unwrap().display()
+                    &c.install_location_rel().unwrap().display()
                 );
                 return Some(*c);
             }

@@ -339,12 +339,12 @@ impl UvmCommand {
                     let variant_destination = if cfg![windows] {
                         Some(base_dir.to_path_buf())
                     } else {
-                        component.installpath()
+                        component.installpath(&base_dir)
                     };
                     let installation_data = InstallObject {
                         version: options.version().to_owned(),
                         component: component,
-                        destination: variant_destination.map(|d| base_dir.join(d)),
+                        destination: variant_destination,
                         verify: !options.skip_verification(),
                     };
                     to_install.insert(installation_data);
@@ -365,12 +365,12 @@ impl UvmCommand {
                     let variant_destination = if cfg![windows] {
                         Some(base_dir.to_path_buf())
                     } else {
-                        component.installpath()
+                        component.installpath(&base_dir)
                     };
                     let installation_data = InstallObject {
                         version: options.version().to_owned(),
                         component: component,
-                        destination: variant_destination.map(|d| base_dir.join(d)),
+                        destination: variant_destination,
                         verify: !options.skip_verification(),
                     };
                     to_install.insert(installation_data);
@@ -379,11 +379,11 @@ impl UvmCommand {
 
             if !to_install.is_empty() {
                 for component in installation.installed_components() {
-                    let variant_destination = component.installpath();
+                    let variant_destination = component.installpath(&base_dir);
                     let installation_data = InstallObject {
                         version: options.version().to_owned(),
                         component: component,
-                        destination: variant_destination.map(|d| base_dir.join(d)),
+                        destination: variant_destination,
                         verify: !options.skip_verification(),
                     };
                     installed.insert(installation_data);

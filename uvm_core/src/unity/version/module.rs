@@ -13,16 +13,16 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
-use relative_path::RelativePathBuf;
+use relative_path::{RelativePath, RelativePathBuf};
 
 lazy_static! {
-    static ref UNITY_BASE_PATTERN: &'static Path = { Path::new("{UNITY_PATH}") };
+    static ref UNITY_BASE_PATTERN: &'static RelativePath = { RelativePath::new("{UNITY_PATH}") };
 }
 
 type ManifestIteratorItem<'a> = ((Component, IniData), &'a Version);
 
-impl AsRef<Path> for UNITY_BASE_PATTERN {
-    fn as_ref(&self) -> &Path {
+impl AsRef<RelativePath> for UNITY_BASE_PATTERN {
+    fn as_ref(&self) -> &RelativePath {
         self.deref()
     }
 }
@@ -131,9 +131,9 @@ impl AsRef<Component> for Module {
 
 impl Module {
     #[cfg(not(windows))]
-    fn destination(component: Component, _: &str) -> Option<PathBuf> {
+    fn destination(component: Component, _: &str) -> Option<RelativePathBuf> {
         component
-            .installpath()
+            .installpath_rel()
             .map(|mut p| {
                 if component == Component::Ios {
                     p.pop();
@@ -141,8 +141,11 @@ impl Module {
                 p
             })
             .map(|p| {
-                if p == Path::new("") {
-                    UNITY_BASE_PATTERN.to_path_buf()
+                if p == RelativePath::new("") {
+                    UNITY_BASE_PATTERN.to_relative_path_buf()
+                } else if p.to_string().starts_with("/") {
+                    //very rare case where the path in the component isn't actually relative
+                    p
                 } else {
                     UNITY_BASE_PATTERN.join(p)
                 }
@@ -150,32 +153,35 @@ impl Module {
     }
 
     #[cfg(windows)]
-    fn destination(component: Component, installer_url: &str) -> Option<PathBuf> {
+    fn destination(component: Component, installer_url: &str) -> Option<RelativePathBuf> {
         component
             .installpath_with_installer_url(installer_url)
             .map(|p| {
                 if p == Path::new("") {
                     UNITY_BASE_PATTERN.to_path_buf()
+                } else if p.to_string().starts_with("/") {
+                    //very rare case where the path in the component isn't actually relative
+                    p
                 } else {
                     UNITY_BASE_PATTERN.join(p)
                 }
             })
     }
 
-    fn strip_unity_base_url<P: AsRef<Path>, Q: AsRef<Path>>(path: P, base_dir: Q) -> RelativePath {
+    fn strip_unity_base_url<P: AsRef<RelativePath>, Q: AsRef<Path>>(path: P, base_dir: Q) -> PathBuf {
         let path = path.as_ref();
         base_dir
             .as_ref()
-            .join(&path.strip_prefix(&UNITY_BASE_PATTERN).unwrap_or(path))
+            .join(&path.strip_prefix(&UNITY_BASE_PATTERN).unwrap_or(path).to_path("."))
     }
 
-    pub fn install_rename_from<P: AsRef<Path>>(&self, base_dir: P) -> Option<RelativePath> {
+    pub fn install_rename_from<P: AsRef<Path>>(&self, base_dir: P) -> Option<PathBuf> {
         self.rename_from
             .as_ref()
             .map(|from| Self::strip_unity_base_url(from, base_dir))
     }
 
-    pub fn install_rename_to<P: AsRef<Path>>(&self, base_dir: P) -> Option<RelativePath> {
+    pub fn install_rename_to<P: AsRef<Path>>(&self, base_dir: P) -> Option<PathBuf> {
         self.rename_to
             .as_ref()
             .map(|to| Self::strip_unity_base_url(to, base_dir))
@@ -192,13 +198,13 @@ impl Module {
         ))
     }
 
-    pub fn install_destination<P: AsRef<Path>>(&self, base_dir: P) -> Option<RelativePath> {
+    pub fn install_destination<P: AsRef<Path>>(&self, base_dir: P) -> Option<PathBuf> {
         Some(Self::strip_unity_base_url(
             self.destination.as_ref().map(|destination| {
                 if self.id == Component::Ios {
                     destination.join("iOSSupport")
                 } else {
-                    destination.to_path_buf()
+                    destination.to_relative_path_buf()
                 }
             })?,
             base_dir.as_ref(),

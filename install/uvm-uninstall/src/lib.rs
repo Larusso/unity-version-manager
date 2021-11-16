@@ -136,7 +136,7 @@ impl UvmCommand {
             if diff.peek().is_some() {
                 stderr.write_line("Start Uninstall").ok();
                 for c in diff {
-                    if let Some(p) = c.installpath().map(|l| installation.path().join(l)) {
+                    if let Some(p) = c.installpath(installation.path()) {
                         stderr.write_line(&format!("Remove {}", c)).ok();
                         remove_dir_all(p)?
                     }

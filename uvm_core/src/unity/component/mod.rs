@@ -9,6 +9,7 @@ use std::str::FromStr;
 use reqwest::Url;
 mod error;
 mod category;
+use relative_path::{RelativePath, RelativePathBuf};
 
 pub use self::category::Category;
 
@@ -170,7 +171,7 @@ impl Component {
     }
 
     #[cfg(windows)]
-    pub fn installpath_with_installer_url(self, installer_url:&str) -> Option<PathBuf> {
+    pub fn installpath_with_installer_url(self, installer_url:&str) -> Option<RelativePathBuf> {
         use crate::sys::unity::component::InstallerType;
         if installer_url.ends_with(".zip") {
             component_impl::installpath(self, InstallerType::Zip)
@@ -180,18 +181,26 @@ impl Component {
     }
 
     #[cfg(windows)]
-    pub fn installpath(self) -> Option<PathBuf> {
+    pub fn installpath(self) -> Option<RelativePathBuf> {
         use crate::sys::unity::component::InstallerType;
 
         component_impl::installpath(self, InstallerType::Exe)
     }
 
     #[cfg(not(windows))]
-    pub fn installpath(self) -> Option<PathBuf> {
+    pub fn installpath<P: AsRef<Path>>(self, base_dir:P) -> Option<PathBuf> {
+        self.installpath_rel().map(|p| p.to_path(base_dir).to_path_buf())
+    }
+
+    pub fn installpath_rel(self) -> Option<RelativePathBuf> {
         component_impl::installpath(self)
     }
 
-    pub fn install_location(self) -> Option<PathBuf> {
+    pub fn install_location<P: AsRef<Path>>(self, base_dir:P) -> Option<PathBuf> {
+        self.install_location_rel().map(|p| p.to_path(base_dir).to_path_buf())
+    }
+
+    pub fn install_location_rel(self) -> Option<RelativePathBuf> {
         component_impl::install_location(self)
     }
 
@@ -209,9 +218,7 @@ impl Component {
     }
 
     pub fn is_installed<P: AsRef<Path>>(self, unity_install_location: P) -> bool {
-        if let Some(install_path) = self.install_location() {
-            let unity_install_location = unity_install_location.as_ref();
-            let install_path = unity_install_location.join(install_path);
+        if let Some(install_path) = self.install_location(unity_install_location) {
             install_path.exists()
         } else {
             false

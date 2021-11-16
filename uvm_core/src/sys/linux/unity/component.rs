@@ -1,7 +1,7 @@
 use crate::unity::Component;
-use std::path::{Path, PathBuf};
+use relative_path::{RelativePath, RelativePathBuf};
 
-pub fn installpath(component:Component) -> Option<PathBuf> {
+pub fn installpath(component:Component) -> Option<RelativePathBuf> {
     use Component::*;
     let path = match component {
         Mono | VisualStudio | MonoDevelop => None,
@@ -30,10 +30,10 @@ pub fn installpath(component:Component) -> Option<PathBuf> {
         _ => None,
     };
 
-    path.map(|p| Path::new(p).to_path_buf())
+    path.map(|p| RelativePath::new(p).to_relative_path_buf())
 }
 
-pub fn install_location(component: Component) -> Option<PathBuf> {
+pub fn install_location(component: Component) -> Option<RelativePathBuf> {
     use Component::*;
     let path = match component {
         AndroidSdkPlatformTools => {
@@ -44,7 +44,7 @@ pub fn install_location(component: Component) -> Option<PathBuf> {
         }
         _ => None,
     };
-    path.map(|p| Path::new(p).to_path_buf()).or_else(|| installpath(component))
+    path.map(|p| RelativePath::new(p).to_relative_path_buf()).or_else(|| installpath(component))
 }
 
 pub fn selected(component:Component) -> bool {

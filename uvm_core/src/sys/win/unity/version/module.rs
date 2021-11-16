@@ -1,7 +1,7 @@
 use crate::unity::{Version};
 use crate::unity::Component;
 use std::path::{Path, PathBuf};
-use relative_path::RelativePath;
+use relative_path::{RelativePath, RelativePathBuf};
 
 pub struct ModulePart {
     pub component:Component,
@@ -56,8 +56,8 @@ pub fn get_android_ndk_download_info<V: AsRef<Version>>(version:V) -> ModulePart
         main: false,
         installed_size: install_size,
         download_size: download_size,
-        rename_from: Some(RelativePath::new(&format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/NDK/android-ndk-{}" , version)).to_path_buf()),
-        rename_to: Some(RelativePath::new("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/NDK").to_path_buf())
+        rename_from: Some(RelativePath::new(&format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/NDK/android-ndk-{}" , version)).to_relative_path_buf()),
+        rename_to: Some(RelativePath::new("{UNITY_PATH}/Editor/Data/PlaybackEngines/AndroidPlayer/NDK").to_relative_path_buf())
     } 
 }
 
@@ -78,8 +78,8 @@ pub fn get_android_sdk_build_tools_download_info<V: AsRef<Version>>(version:V) -
         main: false,
         installed_size: install_size,
         download_size: download_size,
-        rename_from: Some(RelativePath::new(&format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/build-tools/android-{}", android_version)).to_path_buf()),
-        rename_to: Some(RelativePath::new(&format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/build-tools/{}", version)).to_path_buf())
+        rename_from: Some(RelativePath::new(&format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/build-tools/android-{}", android_version)).to_relative_path_buf()),
+        rename_to: Some(RelativePath::new(&format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/build-tools/{}", version)).to_relative_path_buf())
     }
 }
 
@@ -127,8 +127,8 @@ pub fn get_android_sdk_platform_download_info<V: AsRef<Version>>(version:V) -> M
         main: false,
         installed_size: install_size,
         download_size: download_size,
-        rename_from: Some(RelativePath::new(&format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platforms/android-{}", android_version)).to_path_buf()),
-        rename_to: Some(RelativePath::new(&format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platforms/android-{}", sdk_version)).to_path_buf())
+        rename_from: Some(RelativePath::new(&format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platforms/android-{}", android_version)).to_relative_path_buf()),
+        rename_to: Some(RelativePath::new(&format!("{{UNITY_PATH}}/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platforms/android-{}", sdk_version)).to_relative_path_buf())
     }
 }
 
