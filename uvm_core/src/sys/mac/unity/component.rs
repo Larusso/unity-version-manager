@@ -17,13 +17,13 @@ pub fn installpath(component: Component) -> Option<PathBuf> {
         Ios => Some("PlaybackEngines/iOSSupport"),
         TvOs => Some("PlaybackEngines/AppleTVSupport"),
         AppleTV => Some("PlaybackEngines/AppleTVSupport"),
-        Linux | LinuxMono => Some("PlaybackEngines/LinuxStandaloneSupport"),
-        Mac | MacIL2CPP => Some("Unity.app/Contents/PlaybackEngines/MacStandaloneSupport"),
+        Linux | LinuxMono | LinuxIL2CPP | LinuxServer => Some("PlaybackEngines/LinuxStandaloneSupport"),
+        Mac | MacIL2CPP | MacServer => Some("Unity.app/Contents/PlaybackEngines/MacStandaloneSupport"),
         Samsungtv | SamsungTV => Some("PlaybackEngines/STVPlayer"),
         Tizen => Some("PlaybackEngines/TizenPlayer"),
         Vuforia | VuforiaAR => Some("PlaybackEngines/VuforiaSupport"),
         WebGl => Some("PlaybackEngines/WebGLSupport"),
-        Windows | WindowsMono => Some("PlaybackEngines/WindowsStandaloneSupport"),
+        Windows | WindowsMono | WindowsServer => Some("PlaybackEngines/WindowsStandaloneSupport"),
         Facebook | FacebookGames => Some("PlaybackEngines/Facebook"),
         Lumin => Some("PlaybackEngines/LuminSupport"),
         Language(_) => Some("Unity.app/Contents/Localization"),
@@ -50,7 +50,7 @@ pub fn install_location(component: Component) -> Option<PathBuf> {
 pub fn selected(component: Component) -> bool {
     use Component::*;
     match component {
-        MonoDevelop | Documentation | ExampleProject | Example | VisualStudio => true,
+        MonoDevelop | Documentation | ExampleProject | Example | VisualStudio => false,
         _ => false,
     }
 }

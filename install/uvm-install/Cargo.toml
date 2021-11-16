@@ -1,6 +1,6 @@
 [package]
 name = "uvm-install"
-version = "2.4.0"
+version = "2.5.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 edition = "2018"
 [dependencies]
@@ -11,6 +11,6 @@ console = "0.9.1"
 serde = "1.0"
 serde_derive = "1.0"
 uvm_cli = { path = "../../uvm_cli" }
-uvm_core = { path = "../../uvm_core", version = "0.9.0" }
-uvm_install_core = {path = "../uvm_install_core", version = "0.4.0" }
+uvm_core = { path = "../../uvm_core", version = "0.10.0" }
+uvm_install_core = {path = "../uvm_install_core", version = "0.5.0" }
 error-chain = "0.12.4"

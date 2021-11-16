@@ -68,8 +68,8 @@ pub fn install_location(component: Component) -> Option<PathBuf> {
         AndroidOpenJdk => Some(r"Editor\Data\PlaybackEngines\AndroidPlayer\OpenJDK"),
         Ios => Some(r"Editor\Data\PlaybackEngines\iOSSupport"),
         TvOs | AppleTV => Some(r"Editor\Data\PlaybackEngines\AppleTVSupport"),
-        Linux | LinuxMono => Some(r"Editor\Data\PlaybackEngines\LinuxStandaloneSupport"),
-        Mac | MacIL2CPP | MacMono => Some(r"Editor\Data\PlaybackEngines\MacStandaloneSupport"),
+        Linux | LinuxMono | LinuxIL2CPP | LinuxServer => Some(r"Editor\Data\PlaybackEngines\LinuxStandaloneSupport"),
+        Mac | MacIL2CPP | MacMono | MacServer => Some(r"Editor\Data\PlaybackEngines\MacStandaloneSupport"),
         Metro | UwpIL2CPP | UwpNet | UniversalWindowsPlatform => {
             Some(r"Editor\Data\PlaybackEngines\MetroSupport")
         }
@@ -77,7 +77,7 @@ pub fn install_location(component: Component) -> Option<PathBuf> {
         Tizen => Some(r"Editor\Data\PlaybackEngines\TizenPlayer"),
         Vuforia | VuforiaAR => Some(r"Editor\Data\PlaybackEngines\VuforiaSupport"),
         WebGl => Some(r"Editor\Data\PlaybackEngines\WebGLSupport"),
-        Windows | WindowsMono | WindowsIL2CCP => {
+        Windows | WindowsMono | WindowsIL2CCP | WindowsServer => {
             Some(r"Editor\Data\PlaybackEngines\WindowsStandaloneSupport")
         }
         Facebook | FacebookGames => Some(r"Editor\Data\PlaybackEngines\Facebook"),
@@ -92,7 +92,7 @@ pub fn install_location(component: Component) -> Option<PathBuf> {
 pub fn selected(component: Component) -> bool {
     use Component::*;
     match component {
-        Documentation | StandardAssets | ExampleProject | Example | VisualStudio => true,
+        Documentation | StandardAssets | ExampleProject | Example | VisualStudio => false,
         _ => false,
     }
 }
