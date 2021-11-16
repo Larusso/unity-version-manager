@@ -6,7 +6,7 @@ edition = "2018"
 description = "cli utility to install and manage unity versions"
 
 [dependencies]
-anyhow = "1.0.38"
+anyhow = "1.0.45"
 console = "0.9.1"
 uvm_cli = { path = "../../uvm_cli" }
 structopt = "0.3"
