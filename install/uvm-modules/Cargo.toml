@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.38"
-flexi_logger = "0.16.1"
+flexi_logger = "0.20.1"
 indicatif = "0.15.0"
 log = "0.4.11"
 console = "0.9.1"
