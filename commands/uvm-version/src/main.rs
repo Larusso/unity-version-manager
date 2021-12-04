@@ -1,74 +1,80 @@
 use anyhow::Result;
 use console::style;
-use structopt::{clap::crate_authors, clap::crate_description, clap::crate_version, StructOpt};
-use uvm_cli;
 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
-use semver::VersionReq;
 use log::*;
-use uvm_core::unity::VersionType;
-use uvm_core::unity::fetch_matching_version;
+use semver::VersionReq;
+use structopt::{
+    clap::crate_authors, clap::crate_description, clap::crate_version, clap::AppSettings, StructOpt,
+};
+use uvm_cli;
 use uvm_cli::{options::ColorOption, set_colors_enabled, set_loglevel};
+use uvm_core::unity::fetch_matching_version;
+use uvm_core::unity::VersionType;
 
 fn has_operand(ranges: &str) -> bool {
-  ranges.starts_with("^")
-      || ranges.starts_with("~")
-      || ranges.starts_with(">")
-      || ranges.starts_with("<")
-      || ranges.starts_with("=")
+    ranges.starts_with("^")
+        || ranges.starts_with("~")
+        || ranges.starts_with(">")
+        || ranges.starts_with("<")
+        || ranges.starts_with("=")
 }
 
 fn version_req(s: &str) -> Result<VersionReq, &'static str> {
-  let mut s = String::from(s);
-  if s.is_empty() {
-    s.push('*');
-  } else if !has_operand(s.trim()) {
-    s.insert(0, '~');
-  }
-  VersionReq::parse(&s).map_err(|_| "expected semver version req") 
+    let mut s = String::from(s);
+    if s.is_empty() {
+        s.push('*');
+    } else if !has_operand(s.trim()) {
+        s.insert(0, '~');
+    }
+    VersionReq::parse(&s).map_err(|_| "expected semver version req")
 }
 
+const SETTINGS: &'static [AppSettings] = &[
+    AppSettings::ColoredHelp,
+    AppSettings::DontCollapseArgsInUsage,
+];
+
 #[derive(StructOpt, Debug)]
-#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!())]
+#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!(), settings = SETTINGS)]
 struct Opts {
-  /// print more output
-  #[structopt(short, long, parse(from_occurrences))]
-  verbose: i32,
+    /// print more output
+    #[structopt(short, long, parse(from_occurrences))]
+    verbose: i32,
 
-  /// print debug output
-  #[structopt(short, long)]
-  debug: bool,
+    /// print debug output
+    #[structopt(short, long)]
+    debug: bool,
 
-  /// Color:.
-  #[structopt(short, long, possible_values = &ColorOption::variants(), case_insensitive = true, default_value)]
-  color: ColorOption,
+    /// Color:.
+    #[structopt(short, long, possible_values = &ColorOption::variants(), case_insensitive = true, default_value)]
+    color: ColorOption,
 
-  #[structopt(subcommand)]
-  cmd: Command
+    #[structopt(subcommand)]
+    cmd: Command,
 }
 
 #[derive(StructOpt, Debug)]
 enum Command {
-  /// Return version matching version req.
-  Matching {
-    /// The version requirement string
-    /// 
-    /// The version requirement string will be converted to `semver::VersionReq`
-    /// See https://docs.rs/semver/1.0.2/semver/struct.VersionReq.html for usage.
-    #[structopt(parse(try_from_str = version_req))]
-    version_req: VersionReq,
+    /// Return version matching version req.
+    Matching {
+        /// The version requirement string
+        ///
+        /// The version requirement string will be converted to `semver::VersionReq`
+        /// See https://docs.rs/semver/1.0.2/semver/struct.VersionReq.html for usage.
+        #[structopt(parse(try_from_str = version_req))]
+        version_req: VersionReq,
 
-    /// The unity release type
-    /// 
-    /// The release type to limit the search for.
-    #[structopt(possible_values=&["f", "final","p", "patch","b", "beta","a", "alpha"], case_insensitive=false, default_value)]
-    release_type: VersionType,
-  },
-  Latest {
-    #[structopt(possible_values=&["f", "final","p", "patch","b", "beta","a", "alpha"], case_insensitive=false, default_value)]
-    release_type: VersionType,
-  }
+        /// The unity release type
+        ///
+        /// The release type to limit the search for.
+        #[structopt(possible_values=&["f", "final","p", "patch","b", "beta","a", "alpha"], case_insensitive=false, default_value)]
+        release_type: VersionType,
+    },
+    Latest {
+        #[structopt(possible_values=&["f", "final","p", "patch","b", "beta","a", "alpha"], case_insensitive=false, default_value)]
+        release_type: VersionType,
+    },
 }
-
 
 fn progress_draw_target(options: &Opts) -> ProgressDrawTarget {
     if options.debug {
@@ -79,11 +85,10 @@ fn progress_draw_target(options: &Opts) -> ProgressDrawTarget {
 }
 
 fn main() -> Result<()> {
-  let opt = Opts::from_args_safe().map(|opt| {
-          set_colors_enabled(&opt.color);
-          set_loglevel(opt.debug.then(|| 2).unwrap_or(opt.verbose));
-          opt
-    })?; 
+    let opt = Opts::from_args();
+
+    set_colors_enabled(&opt.color);
+    set_loglevel(opt.debug.then(|| 2).unwrap_or(opt.verbose));
 
     let progress = ProgressBar::new_spinner();
     let spinner_style = ProgressStyle::default_spinner()
@@ -100,13 +105,15 @@ fn main() -> Result<()> {
     progress.finish_and_clear();
 
     let (version_req, version_type) = match opt.cmd {
-      Command::Latest { release_type } => (VersionReq::parse("*").unwrap(), release_type),
-      Command::Matching { version_req, release_type } => (version_req, release_type),
+        Command::Latest { release_type } => (VersionReq::parse("*").unwrap(), release_type),
+        Command::Matching {
+            version_req,
+            release_type,
+        } => (version_req, release_type),
     };
 
     let version = fetch_matching_version(versions, version_req, version_type)?;
     info!("highest matching version:");
     eprintln!("{}", style(version).green().bold());
     Ok(())
-
 }

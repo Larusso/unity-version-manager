@@ -2,12 +2,19 @@ use anyhow::{Context, Result};
 use console::Style;
 use log::info;
 use std::io;
-use structopt::{clap::crate_authors, clap::crate_description, clap::crate_version, StructOpt};
+use structopt::{
+    clap::crate_authors, clap::crate_description, clap::crate_version, clap::AppSettings, StructOpt,
+};
 use uvm_cli;
 use uvm_cli::{options::ColorOption, set_colors_enabled, set_loglevel};
 
+const SETTINGS: &'static [AppSettings] = &[
+    AppSettings::ColoredHelp,
+    AppSettings::DontCollapseArgsInUsage,
+];
+
 #[derive(StructOpt, Debug)]
-#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!())]
+#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!(), settings = SETTINGS)]
 struct Opts {
     /// print only the path to the current version
     #[structopt(short, long = "path")]
@@ -39,11 +46,10 @@ struct Opts {
 }
 
 fn main() -> Result<()> {
-    let opt = Opts::from_args_safe().map(|opt| {
-        set_colors_enabled(&opt.color);
-        set_loglevel(opt.debug.then(|| 2).unwrap_or(opt.verbose));
-        opt
-    })?;
+    let opt = Opts::from_args();
+
+    set_colors_enabled(&opt.color);
+    set_loglevel(opt.debug.then(|| 2).unwrap_or(opt.verbose));
 
     list(&opt).context("failed to list Unity installations")?;
     Ok(())

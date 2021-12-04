@@ -6,12 +6,18 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::process;
 use structopt::{
-    clap::arg_enum, clap::crate_authors, clap::crate_description, clap::crate_version, StructOpt,
+    clap::arg_enum, clap::crate_authors, clap::crate_description, clap::crate_version,
+    clap::AppSettings, StructOpt,
 };
 use uvm_cli::{options::ColorOption, set_colors_enabled, set_loglevel};
 
+const SETTINGS: &'static [AppSettings] = &[
+    AppSettings::ColoredHelp,
+    AppSettings::DontCollapseArgsInUsage,
+];
+
 #[derive(StructOpt, Debug)]
-#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!())]
+#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!(), settings = SETTINGS)]
 struct Opts {
     /// the build platform to open the project with
     #[structopt(short, long, possible_values = &UnityPlatform::variants(), case_insensitive = true)]
@@ -42,7 +48,7 @@ fn main() -> Result<()> {
     let opt = Opts::from_args();
     set_colors_enabled(&opt.color);
     set_loglevel(opt.verbose);
-    
+
     launch(&opt).context("failed to launch Unity")?;
     Ok(())
 }
