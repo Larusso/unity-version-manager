@@ -6,18 +6,24 @@ use uvm_core;
 use console::style;
 use std::env;
 use std::path::PathBuf;
-use structopt::{clap::crate_authors, clap::crate_description, clap::crate_version, StructOpt};
+use structopt::{
+    clap::crate_authors, clap::crate_description, clap::crate_version, clap::AppSettings, StructOpt,
+};
 use uvm_cli::{options::ColorOption, set_colors_enabled, set_loglevel};
 
-#[derive(StructOpt, Debug)]
-#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!())]
-struct Opts {
+const SETTINGS: &'static [AppSettings] = &[
+    AppSettings::ColoredHelp,
+    AppSettings::DontCollapseArgsInUsage,
+];
 
-    /// path to project directory. 
+#[derive(StructOpt, Debug)]
+#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!(), settings = SETTINGS)]
+struct Opts {
+    /// path to project directory.
     project_path: Option<PathBuf>,
 
     /// Detects a unity version recursivly from current working directory.
-    /// With this flag set, the tool returns the first version it finds. 
+    /// With this flag set, the tool returns the first version it finds.
     #[structopt(short, long)]
     recursive: bool,
 
@@ -35,16 +41,16 @@ struct Opts {
 }
 
 fn main() -> Result<()> {
-  let opt = Opts::from_args_safe().map(|opt| {
-      set_colors_enabled(&opt.color);
-      set_loglevel(opt.debug.then(|| 2).unwrap_or(opt.verbose));
-      opt
-  })?;
+    let opt = Opts::from_args();
 
-  let project_version = uvm_core::dectect_project_version(
+    set_colors_enabled(&opt.color);
+    set_loglevel(opt.debug.then(|| 2).unwrap_or(opt.verbose));
+
+    let project_version = uvm_core::dectect_project_version(
         &opt.project_path.unwrap_or(env::current_dir()?),
-        Some(opt.recursive))?;
+        Some(opt.recursive),
+    )?;
 
-  println!("{}", style(project_version.to_string()).green().bold());
-  Ok(())
+    println!("{}", style(project_version.to_string()).green().bold());
+    Ok(())
 }

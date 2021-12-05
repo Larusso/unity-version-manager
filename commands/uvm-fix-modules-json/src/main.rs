@@ -3,20 +3,27 @@ use console::style;
 use log::{info, trace};
 use std::fs::OpenOptions;
 use std::process;
+use structopt::{
+    clap::crate_authors, clap::crate_description, clap::crate_version, clap::AppSettings, StructOpt,
+};
 use uvm_cli;
+use uvm_cli::{options::ColorOption, set_colors_enabled, set_loglevel};
 use uvm_core;
 use uvm_core::unity::{Installations, Manifest, Version};
-use uvm_cli::{options::ColorOption, set_colors_enabled, set_loglevel};
-use structopt::{clap::crate_authors, clap::crate_description, clap::crate_version, StructOpt};
+
+const SETTINGS: &'static [AppSettings] = &[
+    AppSettings::ColoredHelp,
+    AppSettings::DontCollapseArgsInUsage,
+];
 
 #[derive(StructOpt, Debug)]
-#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!())]
+#[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!(), settings = SETTINGS)]
 struct Opts {
     #[structopt(name = "version", group = "input", required_unless("all"))]
     version: Vec<Version>,
 
     /// only print moddule to stdout
-    #[structopt(long="dry-run")]
+    #[structopt(long = "dry-run")]
     dry_run: bool,
 
     /// generate modules.json for all installed editors
@@ -41,8 +48,7 @@ fn generate_for_installation(options: Opts) -> Result<()> {
         info!("generate modules.json for all installations");
         uvm_core::list_all_installations()
     } else {
-        let v = options
-            .version;
+        let v = options.version;
         let installations: Installations = v
             .iter()
             .flat_map(|v| uvm_core::find_installation(v).into_iter())
@@ -52,7 +58,14 @@ fn generate_for_installation(options: Opts) -> Result<()> {
     .unwrap();
 
     for i in installations {
-        info!("{}", style(format!("generate modules.json for installation: {}", i.path().display())).yellow());
+        info!(
+            "{}",
+            style(format!(
+                "generate modules.json for installation: {}",
+                i.path().display()
+            ))
+            .yellow()
+        );
         let mut manifest = Manifest::load(i.version()).expect("a manifest");
         let c = i.installed_components();
         manifest.mark_installed_modules(c);
@@ -62,7 +75,10 @@ fn generate_for_installation(options: Opts) -> Result<()> {
             eprintln!("output path: {}", output_path.display());
             println!("{}", manifest.modules_json()?);
         } else {
-            info!("{}", style(format!("write {}", output_path.display())).green());
+            info!(
+                "{}",
+                style(format!("write {}", output_path.display())).green()
+            );
             let mut f = OpenOptions::new()
                 .write(true)
                 .truncate(true)
@@ -75,11 +91,10 @@ fn generate_for_installation(options: Opts) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    let opt = Opts::from_args_safe().map(|opt| {
-        set_colors_enabled(&opt.color);
-        set_loglevel(opt.debug.then(|| 2).unwrap_or(opt.verbose));
-        opt
-    })?;
+    let opt = Opts::from_args();
+
+    set_colors_enabled(&opt.color);
+    set_loglevel(opt.debug.then(|| 2).unwrap_or(opt.verbose));
 
     trace!("generate modules.json");
 
