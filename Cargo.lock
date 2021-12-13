@@ -45,6 +45,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ansi_term"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d52a9bb7ec0cf484c551830a7ce27bd20d67eac647e1befb56b0be4ee39a55d2"
+dependencies = [
+ "winapi 0.3.9",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -259,7 +268,7 @@ dependencies = [
  "libc",
  "num-integer",
  "num-traits",
- "time",
+ "time 0.1.44",
  "winapi 0.3.9",
 ]
 
@@ -269,7 +278,7 @@ version = "2.33.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37e58ac78573c40708d45522f0d80fa2f01cc4f9b4e2bf749807255454312002"
 dependencies = [
- "ansi_term",
+ "ansi_term 0.11.0",
  "atty",
  "bitflags",
  "strsim 0.8.0",
@@ -395,7 +404,7 @@ version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "888604f00b3db336d2af898ec3c1d5d0ddf5e6d462220f2ededc33a87ac4bbd5"
 dependencies = [
- "time",
+ "time 0.1.44",
  "url 1.7.2",
 ]
 
@@ -412,7 +421,7 @@ dependencies = [
  "publicsuffix",
  "serde",
  "serde_json",
- "time",
+ "time 0.1.44",
  "try_from",
  "url 1.7.2",
 ]
@@ -656,34 +665,19 @@ dependencies = [
 
 [[package]]
 name = "flexi_logger"
-version = "0.16.3"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "291b6ce7b3ed2dda82efa6aee4c6bdb55fd11bc88b06c55b01851e94b96e5322"
+checksum = "8795f0e6a26413163b399458007f03e52cee7e422ac364ce328d5efd0260d7ba"
 dependencies = [
+ "ansi_term 0.12.1",
  "atty",
- "chrono",
  "glob 0.3.0",
  "lazy_static 1.4.0",
  "log 0.4.14",
  "regex 1.5.4",
+ "rustversion",
  "thiserror",
- "yansi",
-]
-
-[[package]]
-name = "flexi_logger"
-version = "0.17.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33ab94b6ac8eb69f1496a6993f26f785b5fd6d99b7416023eb2a6175c0b242b1"
-dependencies = [
- "atty",
- "chrono",
- "glob 0.3.0",
- "lazy_static 1.4.0",
- "log 0.4.14",
- "regex 1.5.4",
- "thiserror",
- "yansi",
+ "time 0.3.5",
 ]
 
 [[package]]
@@ -930,7 +924,7 @@ dependencies = [
  "log 0.4.14",
  "net2",
  "rustc_version",
- "time",
+ "time 0.1.44",
  "tokio",
  "tokio-buf",
  "tokio-executor",
@@ -1068,9 +1062,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.95"
+version = "0.2.111"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "789da6d93f1b866ffe175afc5322a4d76c038605a1c3319bb57b06967ca98a36"
+checksum = "8e167738f1866a7ec625567bae89ca0d44477232a4f7c52b1c7f2adc2c98804f"
 
 [[package]]
 name = "linked-hash-map"
@@ -1827,7 +1821,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_urlencoded",
- "time",
+ "time 0.1.44",
  "tokio",
  "tokio-executor",
  "tokio-io",
@@ -1858,6 +1852,12 @@ checksum = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
 dependencies = [
  "semver 0.9.0",
 ]
+
+[[package]]
+name = "rustversion"
+version = "1.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2cc38e8fa666e2de3c4aba7edeb5ffc5246c1c2ed0e3d17e560aeeba736b23f"
 
 [[package]]
 name = "rusty-fork"
@@ -2219,6 +2219,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "time"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41effe7cfa8af36f439fac33861b66b049edc6f9a32331e2312660529c1c24ad"
+dependencies = [
+ "itoa",
+ "libc",
+ "time-macros",
+]
+
+[[package]]
+name = "time-macros"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25eb0ca3468fc0acc11828786797f6ef9aa1555e4a211a60d64cc8e4d1be47d6"
+
+[[package]]
 name = "tinyvec"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2514,7 +2531,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "console 0.9.2",
- "flexi_logger 0.16.3",
+ "flexi_logger 0.21.0",
  "log 0.4.14",
  "reqwest",
  "serde",
@@ -2531,7 +2548,7 @@ dependencies = [
  "anyhow",
  "cfg-if 1.0.0",
  "console 0.9.2",
- "flexi_logger 0.16.3",
+ "flexi_logger 0.21.0",
  "indicatif 0.15.0",
  "lazy_static 1.4.0",
  "log 0.4.14",
@@ -2550,7 +2567,7 @@ dependencies = [
  "anyhow",
  "cfg-if 1.0.0",
  "console 0.9.2",
- "flexi_logger 0.16.3",
+ "flexi_logger 0.21.0",
  "indicatif 0.15.0",
  "lazy_static 1.4.0",
  "log 0.4.14",
@@ -2580,7 +2597,7 @@ version = "2.5.0"
 dependencies = [
  "console 0.9.2",
  "error-chain",
- "flexi_logger 0.16.3",
+ "flexi_logger 0.21.0",
  "indicatif 0.15.0",
  "log 0.4.14",
  "serde",
@@ -2643,7 +2660,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "console 0.9.2",
- "flexi_logger 0.16.3",
+ "flexi_logger 0.21.0",
  "indicatif 0.15.0",
  "itertools",
  "log 0.4.14",
@@ -2707,7 +2724,7 @@ dependencies = [
  "cli_core",
  "console 0.9.2",
  "docopt",
- "flexi_logger 0.17.1",
+ "flexi_logger 0.21.0",
  "log 0.4.14",
  "serde",
  "serde_derive",
@@ -2934,12 +2951,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "yansi"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fc79f4a1e39857fc00c3f662cbf2651c771f00e9c15fe2abc341806bd46bd71"
-
-[[package]]
 name = "zip"
 version = "0.5.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2950,5 +2961,5 @@ dependencies = [
  "crc32fast",
  "flate2",
  "thiserror",
- "time",
+ "time 0.1.44",
 ]
