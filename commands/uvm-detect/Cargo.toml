@@ -6,7 +6,7 @@ description = "Find which version of unity was used to generate a project."
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.38"
+anyhow = "1.0.52"
 console = "0.9.1"
 structopt = "0.3"
 uvm_cli = { path = "../../uvm_cli" }
