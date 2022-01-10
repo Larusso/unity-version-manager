@@ -15,5 +15,5 @@ serde_derive = "1.0"
 uvm_core = { path = "../uvm_core", version = "0.10.0" }
 console = "0.9.1"
 cli_core = "0.1.0"
-flexi_logger = "0.17.1"
+flexi_logger = "0.22.2"
 structopt = "0.3"
