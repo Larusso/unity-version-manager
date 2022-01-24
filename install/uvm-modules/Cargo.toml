@@ -7,7 +7,7 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.38"
+anyhow = "1.0.53"
 flexi_logger = "0.16.1"
 indicatif = "0.15.0"
 log = "0.4.11"

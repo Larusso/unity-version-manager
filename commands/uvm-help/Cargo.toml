@@ -5,7 +5,7 @@ authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 edition = "2018"
 description = "Prints help page for command"
 [dependencies]
-anyhow = "1.0.38"
+anyhow = "1.0.53"
 console = "0.9.1"
 structopt = "0.3"
 uvm_cli = { path = "../../uvm_cli" }

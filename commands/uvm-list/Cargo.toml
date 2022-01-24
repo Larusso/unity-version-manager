@@ -5,7 +5,7 @@ authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 edition = "2018"
 description = "List installed unity versions"
 [dependencies]
-anyhow = "1.0.38"
+anyhow = "1.0.53"
 console = "0.9.1"
 log = "0.4.11"
 serde = "1.0"
