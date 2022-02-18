@@ -62,6 +62,22 @@ impl InstallHandler for ModuleXzInstaller {
 
         let destination = self.destination();
         let installer = self.installer();
+        let destination = if destination.ends_with("Editor/Data/PlaybackEngines/iOSSupport") {
+            debug!("adjust install destination for iOSSupport module");
+            destination.parent()
+                .ok_or_else(|| {
+                    io::Error::new(
+                        io::ErrorKind::NotFound,
+                        format!(
+                            "Can't determine destination for {} and destination {}",
+                            &installer.display(),
+                            destination.display()
+                        ),
+                    )
+                })?
+        } else {
+            destination
+        };
 
         let destination = if destination.ends_with("Editor/Data/PlaybackEngines") {
             destination
