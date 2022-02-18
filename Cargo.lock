@@ -2752,7 +2752,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_install_core"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "cfg-if 1.0.0",
  "derive_deref",

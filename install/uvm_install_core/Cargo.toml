@@ -1,6 +1,6 @@
 [package]
 name = "uvm_install_core"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Base crate with installer functions to install Unity3D and its support modules"
 repository = "https://github.com/Larusso/unity-version-manager"
