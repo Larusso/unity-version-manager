@@ -40,6 +40,9 @@ struct Opts {
     #[structopt(long)]
     system: bool,
 
+    #[structopt(short = "m", long = "modules")]
+    list_modules: bool,
+
     /// Color:.
     #[structopt(short, long, possible_values = &ColorOption::variants(), case_insensitive = true, default_value)]
     color: ColorOption,
@@ -97,6 +100,11 @@ fn list(options: &Opts) -> io::Result<()> {
                 new_line += &format!("{}", path_style.apply_to(installation.path().display()));
             }
             new_line += "\n";
+            if options.list_modules {
+                for c in installation.installed_components() {
+                    new_line += &format!("  {}\n", out_style.apply_to(c));
+                }
+            }
             new_line
         });
 
