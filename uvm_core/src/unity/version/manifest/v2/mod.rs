@@ -12,6 +12,7 @@ use std::path::Path;
 #[derive(Debug)]
 pub struct Manifest<'a> {
     version: &'a Version,
+    #[allow(dead_code)]
     base_url: DownloadURL,
     modules: ModulesMap,
     editor: Module,

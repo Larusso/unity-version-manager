@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use stringreader::StringReader;
 use uvm_core::unity::v2::Manifest;
-use uvm_core::unity::{Component, Version};
+use uvm_core::unity::{Component};
 use uvm_install_graph::{InstallGraph, InstallStatus, Walker};
 mod fixures;
 use itertools::Itertools;

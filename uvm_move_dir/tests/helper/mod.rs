@@ -27,9 +27,9 @@ pub fn assert_moved_structure_at<P: AsRef<Path>>(target:P) {
     let subdir2 = target.join("subdir2");
     let subfile2 = subdir2.join("file2.txt");
 
-    assert!(subfile0.exists(), format!("{} should exist", subfile0.display()));
-    assert!(subdir1.exists(), format!("{} should exist", subdir1.display()));
-    assert!(subfile1.exists(), format!("{} should exist", subfile1.display()));
-    assert!(subdir2.exists(), format!("{} should exist", subdir2.display()));
-    assert!(subfile2.exists(), format!("{} should exist", subfile2.display()));
+    assert!(subfile0.exists(), "{} should exist", subfile0.display());
+    assert!(subdir1.exists(), "{} should exist", subdir1.display());
+    assert!(subfile1.exists(), "{} should exist", subfile1.display());
+    assert!(subdir2.exists(), "{} should exist", subdir2.display());
+    assert!(subfile2.exists(), "{} should exist", subfile2.display());
 }

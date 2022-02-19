@@ -1,6 +1,5 @@
 use super::*;
 use std::collections::BTreeMap;
-use std::error::Error;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -79,7 +78,7 @@ pub fn hash_for_version(version: &Version) -> io::Result<String> {
             hash_from_service(version).and_then(|hash| {
                 cache_hash(&hash, version).unwrap_or_else(|err| {
                     warn!("unable to cache hash {} for version {}", &hash, version);
-                    warn!("error: {}", err.description());
+                    warn!("error: {}", err);
                 });
                 Ok(hash)
             })

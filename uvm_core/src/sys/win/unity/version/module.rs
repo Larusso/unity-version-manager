@@ -82,7 +82,7 @@ pub fn get_android_sdk_build_tools_download_info<V: AsRef<Version>>(version:V) -
     }
 }
 
-pub fn get_android_sdk_ndk_tools_download_info<V: AsRef<Version>>(version:V) -> ModulePart {
+pub fn get_android_sdk_ndk_tools_download_info<V: AsRef<Version>>(_version:V) -> ModulePart {
     ModulePart {
         component: Component::AndroidSdkNdkTools,
         name: "Android SDK & NDK Tools".to_string(),
@@ -96,7 +96,7 @@ pub fn get_android_sdk_ndk_tools_download_info<V: AsRef<Version>>(version:V) -> 
     }
 }
 
-pub fn get_android_sdk_platform_tools_download_info<V: AsRef<Version>>(version:V) -> ModulePart {
+pub fn get_android_sdk_platform_tools_download_info<V: AsRef<Version>>(_version:V) -> ModulePart {
     ModulePart {
         component: Component::AndroidSdkPlatformTools,
         name: "Android SDK Platform Tools".to_string(),

@@ -15,7 +15,7 @@ use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 
 lazy_static! {
-    static ref UNITY_BASE_PATTERN: &'static Path = { Path::new("{UNITY_PATH}") };
+    static ref UNITY_BASE_PATTERN: &'static Path = Path::new("{UNITY_PATH}");
 }
 
 type ManifestIteratorItem<'a> = ((Component, IniData), &'a Version);

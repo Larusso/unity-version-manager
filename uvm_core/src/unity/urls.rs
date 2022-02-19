@@ -27,7 +27,6 @@ impl Into<Url> for DownloadURL {
 
 impl DownloadURL {
     pub fn new<V: AsRef<Version>>(version: V) -> Result<DownloadURL> {
-        use std::error::Error;
         let version = version.as_ref();
         let mut url = match version.release_type() {
             VersionType::Final => Url::parse(BASE_URL),
@@ -36,7 +35,7 @@ impl DownloadURL {
         .map_err(|err| UvmError::with_chain(err, "failed to parse download url"))?;
 
         let hash = version.version_hash().map_err(|err| {
-            warn!("{}", err.description());
+            warn!("{}", err);
             UvmError::with_chain(
                 err,
                 format!("No hash value for version: {} available", version),

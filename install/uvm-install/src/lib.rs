@@ -10,7 +10,7 @@ extern crate uvm_core;
 #[macro_use]
 extern crate log;
 
-use self::error::{Error, Result, ResultExt};
+use self::error::{Error, Result};
 use console::{style, Term};
 use indicatif::{ProgressDrawTarget, ProgressStyle};
 use std::collections::HashSet;

@@ -1,16 +1,5 @@
-#[macro_use]
-extern crate serde_derive;
-extern crate console;
-extern crate indicatif;
-extern crate semver;
-extern crate serde;
-extern crate uvm_cli;
-extern crate uvm_core;
-#[macro_use]
-extern crate log;
-
 use console::style;
-use console::Style;
+
 use console::Term;
 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
 use semver::VersionReq;
@@ -19,7 +8,7 @@ use std::io;
 use std::result;
 use uvm_cli::ColorOption;
 use uvm_core::unity::VersionType;
-use uvm_core::Version;
+use log::{debug,info};
 use uvm_core::unity::fetch_matching_version;
 
 #[derive(Debug, Deserialize)]
