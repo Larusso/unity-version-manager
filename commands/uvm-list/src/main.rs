@@ -66,6 +66,9 @@ fn list(options: &Opts) -> io::Result<()> {
     } else if options.all {
         info!("fetch all installations");
         uvm_core::list_all_installations
+    } else if options.use_hub {
+        info!("fetch installations from unity hub");
+        uvm_core::list_hub_installations
     } else {
         info!("fetch installations from unity hub");
         uvm_core::list_hub_installations

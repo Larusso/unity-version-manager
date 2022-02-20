@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{Result};
 use console::style;
 use log::{info, trace};
 use std::fs::OpenOptions;

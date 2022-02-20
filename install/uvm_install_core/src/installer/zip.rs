@@ -24,8 +24,7 @@ impl<V, I> Installer<V, Zip, I> {
 
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).unwrap();
-            let outpath = rename_handler(&destination.join(file.sanitized_name()));
-
+            let outpath = rename_handler(&destination.join(file.mangled_name()));
             {
                 let comment = file.comment();
                 if !comment.is_empty() {

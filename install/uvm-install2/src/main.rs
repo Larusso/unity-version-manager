@@ -1,7 +1,7 @@
 use self::error;
 use console::style;
 use log::*;
-use std::io::{self, Write};
+
 use std::path::PathBuf;
 use std::process;
 use structopt::{

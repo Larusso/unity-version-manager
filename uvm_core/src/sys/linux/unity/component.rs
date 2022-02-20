@@ -7,7 +7,7 @@ pub fn installpath(component:Component) -> Option<PathBuf> {
         Mono | VisualStudio | MonoDevelop => None,
         LinuxMono | StandardAssets | Example => Some(""),
         Documentation => Some("Editor/Data/Documentation"),
-        StandardAssets | ExampleProject | Example => None,
+        ExampleProject  => None,
         Android => Some("Editor/Data/PlaybackEngines/AndroidPlayer"),
         AndroidSdkBuildTools => Some("Editor/Data/PlaybackEngines/AndroidPlayer/SDK/build-tools"),
         AndroidSdkPlatforms => Some("Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platforms"),

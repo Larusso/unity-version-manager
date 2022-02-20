@@ -1,5 +1,5 @@
 use anyhow::Result;
-use log::{info, debug};
+use log::{info};
 use std::io;
 use std::fs::File;
 use std::io::Write;
