@@ -2,6 +2,8 @@ use console::style;
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::{env, fs, io, process};
+use itertools::Itertools;
+use std::hash::{Hash, Hasher};
 
 #[cfg(unix)]
 use std::os::unix::fs::MetadataExt;
@@ -61,7 +63,8 @@ pub fn find_commands_in_path(dir: &Path) -> io::Result<Box<dyn Iterator<Item = P
         .read_dir()?
         .filter_map(io::Result::ok)
         .filter(|entry| check_file(entry).unwrap_or(false))
-        .map(|entry| entry.path());
+        .map(|entry| entry.path())
+        .flat_map(|path| path.canonicalize());
     Ok(Box::new(result))
 }
 
@@ -125,7 +128,7 @@ impl UvmSubCommands {
         }
 
         if let Some(i) = iter {
-            let m = i.map(UvmSubCommand);
+            let m = i.unique().map(UvmSubCommand).unique();
             Ok(UvmSubCommands(Box::new(m)))
         } else {
             Err(io::Error::new(io::ErrorKind::NotFound, "not Found"))
@@ -141,6 +144,7 @@ impl Iterator for UvmSubCommands {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct UvmSubCommand(PathBuf);
 
 impl UvmSubCommand {
@@ -161,6 +165,20 @@ impl UvmSubCommand {
 
     pub fn description(&self) -> String {
         String::from("")
+    }
+}
+
+impl PartialEq for UvmSubCommand {
+    fn eq(&self, other: &Self) -> bool {
+        self.command_name() == other.command_name()
+    }
+}
+
+impl Eq for UvmSubCommand {}
+
+impl Hash for UvmSubCommand {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.command_name().hash(state);
     }
 }
 
