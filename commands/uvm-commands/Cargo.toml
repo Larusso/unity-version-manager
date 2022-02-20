@@ -4,8 +4,8 @@ version = "2.3.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 edition = "2018"
 [dependencies]
+anyhow = "1.0.38"
 console = "0.9.1"
-serde = "1.0"
-serde_derive = "1.0"
+structopt = "0.3"
 uvm_cli = { path = "../../uvm_cli" }
 uvm_core = { path = "../../uvm_core" }
