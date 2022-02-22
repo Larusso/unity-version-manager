@@ -272,24 +272,10 @@ dependencies = [
  "ansi_term",
  "atty",
  "bitflags",
- "strsim 0.8.0",
+ "strsim",
  "textwrap",
  "unicode-width",
  "vec_map",
-]
-
-[[package]]
-name = "cli_core"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1ce2a4fed13508c92ba7afb5ad9a43b315614498d09366cc29c41d43108ab34"
-dependencies = [
- "console 0.6.2",
- "docopt",
- "flexi_logger 0.9.3",
- "serde",
- "serde_derive",
- "serde_json",
 ]
 
 [[package]]
@@ -541,18 +527,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "docopt"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f3f119846c823f9eafcf953a8f6ffb6ed69bf6240883261a7f13b634579a51f"
-dependencies = [
- "lazy_static 1.4.0",
- "regex 1.5.4",
- "serde",
- "strsim 0.10.0",
-]
-
-[[package]]
 name = "dtoa"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -644,25 +618,13 @@ dependencies = [
 
 [[package]]
 name = "flexi_logger"
-version = "0.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7992096ba2290bd35b86b282e72edae518a25aa9a067ff417bc017ae63ac5e22"
-dependencies = [
- "chrono",
- "glob 0.2.11",
- "log 0.4.14",
- "regex 1.5.4",
-]
-
-[[package]]
-name = "flexi_logger"
 version = "0.16.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "291b6ce7b3ed2dda82efa6aee4c6bdb55fd11bc88b06c55b01851e94b96e5322"
 dependencies = [
  "atty",
  "chrono",
- "glob 0.3.0",
+ "glob",
  "lazy_static 1.4.0",
  "log 0.4.14",
  "regex 1.5.4",
@@ -678,7 +640,7 @@ checksum = "33ab94b6ac8eb69f1496a6993f26f785b5fd6d99b7416023eb2a6175c0b242b1"
 dependencies = [
  "atty",
  "chrono",
- "glob 0.3.0",
+ "glob",
  "lazy_static 1.4.0",
  "log 0.4.14",
  "regex 1.5.4",
@@ -791,12 +753,6 @@ name = "gimli"
 version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e4075386626662786ddb0ec9081e7c7eeb1ba31951f447ca780ef9f5d568189"
-
-[[package]]
-name = "glob"
-version = "0.2.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8be18de09a56b60ed0edf84bc9df007e30040691af7acd1c41874faac5895bfb"
 
 [[package]]
 name = "glob"
@@ -2073,12 +2029,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
 
 [[package]]
-name = "strsim"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
-
-[[package]]
 name = "structopt"
 version = "0.3.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2585,7 +2535,7 @@ dependencies = [
 
 [[package]]
 name = "uvm-install"
-version = "2.6.0"
+version = "2.7.0"
 dependencies = [
  "anyhow",
  "console 0.9.2",
@@ -2601,7 +2551,7 @@ dependencies = [
 
 [[package]]
 name = "uvm-install2"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "console 0.9.2",
  "dirs-2",
@@ -2665,7 +2615,7 @@ dependencies = [
 
 [[package]]
 name = "uvm-uninstall"
-version = "2.3.0"
+version = "2.4.0"
 dependencies = [
  "anyhow",
  "console 0.9.2",
@@ -2687,8 +2637,6 @@ dependencies = [
  "indicatif 0.9.0",
  "log 0.4.14",
  "semver 1.0.3",
- "serde",
- "serde_derive",
  "structopt",
  "uvm_cli",
  "uvm_core",
@@ -2713,9 +2661,8 @@ dependencies = [
 
 [[package]]
 name = "uvm_cli"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
- "cli_core",
  "console 0.9.2",
  "flexi_logger 0.17.1",
  "itertools 0.10.3",
@@ -2763,7 +2710,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_install_core"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "cfg-if 1.0.0",
  "derive_deref",
