@@ -1,15 +1,15 @@
 [package]
 name = "uvm-install"
-version = "2.5.0"
+version = "2.6.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 edition = "2018"
 [dependencies]
+anyhow = "1.0.38"
 flexi_logger = "0.16.1"
+structopt = "0.3"
 indicatif = "0.15.0"
 log = "0.4.11"
 console = "0.9.1"
-serde = "1.0"
-serde_derive = "1.0"
 uvm_cli = { path = "../../uvm_cli" }
 uvm_core = { path = "../../uvm_core", version = "0.10.0" }
 uvm_install_core = {path = "../uvm_install_core", version = "0.5.0" }
