@@ -1,15 +1,6 @@
-#[macro_use]
-extern crate serde_derive;
-
 use indicatif;
-
 use uvm_cli;
-#[macro_use]
-extern crate uvm_core;
-
-#[macro_use]
-extern crate log;
-
+use log::*;
 use self::error::{Error, Result};
 use console::{style, Term};
 use indicatif::{ProgressDrawTarget, ProgressStyle};
@@ -17,10 +8,9 @@ use std::collections::HashSet;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
-use uvm_cli::ColorOption;
+use uvm_cli::options::ColorOption;
 use uvm_install_core as install;
 use uvm_core::unity::hub;
 use uvm_core::unity::hub::editors::{EditorInstallation, Editors};
@@ -28,104 +18,31 @@ use uvm_core::unity::hub::paths;
 use uvm_core::unity::v2::Manifest;
 use uvm_core::unity::{Component, Installation, Version};
 use uvm_install_core::create_installer;
-#[cfg(unix)]
-use uvm_core::utils;
+use uvm_core::*;
 
 mod progress;
 mod error;
 use self::progress::{MultiProgress, ProgressBar};
 
-#[derive(Debug, Deserialize)]
-pub struct Options {
-    arg_version: Version,
-    arg_destination: Option<PathBuf>,
-    #[serde(default)]
-    flag_verify: bool,
-    flag_no_verify: bool,
-    flag_verbose: bool,
-    flag_debug: bool,
-    flag_android: bool,
-    flag_ios: bool,
-    flag_webgl: bool,
-    flag_mobile: bool,
-    flag_linux: bool,
-    flag_windows: bool,
-    flag_desktop: bool,
-    flag_all: bool,
-    flag_color: ColorOption,
-}
-
-impl Options {
-    pub fn version(&self) -> &Version {
-        &self.arg_version
-    }
-
-    pub fn install_variants(&self) -> Option<HashSet<Component>> {
-        if self.flag_android
-            || self.flag_ios
-            || self.flag_webgl
-            || self.flag_linux
-            || self.flag_windows
-            || self.flag_mobile
-            || self.flag_desktop
-            || self.flag_all
-        {
-            let mut variants: HashSet<Component> = HashSet::with_capacity(5);
-
-            if self.flag_android || self.flag_mobile || self.flag_all {
-                variants.insert(Component::Android);
-            }
-
-            if self.flag_ios || self.flag_mobile || self.flag_all {
-                variants.insert(Component::Ios);
-            }
-
-            if self.flag_webgl || self.flag_mobile || self.flag_all {
-                variants.insert(Component::WebGl);
-            }
-
-            let check_version = Version::from_str("2018.0.0b0").unwrap();
-            if (self.flag_windows || self.flag_desktop || self.flag_all)
-                && self.version() >= check_version.as_ref()
-            {
-                variants.insert(Component::WindowsMono);
-            }
-
-            if (self.flag_windows || self.flag_desktop || self.flag_all)
-                && self.version() < check_version.as_ref()
-            {
-                variants.insert(Component::Windows);
-            }
-
-            if self.flag_linux || self.flag_desktop || self.flag_all {
-                variants.insert(Component::Linux);
-            }
-            return Some(variants);
-        }
-        None
-    }
-
-    pub fn destination(&self) -> &Option<PathBuf> {
-        &self.arg_destination
-    }
-
-    pub fn skip_verification(&self) -> bool {
-        !self.flag_verify && self.flag_no_verify
-    }
-}
-
-impl uvm_cli::Options for Options {
-    fn verbose(&self) -> bool {
-        self.flag_verbose
-    }
-
+pub trait Options {
     fn debug(&self) -> bool {
-        self.flag_debug
+        self.verbose()
+    }
+
+    fn verbose(&self) -> bool {
+        false
     }
 
     fn color(&self) -> &ColorOption {
-        &self.flag_color
+        &ColorOption::Auto
     }
+}
+
+pub trait InstallerOptions {
+    fn version(&self) -> &Version;
+    fn install_variants(&self) -> Option<HashSet<Component>>;
+    fn destination(&self) -> &Option<PathBuf>;
+    fn skip_verification(&self) -> bool;
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
@@ -157,7 +74,7 @@ impl UvmCommand {
 
     fn progress_draw_target<T>(options: &T) -> ProgressDrawTarget
     where
-        T: uvm_cli::Options,
+        T: Options,
     {
         if options.debug() {
             ProgressDrawTarget::hidden()
@@ -283,7 +200,7 @@ impl UvmCommand {
             })
     }
 
-    pub fn exec(&self, options: &Options) -> Result<()> {
+    pub fn exec<O>(&self, options: &O) -> Result<()> where O: InstallerOptions + Options {
         let version = options.version();
         self.stderr
             .write_line(&format!(
