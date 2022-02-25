@@ -15,7 +15,6 @@ use std::ffi::OsStr;
 use std::io;
 use std::process::Command;
 
-pub use cli_core::{get_options, ColorOption, Options};
 pub mod options;
 
 #[cfg(unix)]
