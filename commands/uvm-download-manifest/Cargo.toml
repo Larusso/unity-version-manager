@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.38"
-console = "0.9.1"
+console = "0.14.1"
 structopt = { version = "0.3", features = ["color"]}
 flexi_logger = "0.16.1"
 log = "0.4.11"
