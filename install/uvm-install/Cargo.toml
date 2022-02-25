@@ -4,7 +4,7 @@ version = "2.7.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 edition = "2018"
 [dependencies]
-anyhow = "1.0.38"
+anyhow = "1.0.55"
 flexi_logger = "0.16.1"
 structopt = "0.3"
 indicatif = "0.15.0"
