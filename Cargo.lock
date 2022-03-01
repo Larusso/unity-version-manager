@@ -2665,6 +2665,7 @@ dependencies = [
  "serde_yaml",
  "stringreader",
  "tempfile",
+ "thiserror",
  "widestring",
  "winapi 0.3.9",
  "zip",
