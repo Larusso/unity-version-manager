@@ -136,7 +136,7 @@ impl Version {
     }
 
     pub fn version_hash(&self) -> std::io::Result<String> {
-        hash::hash_for_version(self)
+        hash::hash_for_version(self).map_err(|err| std::io::Error::new(std::io::ErrorKind::NotFound, err))
     }
 
     pub fn major(&self) -> u64 {

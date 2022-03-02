@@ -42,7 +42,7 @@ pub fn list_versions<O: VersionListOptions>(options: &O) -> io::Result<()> {
     progress.enable_steady_tick(100);
     progress.tick();
     debug!("fetch versions list");
-    let versions = uvm_core::unity::all_versions()?;
+    let versions = uvm_core::unity::all_versions().map_err(|err| std::io::Error::new(std::io::ErrorKind::NotFound, err))?;
     let versions: Vec<Version> = if options.filter_versions() {
         filter_versions(versions)
             .filter(|version| match options.pattern() {
