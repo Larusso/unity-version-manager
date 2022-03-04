@@ -4,7 +4,6 @@ error_chain! {
     }
 
     links {
-        VersionError(crate::unity::UvmVersionError, crate::unity::UvmVersionErrorKind);
         HubError(crate::unity::hub::UvmHubError, crate::unity::hub::UvmHubErrorKind);
     }
 
@@ -12,6 +11,7 @@ error_chain! {
         Fmt(::std::fmt::Error);
         Io(::std::io::Error);
         NetworkError(reqwest::Error);
+        VersionError(crate::unity::VersionError);
     }
 
     errors {

@@ -1,6 +1,5 @@
-use crate::unity::UvmVersionErrorKind;
-use crate::unity::UvmVersionErrorResult as Result;
 use crate::unity::Version;
+use crate::unity::VersionError;
 use std::convert::AsRef;
 use std::io;
 use std::path::Path;
@@ -8,14 +7,13 @@ use std::str::FromStr;
 
 pub mod module;
 
-pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
+pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version, VersionError> {
     let path = path.as_ref();
     if !path.exists() {
-        return Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            format!("Provided Path does not exist. {}", path.display(),),
-        )
-        .into());
+        return Err(VersionError::PathContainsNoVersion(format!(
+            "Provided Path does not exist. {}",
+            path.display()
+        )));
     }
 
     if path.is_dir() {
@@ -28,16 +26,19 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
         );
 
         if executable_path.exists() {
-            return path.file_name().and_then(|name| name.to_str()).ok_or_else(|| {
-                debug!("Unable to read filename from path {}", path.display());
-                UvmVersionErrorKind::FailedToReadVersion(path.display().to_string())
-            }).and_then(|path| {
-                Version::from_str(path).map_err(|err| err.into())
-            }).or_else(|_| {
-                Version::find_version_in_file(executable_path).into()
-            })
+            return path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .ok_or_else(|| {
+                    debug!("Unable to read filename from path {}", path.display());
+                    VersionError::Other(io::Error::new(io::ErrorKind::Other, "Unknown").into())
+                })
+                .and_then(|path| Version::from_str(path))
+                .or_else(|_| Version::find_version_in_file(executable_path));
         }
     }
 
-    Err(UvmVersionErrorKind::NotAUnityInstalltion(path.display().to_string()).into())
+    Err(VersionError::PathContainsNoVersion(
+        path.display().to_string(),
+    ))
 }
