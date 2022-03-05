@@ -410,15 +410,21 @@ impl FromStr for Component {
             "lumin" => Ok(Lumin),
             x => {
                 if x.starts_with("language-") {
-                    match x.splitn(2,'-').last().and_then(|sub| Localization::from_str(sub).ok()) {
-                        Some(locale) => Ok(Language(locale)),
-                        None => Err(error::ParseComponentErrorKind::Unsupported(x.to_string()).into())
+                    match x.splitn(2, '-').last() {
+                        Some(locale_name) => Localization::from_str(locale_name).map(|locale| locale.into()).map_err(|err| err.into()),
+                        None => Err(error::ParseComponentError::Unsupported(x.to_string()).into())
                     }
                 } else {
-                    Err(error::ParseComponentErrorKind::Unsupported(x.to_string()).into())
+                    Err(error::ParseComponentError::Unsupported(x.to_string()).into())
                 }
             },
         }
+    }
+}
+
+impl From<Localization> for Component {
+    fn from(locale: Localization) -> Self {
+        Component::Language(locale)
     }
 }
 
