@@ -8,8 +8,10 @@ use std::path::{Path, PathBuf};
 use std::result;
 use std::str::FromStr;
 use crate::unity::Installation;
-use std::io;
+use log::{debug,info};
 mod hash;
+mod error;
+pub use error::{VersionError, Result};
 pub mod manifest;
 pub mod module;
 
@@ -17,7 +19,7 @@ use crate::sys::unity::version as version_impl;
 
 pub use self::hash::all_versions;
 
-//pub use self::version_impl::read_version_from_path;
+pub use self::version_impl::read_version_from_path;
 
 #[derive(PartialEq, Eq, Ord, Hash, Debug, Clone, Copy, Deserialize)]
 pub enum VersionType {
@@ -135,8 +137,8 @@ impl Version {
         &self.release_type
     }
 
-    pub fn version_hash(&self) -> std::io::Result<String> {
-        hash::hash_for_version(self).map_err(|err| std::io::Error::new(std::io::ErrorKind::NotFound, err))
+    pub fn version_hash(&self) -> Result<String> {
+        hash::hash_for_version(self).map_err(|source| VersionError::HashMissing{source, version: self.to_string()})
     }
 
     pub fn major(&self) -> u64 {
@@ -171,7 +173,9 @@ impl Version {
 
         let output = child.wait_with_output()?;
 
-        ensure!(output.status.success(), "Unable to read strings from executable {}", path.display());
+        if !output.status.success() {
+            return Err(VersionError::ExecutableContainsNoVersion(path.display().to_string()))
+        }
 
         let version = Version::from_str(&String::from_utf8_lossy(&output.stdout))?;
         debug!("found version {}", &version);
@@ -199,7 +203,7 @@ impl From<(u64, u64, u64, u64)> for Version {
 }
 
 impl TryFrom<PathBuf> for Version {
-    type Error = UvmVersionError;
+    type Error = VersionError;
 
     fn try_from(path: PathBuf) -> Result<Self> {
         Version::from_path(path)
@@ -207,7 +211,7 @@ impl TryFrom<PathBuf> for Version {
 }
 
 impl TryFrom<&Path> for Version {
-    type Error = UvmVersionError;
+    type Error = VersionError;
 
     fn try_from(path: &Path) -> Result<Self> {
         Version::from_path(path)
@@ -264,36 +268,8 @@ impl AsMut<Version> for Version {
     }
 }
 
-error_chain! {
-    types {
-        UvmVersionError, UvmVersionErrorKind, ResultExt, Result;
-    }
-
-    foreign_links {
-        Fmt(::std::fmt::Error);
-        Io(::std::io::Error);
-    }
-
-    errors {
-        NotAUnityInstalltion(path: String) {
-            description("path is not a unity installtion"),
-            display("Provided Path: '{}' is not a Unity installation.", path),
-        }
-
-        FailedToReadVersion(path: String) {
-            description("unable to read version from path"),
-            display("Unable to read version from path: '{}'.", path),
-        }
-
-        IllegalOperation(t: String) {
-            description("illegal operation"),
-            display("illegal operation: '{}'", t),
-        }
-    }
-}
-
 impl FromStr for Version {
-    type Err = UvmVersionError;
+    type Err = VersionError;
 
     fn from_str(s: &str) -> Result<Self> {
         let version_pattern =
@@ -321,13 +297,13 @@ impl FromStr for Version {
                     hash: None,
                 })
             }
-            None => bail!("Failed to match version pattern to input"),
+            None => Err(VersionError::ParsingFailed(s.to_string()))
         }
     }
 }
 
 impl FromStr for VersionType {
-    type Err = UvmVersionError;
+    type Err = VersionError;
 
     fn from_str(s: &str) -> Result<Self> {
         match s {
@@ -339,7 +315,7 @@ impl FromStr for VersionType {
             "patch" => Ok(VersionType::Patch),
             "beta" => Ok(VersionType::Beta),
             "alpha" => Ok(VersionType::Alpha),
-            _ => bail!("Failed to match version type"), 
+            _ => Err(VersionError::VersionTypeParsingFailed(s.to_string()))
         }
     }
 }
@@ -354,7 +330,7 @@ pub fn fetch_matching_version<I: Iterator<Item = Version>>(
     versions: I,
     version_req: semver::VersionReq,
     release_type: VersionType,
-) -> io::Result<Version> {
+) -> Result<Version> {
     versions
         .filter(|version| {
             let semver_version = if version.release_type() < &release_type {
@@ -385,16 +361,14 @@ pub fn fetch_matching_version<I: Iterator<Item = Version>>(
         })
         .max()
         .ok_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::Other,
-                format!("no version found with req {}", version_req),
-            )
+            VersionError::NoMatch(version_req.to_string())
         })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude;
 
     macro_rules! invalid_version_input {
         ($($name:ident: $input:expr),*) => {

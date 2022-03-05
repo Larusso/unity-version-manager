@@ -23,7 +23,7 @@ pub use self::version::module::{Module, Modules, ModulesMap};
 pub use self::version::fetch_matching_version;
 pub use self::version::Version;
 pub use self::version::VersionType;
-pub use self::version::{UvmVersionError, UvmVersionErrorKind, ResultExt as UvmVersionErrorResultExt, Result as UvmVersionErrorResult};
+pub use self::version::{VersionError};
 
 use crate::error::*;
 use itertools::Itertools;

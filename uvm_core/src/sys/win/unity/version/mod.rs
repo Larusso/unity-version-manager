@@ -1,6 +1,4 @@
-use crate::unity::UvmVersionError;
-use crate::unity::UvmVersionErrorKind;
-use crate::unity::UvmVersionErrorResult as Result;
+use crate::unity::VersionError;
 use crate::unity::Version;
 use std::path::Path;
 
@@ -19,22 +17,20 @@ use std::convert::AsRef;
 use std::error::Error;
 use std::ffi::{CStr, CString};
 use std::fmt;
-use std::io;
 use std::mem;
 use std::str::FromStr;
 
 pub mod module;
 
-pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
+pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version, VersionError> {
     let path = path.as_ref();
     debug!("read_version_from_path: {}", path.display());
 
     if !path.exists() {
-        return Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            format!("Provided Path does not exist. {}", path.display(),),
-        )
-        .into());
+        return Err(VersionError::PathContainsNoVersion(format!(
+            "Provided Path does not exist. {}",
+            path.display()
+        )));
     }
 
     if path.is_dir() {
@@ -52,7 +48,7 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
             )
             .map_err(|err| {
                 debug!("{}", err.to_string());
-                UvmVersionError::with_chain(err, "failed to fetch Unity version")
+                VersionError::Other(err.into())
             })?;
             //let company_name = win_query_version_value(&path,r"\StringFileInfo\040904b0\CompanyName");
             let version_parts: Vec<&str> = version_string.as_str().split('_').collect();
@@ -61,7 +57,9 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version> {
         }
     }
 
-    Err(UvmVersionErrorKind::NotAUnityInstalltion(path.display().to_string()).into())
+    Err(VersionError::PathContainsNoVersion(
+        path.display().to_string(),
+    ))
 }
 
 #[derive(Debug)]
