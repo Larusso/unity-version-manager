@@ -40,17 +40,12 @@ impl Default for Platform {
 }
 
 pub mod error {
-    error_chain! {
-        types {
-            ParsePlatformError, ParsePlatformErrorKind, ResultExt, Result;
-        }
+    use thiserror::Error;
 
-        errors {
-            Unsupported(t: String) {
-                description("unsupported platform"),
-                display("unsupported platform: '{}'", t),
-            }
-        }
+    #[derive(Error, Debug)]
+    pub enum ParsePlatformError {
+        #[error("platform not supported: {0}")]
+        NotSupported(String)
     }
 }
 
@@ -62,7 +57,7 @@ impl std::str::FromStr for Platform {
             "osx" => Ok(Platform::MacOs),
             "linux" => Ok(Platform::Linux),
             "win" => Ok(Platform::Win),
-            x => Err(self::error::ParsePlatformErrorKind::Unsupported(x.to_string()).into())
+            x => Err(self::error::ParsePlatformError::NotSupported(x.to_string()))
         }
     }
 }

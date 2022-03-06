@@ -3,15 +3,12 @@ error_chain! {
         UvmError, UvmErrorKind, ResultExt, Result;
     }
 
-    links {
-        HubError(crate::unity::hub::UvmHubError, crate::unity::hub::UvmHubErrorKind);
-    }
-
     foreign_links {
         Fmt(::std::fmt::Error);
         Io(::std::io::Error);
         NetworkError(reqwest::Error);
         VersionError(crate::unity::VersionError);
+        HubError(crate::unity::hub::UvmHubError);
     }
 
     errors {
