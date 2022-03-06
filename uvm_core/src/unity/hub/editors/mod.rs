@@ -20,23 +20,17 @@ pub struct Editors {
 impl Editors {
     pub fn load() -> Result<Editors> {
         let path = paths::editors_config_path()
-            .ok_or_else(|| (UvmHubErrorKind::ConfigDirectoryNotFound))?;
+            .ok_or_else(|| (UvmHubError::ConfigDirectoryNotFound))?;
 
         let map: HashMap<unity::Version, EditorInstallation> = if path.exists() {
             debug!("load hub editors from file: {}", path.display());
             File::open(path)
-                .map_err(|err| {
-                    UvmHubError::with_chain(
-                        err,
-                        UvmHubErrorKind::ReadConfigError("editors.json".to_string()),
-                    )
+                .map_err(|source| {
+                    UvmHubError::ReadConfigError{ config: "editors.json".to_string(), source: source.into() }
                 })
                 .and_then(|f| {
-                    serde_json::from_reader(f).map_err(|err| {
-                        UvmHubError::with_chain(
-                            err,
-                            UvmHubErrorKind::ReadConfigError("editors.json".to_string()),
-                        )
+                    serde_json::from_reader(f).map_err(|source| {
+                        UvmHubError::ReadConfigError { config: "editors.json".to_string(), source: source.into()}
                     })
                 })?
         } else {
@@ -91,25 +85,19 @@ impl Editors {
 
     pub fn flush(&self) -> Result<()> {
         let config_path =
-            paths::config_path().ok_or_else(|| (UvmHubErrorKind::ConfigDirectoryNotFound))?;
+            paths::config_path().ok_or_else(|| (UvmHubError::ConfigDirectoryNotFound))?;
 
         let path = paths::editors_config_path()
-            .ok_or_else(|| UvmHubErrorKind::ConfigNotFound("editors.json".to_string()))?;
+            .ok_or_else(|| UvmHubError::ConfigNotFound("editors.json".to_string()))?;
 
-        fs::create_dir_all(config_path)?;
-        let mut file = File::create(path)?;
+        fs::create_dir_all(config_path).map_err(|source| UvmHubError::FailedToCreateConfigDirectory{source})?;
+        let mut file = File::create(path).map_err(|source| UvmHubError::FailedToCreateConfig{config: "editors.json".to_string(), source})?;
 
-        let j = serde_json::to_string(&self.map).map_err(|err| {
-            UvmHubError::with_chain(
-                err,
-                UvmHubErrorKind::WriteConfigError("editors.json".to_string()),
-            )
+        let j = serde_json::to_string(&self.map).map_err(|source| {
+            UvmHubError::WriteConfigError {config: "editors.json".to_string(), source: source.into()}
         })?;
-        write!(file, "{}", &j).map_err(|err| {
-            UvmHubError::with_chain(
-                err,
-                UvmHubErrorKind::WriteConfigError("editors.json".to_string()),
-            )
+        write!(file, "{}", &j).map_err(|source| {
+            UvmHubError::WriteConfigError {config: "editors.json".to_string(), source: source.into()}
         })
     }
 }
