@@ -1,17 +1,15 @@
-error_chain! {
-    types {
-        ParseComponentError, ParseComponentErrorKind, ResultExt, Result;
-    }
+use thiserror::Error;
+use crate::unity::LocalizationError;
 
-    errors {
-        Unsupported(t: String) {
-            description("unsupported component"),
-            display("unsupported component: '{}'", t),
-        }
-
-        UnsupportedCategory(t: String) {
-            description("unsupported component category"),
-            display("unsupported component category: '{}'", t),
-        }
+#[derive(Error, Debug)]
+pub enum ParseComponentError {
+    #[error("unsupported component: {0}")]
+    Unsupported(String),
+    #[error("unsupported component category: {0}")]
+    UnsupportedCategory(String),
+    #[error("unsupported locale")]
+    UnsupportedLocale {
+        #[from]
+        source: LocalizationError,
     }
 }

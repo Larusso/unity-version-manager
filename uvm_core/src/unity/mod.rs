@@ -13,7 +13,7 @@ pub mod v2 {
 use core::iter::FromIterator;
 pub use self::component::Component;
 pub use self::component::Category;
-pub use self::localization::Localization;
+pub use self::localization::{Localization, error::Error as LocalizationError};
 pub use self::current_installation::current_installation;
 pub use self::current_installation::CurrentInstallation;
 pub use self::installation::Installation;

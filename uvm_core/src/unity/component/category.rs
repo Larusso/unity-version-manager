@@ -1,4 +1,4 @@
-use super::error::{ParseComponentError, ParseComponentErrorKind};
+use super::error::ParseComponentError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::str::FromStr;
@@ -45,7 +45,7 @@ impl FromStr for Category {
             "Components" => Ok(Components),
             "Platforms" => Ok(Platforms),
             "LanguagePack" | "Language packs (Preview)" => Ok(LanguagePack),
-            x => Err(ParseComponentErrorKind::UnsupportedCategory(x.to_string()).into()),
+            x => Err(ParseComponentError::UnsupportedCategory(x.to_string())),
         }
     }
 }

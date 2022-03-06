@@ -4,15 +4,13 @@ use std::collections::HashSet;
 use std::str::FromStr;
 
 pub mod error {
-    error_chain! {
-        errors {
-            Unknown(t: String) {
-                description("Unknown localization"),
-                display("Unknown localization: '{}'", t),
-            }
-        }
-    }
+    use thiserror::Error;
 
+    #[derive(Error, Debug)]
+    pub enum Error {
+        #[error("unknown locale {0}")]
+        Unknown(String)
+    }
 }
 
 /// add the localization generic information to the config
@@ -95,7 +93,7 @@ impl FromStr for Localization {
             "zh-hant" => Ok(ZhHant),
             "zh-hans" => Ok(ZhHans),
             "ru" => Ok(Ru),
-            x => Err(error::ErrorKind::Unknown(x.to_string()).into())
+            x => Err(error::Error::Unknown(x.to_string()))
         }
     }
 }
