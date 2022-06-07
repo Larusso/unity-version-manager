@@ -335,7 +335,7 @@ dependencies = [
  "lazy_static 1.4.0",
  "libc",
  "parking_lot 0.12.0",
- "regex 1.5.4",
+ "regex 1.5.6",
  "termios",
  "unicode-width",
  "winapi 0.3.9",
@@ -351,7 +351,7 @@ dependencies = [
  "encode_unicode",
  "lazy_static 1.4.0",
  "libc",
- "regex 1.5.4",
+ "regex 1.5.6",
  "termios",
  "unicode-width",
  "winapi 0.3.9",
@@ -366,7 +366,7 @@ dependencies = [
  "encode_unicode",
  "libc",
  "once_cell",
- "regex 1.5.4",
+ "regex 1.5.6",
  "terminal_size",
  "unicode-width",
  "winapi 0.3.9",
@@ -565,7 +565,7 @@ dependencies = [
  "atty",
  "humantime 2.1.0",
  "log 0.4.14",
- "regex 1.5.4",
+ "regex 1.5.6",
  "termcolor",
 ]
 
@@ -639,7 +639,7 @@ dependencies = [
  "glob",
  "lazy_static 1.4.0",
  "log 0.4.14",
- "regex 1.5.4",
+ "regex 1.5.6",
  "thiserror",
  "yansi",
 ]
@@ -655,7 +655,7 @@ dependencies = [
  "glob",
  "lazy_static 1.4.0",
  "log 0.4.14",
- "regex 1.5.4",
+ "regex 1.5.6",
  "thiserror",
  "yansi",
 ]
@@ -965,7 +965,7 @@ dependencies = [
  "console 0.15.0",
  "lazy_static 1.4.0",
  "number_prefix",
- "regex 1.5.4",
+ "regex 1.5.6",
 ]
 
 [[package]]
@@ -1460,7 +1460,7 @@ dependencies = [
  "rand 0.6.5",
  "rand_chacha 0.1.1",
  "rand_xorshift",
- "regex-syntax 0.6.25",
+ "regex-syntax 0.6.26",
  "rusty-fork",
  "tempfile",
 ]
@@ -1701,13 +1701,13 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.5.4"
+version = "1.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d07a8629359eb56f1e2fb1652bb04212c072a87ba68546a04065d525673ac461"
+checksum = "d83f127d94bdbcda4c8cc2e50f6f84f4b611f69c902699ca385a39c3a75f9ff1"
 dependencies = [
  "aho-corasick 0.7.18",
  "memchr",
- "regex-syntax 0.6.25",
+ "regex-syntax 0.6.26",
 ]
 
 [[package]]
@@ -1721,9 +1721,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.6.25"
+version = "0.6.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
+checksum = "49b3de9ec5dc0a3417da371aab17d729997c15010e7fd24ff707773a33bddb64"
 
 [[package]]
 name = "remove_dir_all"
@@ -2613,7 +2613,7 @@ dependencies = [
  "indicatif 0.15.0",
  "itertools 0.9.0",
  "log 0.4.14",
- "regex 1.5.4",
+ "regex 1.5.6",
  "serde",
  "serde_derive",
  "structopt",
@@ -2656,7 +2656,7 @@ dependencies = [
  "plist 0.3.0",
  "proptest",
  "rand 0.7.3",
- "regex 1.5.4",
+ "regex 1.5.6",
  "reqwest",
  "semver 1.0.6",
  "serde",
