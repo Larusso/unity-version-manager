@@ -19,15 +19,6 @@ checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
 name = "aho-corasick"
-version = "0.6.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81ce3d38065e618af2d7b77e10c5ad9a069859b4be3c2250f674af3840d9c8a5"
-dependencies = [
- "memchr",
-]
-
-[[package]]
-name = "aho-corasick"
 version = "0.7.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e37cfd5e7657ada45f742d6e99ca5788580b5c529dc78faf11ece6dc702656f"
@@ -335,7 +326,7 @@ dependencies = [
  "lazy_static 1.4.0",
  "libc",
  "parking_lot 0.12.0",
- "regex 1.5.6",
+ "regex",
  "termios",
  "unicode-width",
  "winapi 0.3.9",
@@ -351,7 +342,7 @@ dependencies = [
  "encode_unicode",
  "lazy_static 1.4.0",
  "libc",
- "regex 1.5.6",
+ "regex",
  "termios",
  "unicode-width",
  "winapi 0.3.9",
@@ -366,7 +357,7 @@ dependencies = [
  "encode_unicode",
  "libc",
  "once_cell",
- "regex 1.5.6",
+ "regex",
  "terminal_size",
  "unicode-width",
  "winapi 0.3.9",
@@ -565,7 +556,7 @@ dependencies = [
  "atty",
  "humantime 2.1.0",
  "log 0.4.14",
- "regex 1.5.6",
+ "regex",
  "termcolor",
 ]
 
@@ -639,7 +630,7 @@ dependencies = [
  "glob",
  "lazy_static 1.4.0",
  "log 0.4.14",
- "regex 1.5.6",
+ "regex",
  "thiserror",
  "yansi",
 ]
@@ -655,7 +646,7 @@ dependencies = [
  "glob",
  "lazy_static 1.4.0",
  "log 0.4.14",
- "regex 1.5.6",
+ "regex",
  "thiserror",
  "yansi",
 ]
@@ -946,26 +937,13 @@ dependencies = [
 
 [[package]]
 name = "indicatif"
-version = "0.9.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a29b2fa6f00010c268bface64c18bb0310aaa70d46a195d5382d288c477fb016"
+checksum = "fcc42b206e70d86ec03285b123e65a5458c92027d1fb2ae3555878b8113b3ddf"
 dependencies = [
  "console 0.15.0",
- "lazy_static 0.2.11",
- "parking_lot 0.12.0",
- "regex 0.2.11",
-]
-
-[[package]]
-name = "indicatif"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7baab56125e25686df467fe470785512329883aab42696d661247aca2a2896e4"
-dependencies = [
- "console 0.15.0",
- "lazy_static 1.4.0",
  "number_prefix",
- "regex 1.5.6",
+ "unicode-width",
 ]
 
 [[package]]
@@ -1247,9 +1225,9 @@ dependencies = [
 
 [[package]]
 name = "number_prefix"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17b02fc0ff9a9e4b35b3342880f48e896ebf69f2967921fe8646bf5b7125956a"
+checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "object"
@@ -1460,7 +1438,7 @@ dependencies = [
  "rand 0.6.5",
  "rand_chacha 0.1.1",
  "rand_xorshift",
- "regex-syntax 0.6.26",
+ "regex-syntax",
  "rusty-fork",
  "tempfile",
 ]
@@ -1688,35 +1666,13 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "0.2.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9329abc99e39129fcceabd24cf5d85b4671ef7c29c50e972bc5afe32438ec384"
-dependencies = [
- "aho-corasick 0.6.10",
- "memchr",
- "regex-syntax 0.5.6",
- "thread_local",
- "utf8-ranges",
-]
-
-[[package]]
-name = "regex"
 version = "1.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d83f127d94bdbcda4c8cc2e50f6f84f4b611f69c902699ca385a39c3a75f9ff1"
 dependencies = [
- "aho-corasick 0.7.18",
+ "aho-corasick",
  "memchr",
- "regex-syntax 0.6.26",
-]
-
-[[package]]
-name = "regex-syntax"
-version = "0.5.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d707a4fa2637f2dca2ef9fd02225ec7661fe01a53623c1e6515b6916511f7a7"
-dependencies = [
- "ucd-util",
+ "regex-syntax",
 ]
 
 [[package]]
@@ -2123,15 +2079,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "thread_local"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6b53e329000edc2b34dbe8545fd20e55a333362d0a321909685a19bd28c3f1b"
-dependencies = [
- "lazy_static 1.4.0",
-]
-
-[[package]]
 name = "time"
 version = "0.1.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2312,12 +2259,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dcf81ac59edc17cc8697ff311e8f5ef2d99fcbd9817b34cec66f90b6c3dfd987"
 
 [[package]]
-name = "ucd-util"
-version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c85f514e095d348c279b1e5cd76795082cf15bd59b93207832abe0b1d8fed236"
-
-[[package]]
 name = "unicase"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2381,12 +2322,6 @@ dependencies = [
  "matches",
  "percent-encoding 2.1.0",
 ]
-
-[[package]]
-name = "utf8-ranges"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4ae116fef2b7fea257ed6440d3cfcff7f190865f170cdad00bb6465bf18ecba"
 
 [[package]]
 name = "uuid"
@@ -2453,7 +2388,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "console 0.9.2",
  "flexi_logger 0.16.3",
- "indicatif 0.15.0",
+ "indicatif",
  "lazy_static 1.4.0",
  "log 0.4.14",
  "serde",
@@ -2472,7 +2407,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "console 0.9.2",
  "flexi_logger 0.16.3",
- "indicatif 0.15.0",
+ "indicatif",
  "lazy_static 1.4.0",
  "log 0.4.14",
  "serde",
@@ -2503,7 +2438,7 @@ dependencies = [
  "console 0.9.2",
  "error-chain",
  "flexi_logger 0.16.3",
- "indicatif 0.15.0",
+ "indicatif",
  "log 0.4.14",
  "structopt",
  "uvm_cli",
@@ -2519,7 +2454,7 @@ dependencies = [
  "dirs-2",
  "env_logger",
  "error-chain",
- "indicatif 0.15.0",
+ "indicatif",
  "log 0.4.14",
  "serde",
  "serde_derive",
@@ -2565,7 +2500,7 @@ dependencies = [
  "anyhow",
  "console 0.9.2",
  "flexi_logger 0.16.3",
- "indicatif 0.15.0",
+ "indicatif",
  "itertools 0.9.0",
  "log 0.4.14",
  "serde",
@@ -2596,7 +2531,7 @@ version = "2.1.0"
 dependencies = [
  "anyhow",
  "console 0.6.2",
- "indicatif 0.9.0",
+ "indicatif",
  "log 0.4.14",
  "semver 1.0.6",
  "structopt",
@@ -2610,10 +2545,10 @@ version = "2.3.0"
 dependencies = [
  "anyhow",
  "console 0.9.2",
- "indicatif 0.15.0",
+ "indicatif",
  "itertools 0.9.0",
  "log 0.4.14",
- "regex 1.5.6",
+ "regex",
  "serde",
  "serde_derive",
  "structopt",
@@ -2656,7 +2591,7 @@ dependencies = [
  "plist 0.3.0",
  "proptest",
  "rand 0.7.3",
- "regex 1.5.6",
+ "regex",
  "reqwest",
  "semver 1.0.6",
  "serde",
