@@ -17,7 +17,7 @@ uvm_move_dir = {path = "../../uvm_move_dir", version = "0.1.0" }
 log = "0.4.11"
 reqwest = "0.9.22"
 tempfile = "3"
-md-5 = { version = "0.8.0", features = ["std"] }
+md-5 = { version = "0.10.4", features = ["std"] }
 hex-serde = "0.1.0"
 hex = "0.4.2"
 error-chain = "0.12.4"
