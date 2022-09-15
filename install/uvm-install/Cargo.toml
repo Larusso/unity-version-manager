@@ -7,7 +7,7 @@ edition = "2018"
 anyhow = "1.0.38"
 flexi_logger = "0.16.1"
 structopt = "0.3"
-indicatif = "0.15.0"
+indicatif = "0.17.1"
 log = "0.4.11"
 console = "0.9.1"
 uvm_cli = { path = "../../uvm_cli" }
