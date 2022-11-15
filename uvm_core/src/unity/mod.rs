@@ -5,7 +5,7 @@ mod installation;
 pub mod urls;
 mod version;
 mod localization;
-
+pub mod project;
 pub mod v2 {
     pub use super::version::manifest::v2::Manifest;
 }
