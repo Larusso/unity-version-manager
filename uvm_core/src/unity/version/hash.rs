@@ -21,6 +21,9 @@ pub enum UnityHashError {
         #[from]
         source: std::io::Error
     },
+
+    #[error("hash not available")]
+    Other
 }
 
 type Result<T> = std::result::Result<T, UnityHashError>;
