@@ -1,3 +1,5 @@
+use crate::unity::Installation;
+use log::{debug, info};
 use regex::Regex;
 use semver;
 use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
@@ -7,17 +9,16 @@ use std::fmt;
 use std::path::{Path, PathBuf};
 use std::result;
 use std::str::FromStr;
-use crate::unity::Installation;
-use log::{debug,info};
-mod hash;
 mod error;
-pub use error::{VersionError, Result};
+mod hash;
+pub use error::{Result, VersionError};
 pub mod manifest;
 pub mod module;
 
 use crate::sys::unity::version as version_impl;
 
 pub use self::hash::all_versions;
+use self::hash::UnityHashError;
 
 pub use self::version_impl::read_version_from_path;
 
@@ -138,7 +139,19 @@ impl Version {
     }
 
     pub fn version_hash(&self) -> Result<String> {
-        hash::hash_for_version(self).map_err(|source| VersionError::HashMissing{source, version: self.to_string()})
+        self.hash
+            .as_ref()
+            .map(|h| h.to_owned())
+            .ok_or_else(|| VersionError::HashMissing {
+                source: UnityHashError::Other,
+                version: self.to_string(),
+            })
+            .or_else(|_err| {
+                hash::hash_for_version(self).map_err(|source| VersionError::HashMissing {
+                    source,
+                    version: self.to_string(),
+                })
+            })
     }
 
     pub fn major(&self) -> u64 {
@@ -174,7 +187,9 @@ impl Version {
         let output = child.wait_with_output()?;
 
         if !output.status.success() {
-            return Err(VersionError::ExecutableContainsNoVersion(path.display().to_string()))
+            return Err(VersionError::ExecutableContainsNoVersion(
+                path.display().to_string(),
+            ));
         }
 
         let version = Version::from_str(&String::from_utf8_lossy(&output.stdout))?;
@@ -189,9 +204,14 @@ impl Version {
     pub fn as_semver(&self) -> semver::Version {
         let mut v = self.base.clone();
         if self.release_type != VersionType::Final {
-            v.pre = semver::Prerelease::new(&format!("{}.{}", self.release_type, self.revision)).unwrap();
+            v.pre = semver::Prerelease::new(&format!("{}.{}", self.release_type, self.revision))
+                .unwrap();
         }
         v
+    }
+
+    pub fn set_version_hash(&mut self, hash: Option<String>) {
+        self.hash = hash;
     }
 }
 
@@ -273,7 +293,7 @@ impl FromStr for Version {
 
     fn from_str(s: &str) -> Result<Self> {
         let version_pattern =
-            Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b|a)([0-9]{1,4})").unwrap();
+            Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b|a)([0-9]{1,4})( \(([a-z0-9]{12})\)|/([a-z0-9]{12}))?").unwrap();
         match version_pattern.captures(s) {
             Some(caps) => {
                 let major: u64 = caps.get(1).map_or("0", |m| m.as_str()).parse().unwrap();
@@ -289,15 +309,16 @@ impl FromStr for Version {
                 };
 
                 let revision: u64 = caps.get(5).map_or("0", |m| m.as_str()).parse().unwrap();
+                let hash = caps.get(7).or(caps.get(8)).map(|m| m.as_str().to_owned());
                 let base = semver::Version::new(major, minor, patch);
                 Ok(Version {
                     base,
                     revision,
                     release_type: release_type.unwrap(),
-                    hash: None,
+                    hash: hash,
                 })
             }
-            None => Err(VersionError::ParsingFailed(s.to_string()))
+            None => Err(VersionError::ParsingFailed(s.to_string())),
         }
     }
 }
@@ -315,7 +336,7 @@ impl FromStr for VersionType {
             "patch" => Ok(VersionType::Patch),
             "beta" => Ok(VersionType::Beta),
             "alpha" => Ok(VersionType::Alpha),
-            _ => Err(VersionError::VersionTypeParsingFailed(s.to_string()))
+            _ => Err(VersionError::VersionTypeParsingFailed(s.to_string())),
         }
     }
 }
@@ -339,7 +360,11 @@ pub fn fetch_matching_version<I: Iterator<Item = Version>>(
                     version, release_type
                 );
                 let mut semver_version = version.base().clone();
-                semver_version.pre = semver::Prerelease::new(&format!("{}.{}", version.release_type, version.revision)).unwrap();
+                semver_version.pre = semver::Prerelease::new(&format!(
+                    "{}.{}",
+                    version.release_type, version.revision
+                ))
+                .unwrap();
                 semver_version
             } else {
                 let b = version.base().clone();
@@ -360,9 +385,7 @@ pub fn fetch_matching_version<I: Iterator<Item = Version>>(
             is_match
         })
         .max()
-        .ok_or_else(|| {
-            VersionError::NoMatch(version_req.to_string())
-        })
+        .ok_or_else(|| VersionError::NoMatch(version_req.to_string()))
 }
 
 #[cfg(test)]
@@ -407,7 +430,9 @@ mod tests {
     valid_version_input! {
         when_version_has_single_digits: "1.2.3f4",
         when_version_has_long_digits: "0.0.0f43",
-        when_version_has_only_zero_digits: "0.0.0f0"
+        when_version_has_only_zero_digits: "0.0.0f0",
+        when_version_has_optional_hash_project_settings_style: "2020.3.38f1 (8f5fde82e2dc)",
+        when_version_has_optional_hash_unity_hub_style: "2020.3.38f1/8f5fde82e2dc"
     }
 
     #[test]
@@ -428,6 +453,35 @@ mod tests {
 
         assert_eq!(version.release_type, VersionType::Final);
         assert!(version.revision == 4, "parse correct revision component");
+        assert!(version.hash.is_none(), "parse correct optional hash")
+    }
+
+    #[test]
+    fn splits_version_string_into_components_with_hash() {
+        let version_string = "1.2.3f4 (abcdefghijkm)";
+        let version = Version::from_str(version_string).ok().unwrap();
+
+        assert!(version.base.major == 1, "parse correct major component");
+        assert!(version.base.minor == 2, "parse correct minor component");
+        assert!(version.base.patch == 3, "parse correct patch component");
+
+        assert_eq!(version.release_type, VersionType::Final);
+        assert!(version.revision == 4, "parse correct revision component");
+        assert!(version.hash.unwrap() == "abcdefghijkm", "parse correct optional hash")
+    }
+
+    #[test]
+    fn splits_version_string_into_components_with_hash_unity_hub_style() {
+        let version_string = "1.2.3f4/abcdefghijkm";
+        let version = Version::from_str(version_string).ok().unwrap();
+
+        assert!(version.base.major == 1, "parse correct major component");
+        assert!(version.base.minor == 2, "parse correct minor component");
+        assert!(version.base.patch == 3, "parse correct patch component");
+
+        assert_eq!(version.release_type, VersionType::Final);
+        assert!(version.revision == 4, "parse correct revision component");
+        assert!(version.hash.unwrap() == "abcdefghijkm", "parse correct optional hash")
     }
 
     #[test]
@@ -489,14 +543,17 @@ mod tests {
     #[test]
     fn fetch_hash_for_known_version() {
         let version = Version::f(2017, 1, 0, 2);
-        assert_eq!(version.version_hash().unwrap(), String::from("66e9e4bfc850"));
+        assert_eq!(
+            version.version_hash().unwrap(),
+            String::from("66e9e4bfc850")
+        );
     }
 
     #[cfg(unix)]
     #[test]
     fn reads_version_from_binary_file() {
-        use tempfile::Builder;
         use std::io::Write;
+        use tempfile::Builder;
 
         let mut test_file = Builder::new()
             .prefix("version_binary")
@@ -513,10 +570,13 @@ mod tests {
         let test_value_3 = format!("{} ({})\n", version, version_hash);
         let test_value_4 = format!("Mozilla/5.0 (MacIntel; ) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36 Unity/{} (unity3d.com;\n", version);
         let test_value_5 = format!("Invalid serialized file version. File: \"%s\". Expected version: {}. Actual version: %s.\n", version);
-        let test_value_6 = format!("UnityPlayer/{} (UnityWebRequest/1.0, libcurl/7.52.0-DEV)\n", version);
+        let test_value_6 = format!(
+            "UnityPlayer/{} (UnityWebRequest/1.0, libcurl/7.52.0-DEV)\n",
+            version
+        );
 
         let f = test_file.as_file_mut();
-        let random_bytes: Vec<u8> = (0..2048).map(|_| { rand::random::<u8>() }).collect();
+        let random_bytes: Vec<u8> = (0..2048).map(|_| rand::random::<u8>()).collect();
 
         f.write_all(&random_bytes).unwrap();
         f.write_all(test_value_1.as_bytes()).unwrap();
@@ -539,8 +599,8 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn fails_to_read_version_from_binary_file_if_verion_can_not_be_found() {
-        use tempfile::Builder;
         use std::io::Write;
+        use tempfile::Builder;
 
         let mut test_file = Builder::new()
             .prefix("version_binary")
@@ -549,7 +609,7 @@ mod tests {
             .unwrap();
 
         let f = test_file.as_file_mut();
-        let random_bytes: Vec<u8> = (0..8000).map(|_| { rand::random::<u8>() }).collect();
+        let random_bytes: Vec<u8> = (0..8000).map(|_| rand::random::<u8>()).collect();
 
         f.write_all(&random_bytes).unwrap();
         let v = Version::find_version_in_file(test_file.path());
