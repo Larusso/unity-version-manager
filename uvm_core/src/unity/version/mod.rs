@@ -36,7 +36,7 @@ impl PartialOrd for VersionType {
     }
 }
 
-#[derive(Eq, Debug, Clone, Hash, PartialEq, PartialOrd)]
+#[derive(Eq, Debug, Clone, Hash, PartialOrd)]
 pub struct Version {
     base: semver::Version,
     release_type: VersionType,
@@ -212,6 +212,20 @@ impl Version {
 
     pub fn set_version_hash(&mut self, hash: Option<String>) {
         self.hash = hash;
+    }
+
+    pub fn has_version_hash(&self) -> bool {
+        self.hash.is_some()
+    }
+}
+
+impl PartialEq for Version {
+    fn eq(&self, other: &Self) -> bool {
+        let eq = self.base == other.base && self.release_type == other.release_type && self.revision == other.revision;
+        if self.hash.is_some() && other.hash.is_some() {
+            return eq && self.hash == other.hash
+        }
+        eq
     }
 }
 
@@ -391,7 +405,6 @@ pub fn fetch_matching_version<I: Iterator<Item = Version>>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use proptest::prelude;
 
     macro_rules! invalid_version_input {
         ($($name:ident: $input:expr),*) => {
@@ -547,6 +560,25 @@ mod tests {
             version.version_hash().unwrap(),
             String::from("66e9e4bfc850")
         );
+    }
+
+    #[test]
+    fn compares_versions() {
+        let version_a = Version::from_str("1.2.3f4").ok().unwrap();
+        let version_b = Version::from_str("1.2.3f4").ok().unwrap();
+        assert_eq!(version_a, version_b, "testing version equality");
+
+        let version_c = Version::from_str("1.2.3f4").ok().unwrap();
+        let version_d = Version::from_str("1.2.3f5").ok().unwrap();
+        assert_ne!(version_c, version_d, "testing version nonequality"); 
+
+        let version_c = Version::from_str("1.2.3f4").ok().unwrap();
+        let version_d = Version::from_str("1.2.3f4/1234567890ab").ok().unwrap();
+        assert_eq!(version_c, version_d, "testing version equality when one version has hash other not"); 
+
+        let version_c = Version::from_str("1.2.3f4/0987654321ab").ok().unwrap();
+        let version_d = Version::from_str("1.2.3f4/1234567890ab").ok().unwrap();
+        assert_ne!(version_c, version_d, "testing version equality when one version hash is different"); 
     }
 
     #[cfg(unix)]
