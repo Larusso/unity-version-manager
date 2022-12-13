@@ -6,7 +6,7 @@ edition = "2018"
 description = "List available Unity versions to install."
 [dependencies]
 anyhow = "1.0.38"
-console = "0.9.1"
+console = "0.15.0"
 regex = "1.5"
 itertools = "0.9.0"
 serde = "1.0"
