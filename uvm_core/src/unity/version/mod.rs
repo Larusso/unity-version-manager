@@ -210,8 +210,8 @@ impl Version {
         v
     }
 
-    pub fn set_version_hash(&mut self, hash: Option<String>) {
-        self.hash = hash;
+    pub fn set_version_hash<S: AsRef<str>>(&mut self, hash: Option<S>) {
+        self.hash = hash.map(|s| s.as_ref().to_owned());
     }
 
     pub fn has_version_hash(&self) -> bool {

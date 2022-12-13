@@ -95,8 +95,9 @@ impl IniManifest {
                     ),
                 )
             })?;
-
-        let manifest_path = cache_dir.join(&format!("{}_manifest.ini", version.as_ref()));
+        let version = version.as_ref();
+        let version_string = format!("{}-{}", version, version.version_hash()?);
+        let manifest_path = cache_dir.join(&format!("{}_manifest.ini", version_string));
 
         if !manifest_path.exists() {
             Self::download_manifest(version, manifest_path.to_path_buf())
@@ -271,9 +272,10 @@ mod tests {
 
     #[test]
     fn saves_meta_file_to_cache_dir() {
-        let version = Version::f(2019, 1, 7, 1);
+        let mut version = Version::f(2019, 1, 7, 1);
+        version.set_version_hash(Some("f3c4928e5742"));
         let cache_file = paths::cache_dir()
-            .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
+            .map(|f| f.join(&format!("{}-{}_manifest.ini", version.to_string(), "f3c4928e5742")))
             .unwrap();
         if cache_file.exists() {
             fs::remove_file(&cache_file).unwrap();

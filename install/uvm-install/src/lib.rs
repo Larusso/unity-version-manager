@@ -209,12 +209,14 @@ impl UvmCommand {
                 version.to_string()
             ))
             .ok();
+        
+        let version_string = format!("{}-{}", version, version.version_hash()?);
         let locks_dir = paths::locks_dir().ok_or_else(|| {
             io::Error::new(io::ErrorKind::NotFound, "Unable to locate locks directory.")
         })?;
 
         fs::DirBuilder::new().recursive(true).create(&locks_dir)?;
-        lock_process!(locks_dir.join(format!("{}.lock", &version)));
+        lock_process!(locks_dir.join(format!("{}.lock", &version_string)));
 
         let mut editor_installation: Option<EditorInstallation> = None;
         let base_dir = if let Some(ref destination) = options.destination() {

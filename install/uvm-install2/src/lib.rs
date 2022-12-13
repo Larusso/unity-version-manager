@@ -61,12 +61,13 @@ where
     I::Item: AsRef<Component>,
 {
     let version = version.as_ref();
+    let version_string = format!("{}-{}", version, version.version_hash()?);
     let locks_dir = paths::locks_dir().ok_or_else(|| {
         io::Error::new(io::ErrorKind::NotFound, "Unable to locate locks directory.")
     })?;
 
     fs::DirBuilder::new().recursive(true).create(&locks_dir)?;
-    lock_process!(locks_dir.join(format!("{}.lock", version)));
+    lock_process!(locks_dir.join(format!("{}.lock", version_string)));
 
     let mut manifest = Manifest::load(version)?;
     let mut graph = InstallGraph::from(&manifest);
