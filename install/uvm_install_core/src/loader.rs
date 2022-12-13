@@ -99,8 +99,18 @@ impl<'a> Loader<'a> {
             }
         }
 
+        let version_string = format!("{}-{}", manifest.version(), manifest.version().version_hash()?);
         let installer_dir = paths::cache_dir()
-            .map(|c| c.join(&format!("installer/{}", manifest.version())))
+            .map(|c| c.join(&format!("installer/{}", version_string)))
+            .ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unable to fetch cache installer directory",
+                )
+            })?;
+
+        let temp_dir = paths::cache_dir()
+            .map(|c| c.join(&format!("tmp/{}", version_string)))
             .ok_or_else(|| {
                 io::Error::new(
                     io::ErrorKind::Other,
@@ -112,12 +122,17 @@ impl<'a> Loader<'a> {
 
         let temp_file_name = format!("{}.part", file_name);
 
+        trace!("ensure installer temp dir");
+        fs::DirBuilder::new()
+            .recursive(true)
+            .create(&temp_dir)?;
+
         trace!("ensure installer cache dir");
         fs::DirBuilder::new()
             .recursive(true)
             .create(&installer_dir)?;
 
-        lock_process!(installer_dir.join(format!("{}.lock", file_name)));
+        lock_process!(temp_dir.join(format!("{}.lock", file_name)));
 
         let installer_path = installer_dir.join(file_name);
         trace!("installer_path: {}", installer_path.display());
@@ -138,7 +153,7 @@ impl<'a> Loader<'a> {
             }
         }
 
-        let temp_file = installer_dir.join(temp_file_name);
+        let temp_file = temp_dir.join(temp_file_name);
 
         debug!("create tempfile for installer at {}", temp_file.display());
         //check if tempfile exists and get its size
