@@ -6,7 +6,7 @@ edition = "2018"
 description = "Launch the current active version of unity"
 [dependencies]
 anyhow = "1.0.38"
-console = "0.9.1"
+console = "0.15.0"
 log = "0.4.11"
 structopt = "0.3"
 uvm_cli = { path = "../../uvm_cli" }

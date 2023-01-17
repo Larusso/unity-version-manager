@@ -6,7 +6,7 @@ edition = "2018"
 description = "List installed unity versions"
 [dependencies]
 anyhow = "1.0.38"
-console = "0.9.1"
+console = "0.15.0"
 log = "0.4.11"
 serde = "1.0"
 serde_derive = "1.0"
