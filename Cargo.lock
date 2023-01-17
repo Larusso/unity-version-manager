@@ -994,15 +994,6 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "284f18f85651fe11e8a991b2adb42cb078325c996ed026d994719efcfca1d54b"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9a9d19fa1e79b6215ff29b9d6880b706147f16e9b1dbb1e4e5947b5b02bc5e3"
@@ -2572,7 +2563,7 @@ dependencies = [
  "console 0.9.2",
  "flexi_logger 0.16.3",
  "indicatif 0.15.0",
- "itertools 0.9.0",
+ "itertools",
  "log 0.4.14",
  "serde",
  "serde_derive",
@@ -2617,7 +2608,7 @@ dependencies = [
  "anyhow",
  "console 0.9.2",
  "indicatif 0.15.0",
- "itertools 0.9.0",
+ "itertools",
  "log 0.4.14",
  "regex 1.5.6",
  "serde",
@@ -2633,7 +2624,7 @@ version = "0.4.0"
 dependencies = [
  "console 0.9.2",
  "flexi_logger 0.17.1",
- "itertools 0.10.3",
+ "itertools",
  "log 0.4.14",
  "serde",
  "serde_derive",
@@ -2654,7 +2645,7 @@ dependencies = [
  "hex 0.4.3",
  "hex-serde",
  "indoc",
- "itertools 0.9.0",
+ "itertools",
  "lazy_static 1.4.0",
  "libc",
  "log 0.4.14",
@@ -2704,7 +2695,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "daggy",
  "fixedbitset",
- "itertools 0.9.0",
+ "itertools",
  "stringreader",
  "uvm_core",
 ]
