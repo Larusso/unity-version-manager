@@ -5,7 +5,7 @@ pub fn installpath(component:Component) -> Option<PathBuf> {
     use Component::*;
     let path = match component {
         Mono | VisualStudio | MonoDevelop => None,
-        LinuxMono | StandardAssets | Example => Some(""),
+        StandardAssets | Example => Some(""),
         Documentation => Some("Editor/Data/Documentation"),
         ExampleProject  => None,
         Android => Some("Editor/Data/PlaybackEngines/AndroidPlayer"),
