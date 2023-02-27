@@ -630,22 +630,6 @@ dependencies = [
 
 [[package]]
 name = "flexi_logger"
-version = "0.16.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "291b6ce7b3ed2dda82efa6aee4c6bdb55fd11bc88b06c55b01851e94b96e5322"
-dependencies = [
- "atty",
- "chrono",
- "glob",
- "lazy_static 1.4.0",
- "log 0.4.14",
- "regex 1.5.6",
- "thiserror",
- "yansi",
-]
-
-[[package]]
-name = "flexi_logger"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "33ab94b6ac8eb69f1496a6993f26f785b5fd6d99b7416023eb2a6175c0b242b1"
@@ -2441,7 +2425,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "console 0.9.2",
- "flexi_logger 0.16.3",
+ "flexi_logger",
  "log 0.4.14",
  "reqwest",
  "serde",
@@ -2458,7 +2442,7 @@ dependencies = [
  "anyhow",
  "cfg-if 1.0.0",
  "console 0.9.2",
- "flexi_logger 0.16.3",
+ "flexi_logger",
  "indicatif 0.15.0",
  "lazy_static 1.4.0",
  "log 0.4.14",
@@ -2477,7 +2461,7 @@ dependencies = [
  "anyhow",
  "cfg-if 1.0.0",
  "console 0.9.2",
- "flexi_logger 0.16.3",
+ "flexi_logger",
  "indicatif 0.15.0",
  "lazy_static 1.4.0",
  "log 0.4.14",
@@ -2508,7 +2492,7 @@ dependencies = [
  "anyhow",
  "console 0.9.2",
  "error-chain",
- "flexi_logger 0.16.3",
+ "flexi_logger",
  "indicatif 0.15.0",
  "log 0.4.14",
  "structopt",
@@ -2570,7 +2554,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "console 0.9.2",
- "flexi_logger 0.16.3",
+ "flexi_logger",
  "indicatif 0.15.0",
  "itertools 0.9.0",
  "log 0.4.14",
@@ -2632,7 +2616,7 @@ name = "uvm_cli"
 version = "0.4.0"
 dependencies = [
  "console 0.9.2",
- "flexi_logger 0.17.1",
+ "flexi_logger",
  "itertools 0.10.3",
  "log 0.4.14",
  "serde",
