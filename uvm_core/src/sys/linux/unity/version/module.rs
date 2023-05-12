@@ -16,17 +16,17 @@ pub struct ModulePart {
 
 pub fn get_android_open_jdk_download_info<V: AsRef<Version>>(version:V) -> ModulePart {
     let version = version.as_ref();
-    let (version, install_size, download_size) = 
-    if *version >= Version::a(2022,1,0,0) {
-        ( "8u172-b11", 162_000_000, 73_170_000)
+    let (version, checksum, install_size, download_size) = 
+    if *version >= Version::a(2022,2,0,0) {
+        ( "11.0.14.1-1", "c17a2ae6fe1b4281fb613fed32027cf93e0251795387941bd8c1fcb6c74f9db4", 239_521_958, 121_536_013)
     } else {
-        ( "8u172-b11", 162_000_000, 73_170_000)
+        ( "8u172-b11", "4be8440cc514099cfe1b50cbc74128f6955cd90fd5afe15ea7be60f832de67b4", 162_000_000, 73_170_000)
     };
-
+    //https://download.unity3d.com/download_unity/open-jdk/open-jdk-linux-x64/jdk11.0.14.1-1_c17a2ae6fe1b4281fb613fed32027cf93e0251795387941bd8c1fcb6c74f9db4.zip
     ModulePart {
         component: Component::AndroidOpenJdk,
         name: "OpenJDK".to_string(),
-        download_url: format!("http://download.unity3d.com/download_unity/open-jdk/open-jdk-linux-x64/jdk{}_4be8440cc514099cfe1b50cbc74128f6955cd90fd5afe15ea7be60f832de67b4.zip", version),
+        download_url: format!("http://download.unity3d.com/download_unity/open-jdk/open-jdk-linux-x64/jdk{}_{}.zip", version, checksum),
         version: version.to_string(),
         main: true,
         installed_size: install_size,
