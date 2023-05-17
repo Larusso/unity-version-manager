@@ -51,6 +51,7 @@ macro_rules! generate_modules_json {
 
 #[cfg(not(target_os = "linux"))]
 generate_modules_json![
+    generates_modules_2022_2, Version::f(2022, 2, 6, 1), UNITY_2022_2_6_F_1,
     generates_modules_2022_1, Version::a(2022, 1, 0, 13), UNITY_2022_1_0_A_13,
     generates_modules_2021_1, Version::f(2021, 1, 28, 1), UNITY_2021_1_28_F_1,
     generates_modules_2021_2, Version::f(2021, 2, 2, 1), UNITY_2021_2_2_F_1,
@@ -73,6 +74,7 @@ generate_modules_json![
 
 #[cfg(target_os = "linux")]
 generate_modules_json![
+    generates_modules_2022_2, Version::f(2022, 2, 6, 1), UNITY_2022_2_6_F_1,
     generates_modules_2022_1, Version::a(2022, 1, 0, 13), UNITY_2022_1_0_A_13,
     generates_modules_2021_1, Version::f(2021, 1, 28, 1), UNITY_2021_1_28_F_1,
     generates_modules_2021_2, Version::f(2021, 2, 2, 1), UNITY_2021_2_2_F_1,

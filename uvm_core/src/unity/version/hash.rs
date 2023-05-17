@@ -739,6 +739,7 @@ const VERSIONS: &str = "
 2022.1.0b7: c0c678b963f4
 2022.1.0b8: cca363eec1bc
 2022.1.0b9: a43aced8177f
+2022.2.6f1: 10bfa6201ced
 5.4.5f1: 68943b6c8c42
 5.5.0f3: 38b4efef76f0
 5.5.1f1: 88d00a7498cd
