@@ -1,6 +1,13 @@
 [package]
 name = "uvm_live_platform"
 version = "0.1.0"
+authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
+description = "Methods to connect to the unity live platform service."
+repository = "https://github.com/Larusso/unity-version-manager"
+readme = "../README.md"
+keywords = ["unity","version-manager"]
+categories = ["development-tools"]
+license = "Apache-2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
