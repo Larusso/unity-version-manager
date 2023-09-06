@@ -31,7 +31,7 @@ impl Default for UnityReleaseDownloadPlatform {
     fn default() -> Self {
         if cfg!(target_os = "linux") {
             Self::Linux
-        } else if cfg!(target_os = "macos") {
+        } else if cfg!(target_os = "windows") {
             Self::Windows
         } else if cfg!(target_os = "macos") {
             Self::MacOs

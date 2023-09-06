@@ -23,3 +23,13 @@ fn _list_all_versions(include_revisions: bool, autopage: bool) -> Result<ListVer
     ListVersions::builder().include_revision(include_revisions).autopage(autopage).list()
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let result: Vec<String> = all_versions().unwrap().collect();
+        println!("{:?}", result)
+    }
+}
