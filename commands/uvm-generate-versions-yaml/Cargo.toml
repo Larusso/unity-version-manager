@@ -1,0 +1,17 @@
+[package]
+name = "uvm-generate-versions-yaml"
+version = "0.1.0"
+authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
+description = "Generate the versions.yml file for versions service"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.75"
+clap = { version = "4.4.2", features = ["derive", "env"] }
+console = "0.15.7"
+flexi_logger = "0.26.0"
+log = "0.4.20"
+rayon = "1.7.0"
+serde_yaml = "0.9.25"
+uvm_live_platform = {path = "../../uvm_live_platform"}
+uvm_core = {path = "../../uvm_core"}

@@ -1,0 +1,2197 @@
+"""Exposes a URL that specifies the behavior of this scalar."""
+directive @specifiedBy(
+  """The URL that specifies the behavior of this scalar."""
+  url: String!
+) on SCALAR
+
+directive @requires(fields: _FieldSet!) on FIELD_DEFINITION
+
+directive @auth on OBJECT | FIELD_DEFINITION
+
+scalar _Any
+
+scalar _FieldSet
+
+"""
+Boundary values related to a Product Variant of type `UnitVariant` within which the price is applicable.
+"""
+type Boundary {
+  """The start value of the Product Variant."""
+  start: Float!
+
+  """The end value of the Product Variant."""
+  end: Float!
+}
+
+"""A Unity Hub Community Resource."""
+type CommunityResource {
+  """The localized human-readable title of the Community Resource."""
+  title: String!
+
+  """The localized description of the Community Resource."""
+  description: String!
+
+  """The localized URL of the Community Resource."""
+  url: URL!
+
+  """The localized thumbnail of the Community Resource."""
+  thumbnail: ResourceMedia!
+}
+
+"""Possible values of Community Resource Order."""
+enum CommunityResourceOrder {
+  WEIGHTED_DESC
+}
+
+"""
+A Composite Metered Product is one which contains a subset of Metered Products
+(for example, Unity Simulation). The price points are all on the child products.
+It extends the `ProductInterface` by adding a list of `products` as it's Metered
+Product children.
+"""
+type CompositeMeteredProduct implements ProductInterface {
+  """The slug of the Product."""
+  slug: ID!
+
+  """The SKU of the Product."""
+  sku: ID!
+
+  """The name of the Product."""
+  name: String!
+
+  """The type of the Product."""
+  type: ProductType!
+
+  """The description of the Product."""
+  description: String!
+
+  """The UI Page of the Product."""
+  ui: UIPage!
+
+  """The child products of the Composite Metered Product."""
+  products: [MeteredProduct!]!
+}
+
+"""Input fields to create a new Organization."""
+input CreateOrganizationInput {
+  """The name of the Organization."""
+  name: String!
+}
+
+"""The response of a Create Organization Mutation."""
+union CreateOrganizationResponse = CreateOrganizationResult | ServerError
+
+"""The result of a Create Organization Mutation."""
+type CreateOrganizationResult {
+  """The indication whether the Organization has been successfully created."""
+  success: Boolean!
+
+  """The organization that has been created."""
+  organization: Organization!
+}
+
+"""Possible types of Currency."""
+enum Currency {
+  BRL
+  CNY
+  EUR
+  JPY
+  KRW
+  USD
+}
+
+"""
+A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the
+`date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO
+8601 standard for representation of dates and times using the Gregorian calendar.
+"""
+scalar DateTime
+
+"""
+A field whose value conforms to the standard internet email address format as
+specified in HTML Spec:
+https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
+"""
+scalar EmailAddress
+
+"""
+An Error is returned when any form of operational error is thrown by the Live Platform.
+"""
+interface Error {
+  """The title of the Error."""
+  title: String!
+
+  """The message of the Error."""
+  message: String!
+
+  """The errorCode of the Error."""
+  errorCode: String!
+}
+
+"""An Extra Field."""
+type ExtraField {
+  """The name of the Extra Field."""
+  name: String!
+
+  """The value of the Extra Field."""
+  value: String!
+}
+
+"""Possible types of FileType."""
+enum FileType {
+  TEXT
+  TAR_GZ
+  TAR_XZ
+  ZIP
+  PKG
+  EXE
+  PO
+  DMG
+  LZMA
+  LZ4
+  MD
+  PDF
+}
+
+"""A Flat pricing for Product."""
+type FlatVariant {
+  """The id of the Flat Variant."""
+  id: ID!
+
+  """The name of the Flat Variant."""
+  name: String!
+
+  """The price of the Flat Variant."""
+  price: Price!
+}
+
+"""A Unity Hub Content."""
+type HubContent {
+  """The unique identifier of the Hub Content."""
+  id: ID!
+
+  """The localized title of the Hub Content."""
+  title: String!
+
+  """The localized description of the Hub Content."""
+  description: String!
+
+  """The localized call-to-action of the Hub Content."""
+  cta: String!
+
+  """The localized link for the call-to-action of the Hub Content."""
+  link: URL!
+
+  """The thumbnail of the Hub Content."""
+  thumbnail: ResourceMedia!
+}
+
+"""A Unity Hub Content Category."""
+type HubContentCategory {
+  """The unique identifier of the Hub Content Category."""
+  id: ID!
+
+  """The unique human readable identifier of the Hub Content Category."""
+  slug: String!
+
+  """The localized name of the Hub Content Category."""
+  name: String!
+
+  """The localized title of the Hub Content Category."""
+  title: String!
+
+  """The localized description of the Hub Content Category."""
+  description: String!
+
+  """
+  The icon of the Hub Content Category, this is an internal Hub Icon Reference.
+  """
+  icon: String!
+
+  """The localized contents of the Hub Content Category."""
+  hubContent(
+    """The sorting arguments for a HubContentCategory query."""
+    orderBy: HubContentOrder = WEIGHTED_DESC
+  ): [HubContent!]!
+}
+
+"""The sorting order for Hub Content Categories."""
+enum HubContentCategoryOrder {
+  WEIGHTED_DESC
+  WEIGHTED_ASC
+}
+
+"""The sorting order for Hub Contents."""
+enum HubContentOrder {
+  WEIGHTED_DESC
+  WEIGHTED_ASC
+}
+
+"""
+The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSONObject
+
+"""A Learn Course."""
+type LearnCourse implements LearnEntityInterface {
+  """The ID of the Learn Entity."""
+  id: ID!
+
+  """The type of the Learn Entity."""
+  type: LearnEntityType!
+
+  """The title of the Learn Entity."""
+  title: String!
+
+  """The description of the Learn Entity."""
+  description: String!
+
+  """The proprietary Draft JS JSON description of the Learn Entity."""
+  draftJSDescription: String!
+
+  """
+  The thumbnail of the Learn Entity. A fallback image is returned if no thumbnail is available.
+  """
+  thumbnail: LearnMedia!
+
+  """The language of the Learn Entity."""
+  language: LearnEntityLanguage!
+
+  """The duration in minutes of the Learn Entity."""
+  duration: LearnTimeValue!
+
+  """The total number of bookmarks of the Learn Entity."""
+  totalBookmarks: Int!
+
+  """The web URL of the Learn Entity."""
+  url: URL!
+
+  """The skill level of the Learn Entity."""
+  skillLevel: LearnEntitySkillLevel!
+
+  """The author of the Learn Entity."""
+  author: LearnEntityAuthor!
+
+  """The list of topics related to the Learn Entity."""
+  topics: [LearnEntityTopic!]!
+
+  """The list of industries related to the Learn Entity."""
+  industries: [LearnEntityIndustry!]!
+
+  """The supported Unity editor version of the Learn Entity."""
+  supportedEditorVersion: String!
+
+  """The list of learning materials related to the Learn Entity."""
+  materials: [LearnEntityMaterial!]
+
+  """The Unity Connect group of the Learn Entity."""
+  connectGroup: LearnEntityConnectGroup
+
+  """The list of contents related to the Learn Course."""
+  contents: [LearnEntityInterface!]
+}
+
+"""Possible types of Learn Digital Unit."""
+enum LearnDigitalUnit {
+  BYTE
+  KILOBYTE
+  MEGABYTE
+  GIGABYTE
+}
+
+"""A Digital Value as defined on Learn Live Platform."""
+type LearnDigitalValue {
+  """The value of the Digital Value."""
+  value: Float!
+
+  """The unit of the Digital Value."""
+  unit: LearnDigitalUnit!
+}
+
+"""A Learn Entity Author."""
+type LearnEntityAuthor {
+  """The ID generated from Connect API of the Learn Entity Author."""
+  id: ID!
+
+  """The name of the Learn Entity Author."""
+  name: String!
+
+  """
+  The avatar of the Learn Entity Author. A fallback image is returned if no author avatar is available.
+  """
+  avatar: LearnMedia!
+}
+
+"""Input fields to add/remove a bookmark to/from a Learn Entity."""
+input LearnEntityBookmarkMutationInput {
+  """The ID of the Learn Entity."""
+  id: ID!
+
+  """The type of the Learn Entity."""
+  type: LearnEntityType!
+}
+
+"""A Learn Entity Bookmark Response."""
+union LearnEntityBookmarkMutationResponse = LearnEntityBookmarkResult | NotFoundError | ServerError
+
+"""Response for a `addLearnEntityBookmark` mutation."""
+type LearnEntityBookmarkResult {
+  """
+  The indication whether the bookmark has been successfully added to the Learn Entity or not.
+  """
+  success: Boolean!
+}
+
+"""A Unity Connect group related to a Learn Entity."""
+type LearnEntityConnectGroup {
+  """The name of the Unity Connect group for the Learn Entity."""
+  name: String!
+
+  """The Unity Connect group's URL for the Learn Entity."""
+  url: URL!
+
+  """
+  The statistics about members of the Unity Connect group for the Learn Entity.
+  """
+  members: LearnEntityConnectGroupMembersStatistics!
+}
+
+"""A Learn Entity Connect Group Members Statistics."""
+type LearnEntityConnectGroupMembersStatistics {
+  """The total members of the Unity Connect group for the Learn Entity."""
+  total: Int!
+
+  """
+  The number of online members of the Unity Connect group for the Learn Entity.
+  """
+  online: Int!
+}
+
+"""A Learn Entity Documentation Link."""
+type LearnEntityDocumentationLink {
+  """The URL of the Learn Entity Documentation Link."""
+  url: URL!
+
+  """The name of the Learn Entity Documentation Link."""
+  name: String!
+}
+
+"""A Learn Entity Downloadable Asset."""
+type LearnEntityDownloadableAsset {
+  """The URL of the Learn Entity Downloadable Asset."""
+  url: URL!
+
+  """The file size of the Learn Entity Downloadable Asset."""
+  size(
+    """The format of the Learn Digital Value size."""
+    format: LearnDigitalUnit! = BYTE
+  ): LearnDigitalValue!
+
+  """The name of the Learn Entity Downloadable Asset."""
+  name: String!
+
+  """The supported editor version of the Learn Entity Downloadable Asset."""
+  supportedEditorVersion: String!
+
+  """The packageId from Asset Store of the Learn Entity Downloadable Asset."""
+  packageId: String!
+}
+
+"""Possible duration filters of searchCatalog Query."""
+enum LearnEntityDuration {
+  LESS_THAN_15_MINUTES
+  BETWEEN_15_AND_60_MINUTES
+  BETWEEN_60_AND_120_MINUTES
+  MORE_THAN_120_MINUTES
+}
+
+"""Possible industry values of a Learn Entity Industry."""
+enum LearnEntityIndustry {
+  AEC
+  AUTOMOTIVE
+  FILM
+  GAMES
+}
+
+"""A Learn Entity Interface returned from the learn queries."""
+interface LearnEntityInterface {
+  """The ID of the Learn Entity."""
+  id: ID!
+
+  """The type of the Learn Entity."""
+  type: LearnEntityType!
+
+  """The title of the Learn Entity."""
+  title: String!
+
+  """The description of the Learn Entity."""
+  description: String!
+
+  """The proprietary Draft JS JSON description of the Learn Entity."""
+  draftJSDescription: String!
+
+  """
+  The thumbnail of the Learn Entity. A fallback image is returned if no thumbnail is available.
+  """
+  thumbnail: LearnMedia!
+
+  """The language of the Learn Entity."""
+  language: LearnEntityLanguage!
+
+  """The duration in minutes of the Learn Entity."""
+  duration: LearnTimeValue!
+
+  """The total number of bookmarks of the Learn Entity."""
+  totalBookmarks: Int!
+
+  """The web URL of the Learn Entity."""
+  url: URL!
+
+  """The skill level of the Learn Entity."""
+  skillLevel: LearnEntitySkillLevel!
+
+  """The author of the Learn Entity."""
+  author: LearnEntityAuthor!
+
+  """The list of topics related to the Learn Entity."""
+  topics: [LearnEntityTopic!]!
+
+  """The list of industries related to the Learn Entity."""
+  industries: [LearnEntityIndustry!]!
+
+  """The supported Unity editor version of the Learn Entity."""
+  supportedEditorVersion: String!
+
+  """The list of learning materials related to the Learn Entity."""
+  materials: [LearnEntityMaterial!]
+
+  """The Unity Connect group of the Learn Entity."""
+  connectGroup: LearnEntityConnectGroup
+}
+
+"""Possible language values of a Learn Entity Language."""
+enum LearnEntityLanguage {
+  ENGLISH
+  CHINESE
+  JAPANESE
+  KOREAN
+  RUSSIAN
+  SPANISH
+  FRENCH
+  GERMAN
+  PORTUGUESE
+}
+
+"""
+Types that can represent a Learn Entity Material in the Learn Entity materials.
+"""
+union LearnEntityMaterial = LearnEntityDownloadableAsset | LearnEntityDocumentationLink
+
+"""A relay style offset paginated Learn Entity Connection."""
+type LearnEntityOffsetConnection {
+  """The list of offset paginated Learn Entity edges."""
+  edges: [LearnEntityOffsetEdge!]!
+
+  """The total count of all available Learn Entity edges in the connection."""
+  totalCount: Int!
+
+  """The page information for offset pagination."""
+  pageInfo: LearnEntityOffsetPageInfo!
+}
+
+"""A relay style offset paginated Learn Entity Edge."""
+type LearnEntityOffsetEdge {
+  """A Learn Entity node."""
+  node: LearnEntityResponse!
+}
+
+"""The LearnEntity Offset Pagination Information related to a connection."""
+type LearnEntityOffsetPageInfo {
+  """The flag indicating if there is a next results page."""
+  hasNextPage: Boolean!
+
+  """The flag indicating if there is a previous results page."""
+  hasPreviousPage: Boolean!
+}
+
+"""
+Possible result order of searchCatalog Query. Result order `BEST_MATCH` is affected by the authenticated user.
+"""
+enum LearnEntityOrder {
+  BEST_MATCH
+  MOST_POPULAR
+  MOST_RECENT
+  TITLE_AZ
+  TITLE_ZA
+}
+
+"""A Learn Entity Response."""
+union LearnEntityResponse = LearnTutorial | LearnProject | LearnCourse | NotFoundError | ServerError
+
+"""Possible skill level values of a Learn Entity Skill Level."""
+enum LearnEntitySkillLevel {
+  FOUNDATIONAL
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+"""Possible topic values of a Learn Entity Topic."""
+enum LearnEntityTopic {
+  TWO_D
+  AI_AND_NAVIGATION
+  ANIMATION
+  ART
+  AUDIO
+  CAMERAS
+  DCC_TO_UNITY
+  DESIGN
+  EDITOR_ESSENTIALS
+  FOR_EDUCATORS
+  GRAPHIC_AND_VISUAL_EFFECTS
+  LIGHTING_AND_VISUAL_FIDELITY
+  MATERIAL_AND_SHADERS
+  MOBILE_AND_TOUCH
+  MODELING
+  OBJECT_AND_COMPONENTS
+  OPTIMIZATION
+  PHYSICS
+  PROJECT_MANAGEMENT
+  PROJECT_SETUP_AND_SETTINGS
+  PUBLISHING
+  RENDER_PIPELINES
+  SCRIPTING
+  UNITY_SERVICES
+  USER_INTERFACE
+  VISUALIZATION
+  XR
+}
+
+"""Possible type values of a Learn Entity Type."""
+enum LearnEntityType {
+  TUTORIAL
+  PROJECT
+  COURSE
+  ALL
+}
+
+"""A Media as defined on Learn Live Platform."""
+type LearnMedia {
+  """The URL of the Media."""
+  url: URL!
+
+  """The type of the Media."""
+  type: LearnMediaType!
+}
+
+"""Possible types of LearnMedia Type."""
+enum LearnMediaType {
+  IMAGE
+  VIDEO
+  GIF
+}
+
+"""A Learn Project."""
+type LearnProject implements LearnEntityInterface {
+  """The ID of the Learn Entity."""
+  id: ID!
+
+  """The type of the Learn Entity."""
+  type: LearnEntityType!
+
+  """The title of the Learn Entity."""
+  title: String!
+
+  """The description of the Learn Entity."""
+  description: String!
+
+  """The proprietary Draft JS JSON description of the Learn Entity."""
+  draftJSDescription: String!
+
+  """
+  The thumbnail of the Learn Entity. A fallback image is returned if no thumbnail is available.
+  """
+  thumbnail: LearnMedia!
+
+  """The language of the Learn Entity."""
+  language: LearnEntityLanguage!
+
+  """The duration in minutes of the Learn Entity."""
+  duration: LearnTimeValue!
+
+  """The total number of bookmarks of the Learn Entity."""
+  totalBookmarks: Int!
+
+  """The web URL of the Learn Entity."""
+  url: URL!
+
+  """The skill level of the Learn Entity."""
+  skillLevel: LearnEntitySkillLevel!
+
+  """The author of the Learn Entity."""
+  author: LearnEntityAuthor!
+
+  """The list of topics related to the Learn Entity."""
+  topics: [LearnEntityTopic!]!
+
+  """The list of industries related to the Learn Entity."""
+  industries: [LearnEntityIndustry!]!
+
+  """The supported Unity editor version of the Learn Entity."""
+  supportedEditorVersion: String!
+
+  """The list of learning materials related to the Learn Entity."""
+  materials: [LearnEntityMaterial!]
+
+  """The Unity Connect group of the Learn Entity."""
+  connectGroup: LearnEntityConnectGroup
+
+  """The list of tutorials related to the Learn Project."""
+  tutorials: [LearnEntityInterface!]
+}
+
+"""A Time Value as defined on Learn Live Platform."""
+type LearnTimeValue {
+  """The value of the Time Value."""
+  value: Float!
+
+  """The unit of the Time Value."""
+  unit: TimeUnit!
+}
+
+"""A Learn Tutorial."""
+type LearnTutorial implements LearnEntityInterface {
+  """The ID of the Learn Entity."""
+  id: ID!
+
+  """The type of the Learn Entity."""
+  type: LearnEntityType!
+
+  """The title of the Learn Entity."""
+  title: String!
+
+  """The description of the Learn Entity."""
+  description: String!
+
+  """The proprietary Draft JS JSON description of the Learn Entity."""
+  draftJSDescription: String!
+
+  """
+  The thumbnail of the Learn Entity. A fallback image is returned if no thumbnail is available.
+  """
+  thumbnail: LearnMedia!
+
+  """The language of the Learn Entity."""
+  language: LearnEntityLanguage!
+
+  """The duration in minutes of the Learn Entity."""
+  duration: LearnTimeValue!
+
+  """The total number of bookmarks of the Learn Entity."""
+  totalBookmarks: Int!
+
+  """The web URL of the Learn Entity."""
+  url: URL!
+
+  """The skill level of the Learn Entity."""
+  skillLevel: LearnEntitySkillLevel!
+
+  """The author of the Learn Entity."""
+  author: LearnEntityAuthor!
+
+  """The list of topics related to the Learn Entity."""
+  topics: [LearnEntityTopic!]!
+
+  """The list of industries related to the Learn Entity."""
+  industries: [LearnEntityIndustry!]!
+
+  """The supported Unity editor version of the Learn Entity."""
+  supportedEditorVersion: String!
+
+  """The list of learning materials related to the Learn Entity."""
+  materials: [LearnEntityMaterial!]
+
+  """The Unity Connect group of the Learn Entity."""
+  connectGroup: LearnEntityConnectGroup
+
+  """The list of parents related to the Learn Tutorial."""
+  parents: [LearnEntityInterface!]
+}
+
+"""The Unity Editor License information."""
+type License {
+  """The Unity Editor License type."""
+  type: LicenseType!
+
+  """The Unity Editor License activation date (Unix timestamp)."""
+  activationDate: Timestamp!
+}
+
+"""Possible types of Unity Editor License."""
+enum LicenseType {
+  ENTERPRISE
+  PERSONAL
+  PLUS
+  PRO
+}
+
+"""
+A Metered Product is one which varies in price depending on usage (for example,
+Unity Simulation - Bandwidth). It extends the `ProductInterface` by adding tiers
+of usage costs to the base type.
+"""
+type MeteredProduct implements ProductInterface {
+  """The slug of the Product."""
+  slug: ID!
+
+  """The SKU of the Product."""
+  sku: ID!
+
+  """The name of the Product."""
+  name: String!
+
+  """The type of the Product."""
+  type: ProductType!
+
+  """The description of the Product."""
+  description: String!
+
+  """The UI Page of the Product."""
+  ui: UIPage!
+
+  """The tiers of the Metered Product."""
+  tiers: [ProductVariant!]!
+}
+
+type Mutation {
+  """Create a new Organization."""
+  createOrganization(
+    """The input argument for creating an Organization."""
+    input: CreateOrganizationInput!
+  ): CreateOrganizationResponse!
+
+  """Add a bookmark to a Learn Entity for an authenticated User."""
+  addLearnEntityBookmark(
+    """The input argument for adding a bookmark to a Learn Entity."""
+    input: LearnEntityBookmarkMutationInput!
+  ): LearnEntityBookmarkMutationResponse!
+
+  """Remove a bookmark from a Learn Entity for an authenticated User."""
+  removeLearnEntityBookmark(
+    """The input argument for removing a bookmark from a Learn Entity."""
+    input: LearnEntityBookmarkMutationInput!
+  ): LearnEntityBookmarkMutationResponse!
+
+  """Send an analytics event to Heap."""
+  sendHeapAnalyticsEvent(
+    """The input argument for sending a Heap Analytics event."""
+    input: SendHeapAnalyticsEventInput!
+  ): SendHeapAnalyticsEventResponse!
+}
+
+"""A NotFound Error is returned when an entity cannot be retrieved."""
+type NotFoundError implements Error {
+  """The title of the Error."""
+  title: String!
+
+  """The message of the Error."""
+  message: String!
+
+  """The errorCode of the Error."""
+  errorCode: String!
+}
+
+"""
+A One Time Product is one where a consumer pays a single lump sum for the
+product (for example, Unity Certified Professional: Artist). It extends the
+`ProductInterface` by adding a single price field informing how much a customer needs to pay.
+"""
+type OneTimeProduct implements ProductInterface {
+  """The slug of the Product."""
+  slug: ID!
+
+  """The SKU of the Product."""
+  sku: ID!
+
+  """The name of the Product."""
+  name: String!
+
+  """The type of the Product."""
+  type: ProductType!
+
+  """The description of the Product."""
+  description: String!
+
+  """The UI Page of the Product."""
+  ui: UIPage!
+
+  """The price of the One Time Product."""
+  price: Price!
+}
+
+"""An Organization."""
+type Organization {
+  """The unique id of the Organization."""
+  id: ID!
+
+  """The name of the Organization."""
+  name: String!
+
+  """The primary address of the Organization."""
+  primaryAddress: OrganizationAddress
+
+  """The role of the user in the Organization."""
+  role: OrganizationRole!
+}
+
+"""The Address of the Organization."""
+type OrganizationAddress {
+  """The unique id of the Organization Address."""
+  id: ID!
+
+  """The street of the Organization Address."""
+  street: String!
+
+  """The city of the Organization Address."""
+  city: String!
+
+  """The postal code of the Organization Address."""
+  postalCode: String!
+
+  """The country of the Organization Address."""
+  country: String!
+
+  """The state of the Organization Address."""
+  state: String
+
+  """The phone number of the Organization Address."""
+  phoneNumber: String
+
+  """The company name of the Organization Address."""
+  companyName: String @deprecated(reason: "This field is deprecated. Please use the Organization `name` instead.")
+}
+
+"""Possible types of Organization Role."""
+enum OrganizationRole {
+  MANAGER
+  OWNER
+  USER
+  GUEST
+}
+
+"""A Price related to a Product."""
+type Price {
+  """The value of the Price."""
+  value: Float!
+
+  """The currency of the Price."""
+  currency: Currency!
+}
+
+"""A Product Interface returned from the product queries."""
+interface ProductInterface {
+  """The slug of the Product."""
+  slug: ID!
+
+  """The SKU of the Product."""
+  sku: ID!
+
+  """The name of the Product."""
+  name: String!
+
+  """The type of the Product."""
+  type: ProductType!
+
+  """The description of the Product."""
+  description: String!
+
+  """The UI Page of the Product."""
+  ui: UIPage!
+}
+
+"""A Product Response."""
+union ProductResponse = MeteredProduct | SubscriptionProduct | OneTimeProduct | CompositeMeteredProduct | ServerError | NotFoundError
+
+"""Possible types of Product."""
+enum ProductType {
+  COMPOSITE_METERED
+  METERED
+  SUBSCRIPTION
+  ONE_TIME
+}
+
+"""A Product Variant."""
+union ProductVariant = FlatVariant | UnitVariant
+
+type Query {
+  """Get the Authenticated User profile and the associated resources."""
+  getAuthenticatedUser: User!
+
+  """Search for learn content within the Unity Learn catalog."""
+  searchLearnCatalog(
+    """Limits the number of results returned per page (min 1, max 25)."""
+    limit: Int! = 10
+
+    """Skips the first n elements from the results."""
+    skip: Int! = 0
+
+    """
+    Searches for specific terms (e.g. 3D, platforms, C#). Unsupported characters will be removed from the terms.
+    """
+    searchTerms: String
+
+    """Filters by Learn Entity Skill Level."""
+    skillLevels: [LearnEntitySkillLevel!] = []
+
+    """Filters by Learn Entity TYpe."""
+    types: [LearnEntityType!] = [ALL]
+
+    """Filters by Learn Entity Topic."""
+    topics: [LearnEntityTopic!] = []
+
+    """Filters by Learn Entity Industry."""
+    industries: [LearnEntityIndustry!] = []
+
+    """Filters by Learn Entity Duration."""
+    durations: [LearnEntityDuration!] = []
+
+    """Filters by Learn Entity Language."""
+    languages: [LearnEntityLanguage!] = []
+
+    """Orders the returned results by Learn Entity Order."""
+    order: LearnEntityOrder = BEST_MATCH
+  ): LearnEntityOffsetConnection!
+
+  """Get the HUB featured learn content from the Unity Learn catalog."""
+  getHubFeaturedLearnEntities(
+    """Limits the number of results returned per page (min 1, max 25)."""
+    limit: Int! = 10
+
+    """Skips the first n elements from the results."""
+    skip: Int! = 0
+  ): LearnEntityOffsetConnection!
+
+  """Get the Learn Entity from the Unity Learn catalog."""
+  getLearnEntity(
+    """The ID of the Learn Entity."""
+    id: ID!
+
+    """The type of the Learn Entity."""
+    type: LearnEntityType!
+  ): LearnEntityResponse!
+
+  """Get a Product by SKU."""
+  getProduct(
+    """The SKU of the Product Entity."""
+    sku: ID!
+  ): ProductResponse! @deprecated(reason: "Retrieving a product by SKU is deprecated; please use 'getProductBySlug' instead.")
+
+  """Get all Templates within the Live Platform service."""
+  getTemplates(
+    """Limits the number of results returned per page (min 1, max 25)."""
+    limit: Int! = 10
+
+    """Skips the first n elements from the results."""
+    skip: Int! = 0
+
+    """Orders the returned results by Get Templates Order."""
+    orderBy: TemplateOrder = WEIGHTED_DESC
+
+    """Filters by Template Type."""
+    type: TemplateType
+
+    """Filters by Template Category."""
+    category: [TemplateCategory!] = []
+
+    """Filters by Template Unity Supported Version."""
+    unitySupportedVersion: [String!] = []
+
+    """Filters by Template Version Supported Unity Editor Versions."""
+    supportedUnityEditorVersions: [String!] = []
+  ): TemplateOffsetConnection!
+
+  """Get all the Hub Content Categories within the Live Platform service."""
+  getHubContentCategories(
+    """Orders the returned results by Get Hub Content Categories Order."""
+    orderBy: HubContentCategoryOrder = WEIGHTED_DESC
+  ): [HubContentCategory!]!
+
+  """
+  Get all Unity Hub Community Resources within the Live Platform service.
+  """
+  getHubCommunityResources(
+    """Orders the returned results by Hub Community Resources Order."""
+    orderBy: CommunityResourceOrder = WEIGHTED_DESC
+  ): [CommunityResource!]! @deprecated(reason: "Retrieving Unity Hub Community Resources with this query is deprecated; please use getHubContentCategories.")
+
+  """Get all Weta Releases within the Live Platform service."""
+  getWetaReleases(
+    """Limits the number of results returned per page (min 1, max 25)."""
+    limit: Int! = 10
+
+    """Skips the first n elements from the results."""
+    skip: Int! = 0
+
+    """Orders the returned results by Get Weta Releases Order."""
+    orderBy: WetaReleaseOrder = RELEASE_DATE_DESC
+
+    """Filters by Weta Release product name."""
+    productName: [WetaReleaseProductName!] = []
+
+    """Filters by a full text search on the version string."""
+    version: String
+  ): WetaReleaseOffsetConnection!
+
+  """Get all Unity Releases within the Live Platform service."""
+  getUnityReleases(
+    """Limits the number of results returned per page (min 1, max 25)."""
+    limit: Int! = 10
+
+    """Skips the first n elements from the results."""
+    skip: Int! = 0
+
+    """Orders the returned results by Get Unity Releases Order."""
+    orderBy: UnityReleaseOrder = RELEASE_DATE_DESC
+
+    """Filters by Unity Release stream."""
+    stream: [UnityReleaseStream!] = []
+
+    """Filters by Unity Release download platform."""
+    platform: [UnityReleaseDownloadPlatform!] = []
+
+    """Filters by Unity Release download architecture."""
+    architecture: [UnityReleaseDownloadArchitecture!] = []
+
+    """Filters by a full text search on the version string."""
+    version: String
+  ): UnityReleaseOffsetConnection!
+
+  """Get all Unity Release Major Versions within the Live Platform service."""
+  getUnityReleaseMajorVersions(
+    """Filters by Unity Release stream."""
+    stream: [UnityReleaseStream!] = []
+
+    """Filters by Unity Release download platform."""
+    platform: [UnityReleaseDownloadPlatform!] = []
+
+    """Filters by Unity Release download architecture."""
+    architecture: [UnityReleaseDownloadArchitecture!] = []
+  ): [UnityReleaseMajorVersion!]!
+}
+
+"""Possible types of Release Digital Unit."""
+enum ReleaseDigitalUnit {
+  BYTE
+  KILOBYTE
+  MEGABYTE
+  GIGABYTE
+}
+
+"""A Digital Value as defined on Release Live Platform."""
+type ReleaseDigitalValue {
+  """The value of the Digital Value."""
+  value: Float!
+
+  """The unit of the Digital Value."""
+  unit: ReleaseDigitalUnit!
+}
+
+"""A Media as defined on Resource Live Platform."""
+type ResourceMedia {
+  """The URL of the Media."""
+  url: URL!
+
+  """The type of the Media."""
+  type: ResourceMediaType!
+}
+
+"""Possible types of ResourceMedia Type."""
+enum ResourceMediaType {
+  IMAGE
+  VIDEO
+  GIF
+}
+
+"""Input Fields to send a Heap Analytics Event."""
+input SendHeapAnalyticsEventInput {
+  """The Heap app_id which links this tracking event to a Heap Project."""
+  appId: ID!
+
+  """The identity of the user which emitted the event."""
+  identity: String!
+
+  """The name of the event. Should correlate to the Heap definition."""
+  event: String!
+
+  """The time at which an event occurred (Unix timestamp)."""
+  timestamp: Timestamp
+
+  """The properties of an event."""
+  properties: JSONObject
+}
+
+"""The response from a Send Heap Analytics Event."""
+union SendHeapAnalyticsEventResponse = SendHeapAnalyticsEventResult | ServerError
+
+"""The result for the Send Heap Analytics Event mutation."""
+type SendHeapAnalyticsEventResult {
+  """The indication whether Heap Analytics event was sent or not."""
+  success: Boolean!
+}
+
+"""
+A ServerError is returned when the Live Platform throws an unhandled or operational error.
+"""
+type ServerError implements Error {
+  """The title of the Error."""
+  title: String!
+
+  """The message of the Error."""
+  message: String!
+
+  """The errorCode of the Error."""
+  errorCode: String!
+}
+
+"""
+Subresource Integrity scalar type. It represents SRI values as defined by the
+[W3C Recommendation Subresource Integrity](https://www.w3.org/TR/SRI/). It is of
+type JSON string when used in inputs and response data.
+"""
+scalar SubresourceIntegrity
+
+"""
+A Subscription Product is one where a consumer pays a set amount each month for
+continued usage of the product (for example, Unity Pro). It extends the
+`ProductInterface` by adding variants for different kinds of subscriptions (e.g.
+monthly,yearly).
+"""
+type SubscriptionProduct implements ProductInterface {
+  """The slug of the Product."""
+  slug: ID!
+
+  """The SKU of the Product."""
+  sku: ID!
+
+  """The name of the Product."""
+  name: String!
+
+  """The type of the Product."""
+  type: ProductType!
+
+  """The description of the Product."""
+  description: String!
+
+  """The UI Page of the Product."""
+  ui: UIPage!
+
+  """The variants of the Subscription Product."""
+  variants: [ProductVariant!]!
+
+  """The payment plan name of the Subscription Product."""
+  paymentPlan: String!
+}
+
+"""A Template."""
+type Template {
+  """The package name, that uniquely identifies the Template."""
+  packageName: String!
+
+  """The human-readable name of the Template."""
+  name: String!
+
+  """The description of the Template."""
+  description: String!
+
+  """The icon of the Template."""
+  icon: TemplateMedia!
+
+  """The preview image of the Template."""
+  previewImage: TemplateMedia!
+
+  """The type of the Template."""
+  type: TemplateType!
+
+  """The category of the Template."""
+  category: TemplateCategory!
+
+  """The terms of service of the Template."""
+  termsOfService: TemplateFile
+
+  """The extra fields defined on the Template."""
+  extraFields: [ExtraField!]
+
+  """The render pipeline of the Template."""
+  renderPipeline: TemplateRenderPipeline!
+
+  """The versions of the Template."""
+  versions: [TemplateVersion!]!
+
+  """The build platform of the Template."""
+  buildPlatform: TemplateBuildPlatform! @deprecated(reason: "This field is deprecated. Please use 'buildPlatforms' instead.")
+
+  """The build platforms of the Template."""
+  buildPlatforms: [TemplateBuildPlatform!]!
+
+  """The list of Unity supported editor version for the Template."""
+  unitySupportedVersions: [String!]! @deprecated(reason: "This is no longer used. Please use the 'supportedUnityEditorVersions' field instead.")
+
+  """The indicator for whether a Template is a new Template."""
+  isNew: Boolean!
+}
+
+"""Possible types of a Template Build Platform."""
+enum TemplateBuildPlatform {
+  IOS
+  ANDROID
+  TVOS
+  LINUX
+  MACOS
+  WEBGL
+  WINDOWS
+  LUMINOS
+}
+
+"""Possible categories of a Template."""
+enum TemplateCategory {
+  BLANK
+  XR
+  AEC
+  AUTOMOTIVE
+  MNE
+  GAME
+  ART
+}
+
+"""A Template Dependency."""
+type TemplateDependency {
+  """The name of the Template Dependency."""
+  name: String!
+
+  """The package name of the Template Dependency."""
+  packageName: String!
+
+  """The version of the Template Dependency."""
+  version: String!
+}
+
+"""Possible types of Template Digital Unit."""
+enum TemplateDigitalUnit {
+  BYTE
+  KILOBYTE
+  MEGABYTE
+  GIGABYTE
+}
+
+"""A Digital Value as defined on Template Live Platform."""
+type TemplateDigitalValue {
+  """The value of the Digital Value."""
+  value: Float!
+
+  """The unit of the Digital Value."""
+  unit: TemplateDigitalUnit!
+}
+
+"""A File as defined on Template Live Platform."""
+type TemplateFile {
+  """The url of the File."""
+  url: URL!
+
+  """
+  The Subresource Integrity of the File as defined by the [W3C Recommendation
+  Subresource Integrity](https://www.w3.org/TR/SRI/). For example,
+  `sha1-OTVjZTI0ZTk5MDg0YTMyYTBmZTdiNTU1NTMwZGRhYjQ3OWMzYzc1MQo=`.
+  """
+  integrity: SubresourceIntegrity!
+
+  """The checksum of the File."""
+  checksum: String! @deprecated(reason: "This has been replaced by the field `integrity`. Please use that instead.")
+
+  """The type of the File."""
+  type: FileType!
+}
+
+"""A Media as defined on Template Live Platform."""
+type TemplateMedia {
+  """The URL of the Media."""
+  url: URL!
+
+  """The type of the Media."""
+  type: TemplateMediaType!
+}
+
+"""Possible types of TemplateMedia Type."""
+enum TemplateMediaType {
+  IMAGE
+  VIDEO
+  GIF
+}
+
+"""A relay style offset paginated Template Connection."""
+type TemplateOffsetConnection {
+  """The list of offset paginated Template edges."""
+  edges: [TemplateOffsetEdge!]!
+
+  """The total count of all available Template edges in the connection."""
+  totalCount: Int!
+
+  """The page information for offset pagination."""
+  pageInfo: TemplateOffsetPageInfo!
+}
+
+"""A relay style offset paginated Template Edge."""
+type TemplateOffsetEdge {
+  """A Template node."""
+  node: Template!
+}
+
+"""The Template Offset Pagination Information related to a connection."""
+type TemplateOffsetPageInfo {
+  """The flag indicating if there is a next results page."""
+  hasNextPage: Boolean!
+
+  """The flag indicating if there is a previous results page."""
+  hasPreviousPage: Boolean!
+}
+
+"""Possible values of Template Order."""
+enum TemplateOrder {
+  NAME_ASC
+  NAME_DESC
+  WEIGHTED_DESC
+  RELEASE_DATE_ASC
+  RELEASE_DATE_DESC
+}
+
+"""Possible render pipelines of a Template."""
+enum TemplateRenderPipeline {
+  URP
+  SRP
+  HDRP
+  BUILT_IN
+}
+
+"""Possible values of Template Type."""
+enum TemplateType {
+  LEARNING
+  CORE
+  SAMPLE
+}
+
+"""A Template Version."""
+type TemplateVersion {
+  """The name of the Template Version."""
+  name: String!
+
+  """The size of the Template Version."""
+  size(
+    """The format of the Template Digital Value size."""
+    format: TemplateDigitalUnit! = BYTE
+  ): TemplateDigitalValue!
+
+  """The tarball of the Template Version."""
+  tarball: TemplateFile!
+
+  """The field describing if the Template Version is the most up-to-date."""
+  isLatest: Boolean!
+
+  """The unity editor target for the Template Version."""
+  unityEditorTarget: String! @deprecated(reason: "This should not be used. Please use the 'supportedUnityEditorVersions' field instead.")
+
+  """The supported Unity Editor versions for the Template Version."""
+  supportedUnityEditorVersions: [String!]!
+
+  """The list of dependencies for the Template Version."""
+  dependencies: [TemplateDependency!]!
+}
+
+"""
+The javascript `Date` as integer. Type represents date and time as number of milliseconds from start of UNIX epoch.
+"""
+scalar Timestamp
+
+"""Possible types of Time Unit."""
+enum TimeUnit {
+  SECOND
+  MINUTE
+  HOUR
+  DAY
+}
+
+"""Possible values of Component Alignment."""
+enum UIAlignment {
+  LEFT
+  RIGHT
+  CENTER
+}
+
+"""A UI body."""
+type UIBody {
+  """The elements of the UI body."""
+  elements: [UIElement!]!
+}
+
+"""A UI Component call to action."""
+type UICallToAction implements UICommonComponent {
+  """The type of the component."""
+  type: UIComponentType!
+
+  """The alignment of the component."""
+  alignment: UIAlignment!
+
+  """The action type of the Call to Action component."""
+  actionType: UICallToActionType!
+
+  """The target of the Call to Action component."""
+  target: String!
+
+  """The label of the Call to Action component."""
+  label: String!
+}
+
+"""Possible values of Call to Action type."""
+enum UICallToActionType {
+  BUTTON
+  LINK
+}
+
+"""A UI Common Component."""
+interface UICommonComponent {
+  """The type of the component."""
+  type: UIComponentType!
+
+  """The alignment of the component."""
+  alignment: UIAlignment!
+}
+
+"""A UI Component."""
+union UIComponent = UITitle | UISubTitle | UIParagraph | UITable | UICallToAction | UIImage | UIVideo | UITextBlock
+
+"""A set of UI Components."""
+type UIComponents {
+  """A UI Component pricing table response."""
+  pricingTable(
+    """
+    The name of the pricing table template to render. If not specified, the default template (if it exists) is rendered.
+    """
+    name: String
+  ): UITableResponse
+}
+
+"""Possible values of Component type."""
+enum UIComponentType {
+  TITLE
+  SUBTITLE
+  PARAGRAPH
+  TABLE
+  CALL_TO_ACTION
+  IMAGE
+  VIDEO
+  TEXT_BLOCK
+}
+
+"""A UI Element."""
+union UIElement = UIRow | UIHeroBanner
+
+"""Possible values of UI Element type."""
+enum UIElementType {
+  HERO_BANNER
+  ONE_COLUMN
+  TWO_COLUMN
+  THREE_COLUMN
+}
+
+"""A UI Hero Banner."""
+type UIHeroBanner {
+  """The element type of the UI Hero Banner."""
+  type: UIElementType
+
+  """The Title of the UI Hero Banner."""
+  title: UITitle!
+
+  """The paragraph of the UI Hero Banner."""
+  paragraph: UIParagraph!
+
+  """The background image of the UI Hero Banner."""
+  backgroundImage: UIImage!
+
+  """The Call to Action of the UI Hero Banner."""
+  callToAction: UICallToAction!
+}
+
+"""A UI Component image."""
+type UIImage implements UICommonComponent {
+  """The type of the component."""
+  type: UIComponentType!
+
+  """The alignment of the component."""
+  alignment: UIAlignment!
+
+  """The url of the Image component."""
+  url: URL!
+}
+
+"""A UI Page metadata."""
+type UIMetadata {
+  """The title of the UI Page metadata."""
+  title: String!
+
+  """UI Component pricing table template names for the associated slug."""
+  pricingTableTemplateNames: [String!]!
+}
+
+"""A UI Page."""
+type UIPage {
+  """The metadata of the UI Page."""
+  metadata: UIMetadata
+
+  """The body of the UI Page."""
+  body: UIBody
+
+  """The UI Components."""
+  components: UIComponents
+}
+
+"""A UI Component paragraph."""
+type UIParagraph implements UICommonComponent {
+  """The type of the component."""
+  type: UIComponentType!
+
+  """The alignment of the component."""
+  alignment: UIAlignment!
+
+  """The text content of the Paragraph component."""
+  text: String!
+}
+
+"""A UI Row."""
+type UIRow {
+  """The element type of the UI Row."""
+  type: UIElementType
+
+  """The components of the UI Row."""
+  components: [UIComponent!]!
+}
+
+"""A UI Component sub title."""
+type UISubTitle implements UICommonComponent {
+  """The type of the component."""
+  type: UIComponentType!
+
+  """The alignment of the component."""
+  alignment: UIAlignment!
+
+  """The text content of the SubTitle component."""
+  text: String!
+}
+
+"""A UI Component table."""
+type UITable implements UICommonComponent {
+  """The type of the component."""
+  type: UIComponentType!
+
+  """The alignment of the Table component."""
+  alignment: UIAlignment!
+
+  """The title of the Table component."""
+  title: UITitle
+
+  """The headers of the Table component."""
+  headers: [String!]!
+
+  """The rows of the Table component."""
+  rows: [UITableRow!]!
+}
+
+"""A UI Table Response."""
+union UITableResponse = UITable | ServerError
+
+"""A UI Table Component row."""
+type UITableRow {
+  """The columns of the Table Row component."""
+  columns: [String!]!
+}
+
+"""A UI Component text block."""
+type UITextBlock implements UICommonComponent {
+  """The type of the component."""
+  type: UIComponentType!
+
+  """The alignment of the component."""
+  alignment: UIAlignment!
+
+  """The title of the Text Block component."""
+  title: UITitle!
+
+  """The paragraph of the Text Block component."""
+  paragraph: UIParagraph!
+
+  """The optional call to action of the Text Block component."""
+  callToAction: UICallToAction
+}
+
+"""A UI Component title."""
+type UITitle implements UICommonComponent {
+  """The type of the component."""
+  type: UIComponentType!
+
+  """The alignment of the component."""
+  alignment: UIAlignment!
+
+  """The text content of the Title component."""
+  text: String!
+}
+
+"""A UI Component video."""
+type UIVideo implements UICommonComponent {
+  """The type of the component."""
+  type: UIComponentType!
+
+  """The alignment of the component."""
+  alignment: UIAlignment!
+
+  """The url of the Video component."""
+  url: URL!
+
+  """The preview image of the Video component."""
+  previewImage: UIImage!
+}
+
+"""A Pay per Unit pricing for Product."""
+type UnitVariant {
+  """The id of the Unit Variant."""
+  id: ID!
+
+  """The name of the Unit Variant."""
+  name: String!
+
+  """The price of the Unit Variant."""
+  price: Price!
+
+  """The unit of the Unit Variant."""
+  unit: String!
+
+  """The boundary values of the Unit Variant if they exist."""
+  boundary: Boundary
+}
+
+"""A Unity Release."""
+type UnityRelease {
+  """The version of the Unity Release."""
+  version: ID!
+
+  """The release date of the Unity Release."""
+  releaseDate: DateTime!
+
+  """The release notes of the Unity Release."""
+  releaseNotes: UnityReleaseNotes!
+
+  """The release stream of the Unity Release."""
+  stream: UnityReleaseStream!
+
+  """The downloads of the Unity Release."""
+  downloads: [UnityReleaseDownload!]!
+
+  """The SKU family of the Unity Release."""
+  skuFamily: UnityReleaseSkuFamily!
+
+  """
+  The indicator for whether the Unity Release is the recommended LTS version.
+  """
+  recommended: Boolean!
+
+  """The Unity Hub deep link of the Unity Release."""
+  unityHubDeepLink: URL!
+
+  """The Git Short Revision of the Unity Release."""
+  shortRevision: String!
+
+  """The Third Party Notices of the Unity Release."""
+  thirdPartyNotices: [UnityReleaseThirdPartyNotice!]!
+}
+
+"""A Unity Release download."""
+union UnityReleaseDownload = UnityReleaseHubDownload
+
+"""Possible architectures of Unity Release download."""
+enum UnityReleaseDownloadArchitecture {
+  X86_64
+  ARM64
+}
+
+"""Possible platforms of Unity Release download."""
+enum UnityReleaseDownloadPlatform {
+  MAC_OS
+  LINUX
+  WINDOWS
+}
+
+"""A File as defined on Release Live Platform."""
+interface UnityReleaseFile {
+  """The URL of the File."""
+  url: URL!
+
+  """
+  The Subresource Integrity of the File as defined by the [W3C Recommendation
+  Subresource Integrity](https://www.w3.org/TR/SRI/). For example,
+  `sha1-OTVjZTI0ZTk5MDg0YTMyYTBmZTdiNTU1NTMwZGRhYjQ3OWMzYzc1MQo=`.
+  """
+  integrity: SubresourceIntegrity
+
+  """The type of the File."""
+  type: FileType!
+}
+
+"""A Unity Release Hub download."""
+type UnityReleaseHubDownload implements UnityReleaseFile {
+  """The URL of the Unity Release Hub download."""
+  url: URL!
+
+  """
+  The Subresource Integrity of the Unity Release Hub download as defined by the
+  [W3C Recommendation Subresource Integrity](https://www.w3.org/TR/SRI/). For
+  example, `sha1-OTVjZTI0ZTk5MDg0YTMyYTBmZTdiNTU1NTMwZGRhYjQ3OWMzYzc1MQo=`.
+  """
+  integrity: SubresourceIntegrity
+
+  """The file type of the Unity Release Hub download."""
+  type: FileType!
+
+  """The platform of the Unity Release Hub download."""
+  platform: UnityReleaseDownloadPlatform!
+
+  """The architecture of the Unity Release Hub download."""
+  architecture: UnityReleaseDownloadArchitecture!
+
+  """The modules of the Unity Release Hub download."""
+  modules: [UnityReleaseModule!]!
+
+  """The download size of the Unity Release Hub download."""
+  downloadSize(
+    """The format of the Release Digital Value size."""
+    format: ReleaseDigitalUnit! = BYTE
+  ): ReleaseDigitalValue!
+
+  """The installed size of the Unity Release Hub download."""
+  installedSize(
+    """The format of the Release Digital Value size."""
+    format: ReleaseDigitalUnit! = BYTE
+  ): ReleaseDigitalValue!
+}
+
+"""A Unity Release Major Version."""
+type UnityReleaseMajorVersion {
+  """The version of the Unity Release Major Version."""
+  version: String!
+
+  """The latest Unity Release of the Unity Release Major Version."""
+  latestUnityRelease: UnityRelease!
+}
+
+"""A Unity Release module."""
+type UnityReleaseModule implements UnityReleaseFile {
+  """The URL of the Unity Release module."""
+  url: URL!
+
+  """
+  The Subresource Integrity of the Unity Release module as defined by the [W3C
+  Recommendation Subresource Integrity](https://www.w3.org/TR/SRI/). For
+  example, `sha1-OTVjZTI0ZTk5MDg0YTMyYTBmZTdiNTU1NTMwZGRhYjQ3OWMzYzc1MQo=`.
+  """
+  integrity: SubresourceIntegrity
+
+  """The file type of the Unity Release module."""
+  type: FileType!
+
+  """The ID of the Unity Release module."""
+  id: ID!
+
+  """
+  The slug of the Unity Release module. This is unique across all Unity Release Modules.
+  """
+  slug: ID!
+
+  """The name of the Unity Release module."""
+  name: String!
+
+  """The description of the Unity Release module."""
+  description: String!
+
+  """The category of the Unity Release module."""
+  category: UnityReleaseModuleCategory!
+
+  """
+  The optional sub-modules of the Unity Release module. The parent must be downloaded to download a sub-module.
+  """
+  subModules: [UnityReleaseModule!]
+
+  """
+  The indicator for whether the Unity Release module needs to be downloaded if the parent is downloaded.
+  """
+  required: Boolean!
+
+  """
+  The indicator for whether the Unity Release module needs to be hidden when displaying modules in a UI.
+  """
+  hidden: Boolean!
+
+  """
+  The location to move a Unity Release Module when extracted or unzipped.
+  """
+  extractedPathRename: UnityReleaseModuleExtractedPathRename
+
+  """
+  The indicator for whether the Unity Release module should be pre-selected.
+  """
+  preSelected: Boolean!
+
+  """The file destination of the Unity Release module."""
+  destination: String
+
+  """The end-user license agreements of the Unity Release module."""
+  eula: [UnityReleaseModuleEula!]
+
+  """The download size of the Unity Release module."""
+  downloadSize(
+    """The format of the Release Digital Value size."""
+    format: ReleaseDigitalUnit! = BYTE
+  ): ReleaseDigitalValue!
+
+  """The installed size of the Unity Release module."""
+  installedSize(
+    """The format of the Release Digital Value size."""
+    format: ReleaseDigitalUnit! = BYTE
+  ): ReleaseDigitalValue!
+}
+
+"""Possible categories of Unity Release module."""
+enum UnityReleaseModuleCategory {
+  DOCUMENTATION
+  PLATFORM
+  LANGUAGE_PACK
+  DEV_TOOL
+  PLUGIN
+  COMPONENT
+}
+
+"""A Unity Release module end-user license agreement."""
+type UnityReleaseModuleEula implements UnityReleaseFile {
+  """The URL of the Unity Release module end-user license agreement."""
+  url: URL!
+
+  """
+  The Subresource Integrity of the Unity Release module end-user license
+  agreement as defined by the [W3C Recommendation Subresource
+  Integrity](https://www.w3.org/TR/SRI/). For example,
+  `sha1-OTVjZTI0ZTk5MDg0YTMyYTBmZTdiNTU1NTMwZGRhYjQ3OWMzYzc1MQo=`.
+  """
+  integrity: SubresourceIntegrity
+
+  """The file type of the Unity Release module end-user license agreement."""
+  type: FileType!
+
+  """The label of the Unity Release module end-user license agreement."""
+  label: String!
+
+  """The message of the Unity Release module end-user license agreement."""
+  message: String!
+}
+
+"""A Unity Release Module Extracted Path Rename."""
+type UnityReleaseModuleExtractedPathRename {
+  """The location of the module when extracted."""
+  from: String!
+
+  """The location the module must be moved to."""
+  to: String!
+}
+
+"""A Unity Release Notes File as defined on Release Live Platform."""
+type UnityReleaseNotes implements UnityReleaseFile {
+  """The URL of the Unity Release notes."""
+  url: URL!
+
+  """
+  The Subresource Integrity of the Unity Release notes as defined by the [W3C
+  Recommendation Subresource Integrity](https://www.w3.org/TR/SRI/). For
+  example, `sha1-OTVjZTI0ZTk5MDg0YTMyYTBmZTdiNTU1NTMwZGRhYjQ3OWMzYzc1MQo=`.
+  """
+  integrity: SubresourceIntegrity
+
+  """The file type of the Unity Release notes."""
+  type: FileType!
+}
+
+"""A relay style offset paginated Unity Release Connection."""
+type UnityReleaseOffsetConnection {
+  """The list of offset paginated Unity Release edges."""
+  edges: [UnityReleaseOffsetEdge!]!
+
+  """
+  The total count of all available Unity Release edges in the connection.
+  """
+  totalCount: Int!
+
+  """The page information for offset pagination."""
+  pageInfo: UnityReleaseOffsetPageInfo!
+}
+
+"""A relay style offset paginated Unity Release Edge."""
+type UnityReleaseOffsetEdge {
+  """An Unity Release node."""
+  node: UnityRelease!
+}
+
+"""
+The UnityRelease Offset Pagination Information related to a connection.
+"""
+type UnityReleaseOffsetPageInfo {
+  """The flag indicating if there is a next results page."""
+  hasNextPage: Boolean!
+
+  """The flag indicating if there is a previous results page."""
+  hasPreviousPage: Boolean!
+}
+
+"""Possible values of Unity Release Order."""
+enum UnityReleaseOrder {
+  RELEASE_DATE_ASC
+  RELEASE_DATE_DESC
+}
+
+"""Possible SKU families of Unity Release."""
+enum UnityReleaseSkuFamily {
+  DOTS
+  CLASSIC
+}
+
+"""Possible release streams of Unity Release."""
+enum UnityReleaseStream {
+  LTS
+  BETA
+  ALPHA
+  TECH
+}
+
+"""
+A Unity Release Third Party Notice File as defined on Release Live Platform.
+"""
+type UnityReleaseThirdPartyNotice implements UnityReleaseFile {
+  """The URL of the Unity Release Third Party Notice."""
+  url: URL!
+
+  """
+  The Subresource Integrity of the Unity Release Third Party Notice as defined
+  by the [W3C Recommendation Subresource Integrity](https://www.w3.org/TR/SRI/).
+  For example, `sha1-OTVjZTI0ZTk5MDg0YTMyYTBmZTdiNTU1NTMwZGRhYjQ3OWMzYzc1MQo=`.
+  """
+  integrity: SubresourceIntegrity
+
+  """The file type of the Unity Release Third Party Notice."""
+  type: FileType!
+
+  """The original file name of the Unity Release Third Party Notice."""
+  originalFileName: String!
+}
+
+"""
+A field whose value conforms to the standard URL format as specified in RFC3986: https://www.ietf.org/rfc/rfc3986.txt.
+"""
+scalar URL
+
+"""An authenticated User."""
+type User {
+  """The unique UnityId of the User."""
+  unityId: ID!
+
+  """The preferred language code of the User."""
+  language: String!
+
+  """The full name of the User."""
+  fullName: String!
+
+  """The username of the User."""
+  username: String!
+
+  """The email address of the User."""
+  email: EmailAddress!
+
+  """The date and time the user’s account was created."""
+  createdTime: DateTime!
+
+  """
+  The flag for a new user. It's set to `true` if the user has been created in the last 24 hours.
+  """
+  isNew: Boolean!
+
+  """The Unity Editor license entitled to the User."""
+  license: License!
+
+  """
+  The URL to the Unity Connect avatar of the User. A fallback image is returned if no user avatar is available.
+  """
+  avatar: UserMedia!
+
+  """The list of the organizations for the User."""
+  organizations(
+    """The role of the user in the Organization."""
+    roles: [OrganizationRole!] = []
+  ): [Organization!]!
+
+  """
+  Gets the user's list of recommended learn content from the Unity Learn catalog.
+  """
+  recommendedLearnEntities(
+    """Limits the number of results returned per page (min 1, max 25)."""
+    limit: Int! = 10
+
+    """Skips the first n elements from the results."""
+    skip: Int! = 0
+  ): LearnEntityOffsetConnection!
+
+  """
+  Gets the user's list of in-progress learn content from the Unity Learn catalog.
+  """
+  activeLearnEntities(
+    """Limits the number of results returned per page (min 1, max 25)."""
+    limit: Int! = 10
+
+    """Skips the first n elements from the results."""
+    skip: Int! = 0
+  ): LearnEntityOffsetConnection!
+
+  """
+  Gets the user's list of completed learn content from the Unity Learn catalog.
+  """
+  completedLearnEntities(
+    """Limits the number of results returned per page (min 1, max 25)."""
+    limit: Int! = 10
+
+    """Skips the first n elements from the results."""
+    skip: Int! = 0
+  ): LearnEntityOffsetConnection!
+
+  """
+  Gets the user's list of bookmarked learn content from the Unity Learn catalog.
+  """
+  bookmarkedLearnEntities(
+    """Limits the number of results returned per page (min 1, max 25)."""
+    limit: Int! = 10
+
+    """Skips the first n elements from the results."""
+    skip: Int! = 0
+  ): LearnEntityOffsetConnection!
+}
+
+"""A Media as defined on User Live Platform."""
+type UserMedia {
+  """The URL of the Media."""
+  url: URL!
+
+  """The type of the Media."""
+  type: UserMediaType!
+}
+
+"""Possible types of UserMedia Type."""
+enum UserMediaType {
+  IMAGE
+  VIDEO
+  GIF
+}
+
+"""A Weta Release."""
+type WetaRelease {
+  """The version of the Weta Release."""
+  version: ID!
+
+  """The release date of the Weta Release."""
+  releaseDate: DateTime!
+
+  """The release notes of the Weta Release."""
+  releaseNotes: WetaReleaseNotes!
+
+  """The installer download URL of the Weta Release."""
+  installer: URL!
+
+  """The product name of the Weta Release."""
+  productName: WetaReleaseProductName!
+}
+
+"""A File as defined on Release Live Platform."""
+interface WetaReleaseFile {
+  """The URL of the File."""
+  url: URL!
+
+  """
+  The Subresource Integrity of the File as defined by the [W3C Recommendation
+  Subresource Integrity](https://www.w3.org/TR/SRI/). For example,
+  `sha1-OTVjZTI0ZTk5MDg0YTMyYTBmZTdiNTU1NTMwZGRhYjQ3OWMzYzc1MQo=`.
+  """
+  integrity: SubresourceIntegrity
+
+  """The type of the File."""
+  type: FileType!
+}
+
+"""A Weta Release Notes File as defined on Release Live Platform."""
+type WetaReleaseNotes implements WetaReleaseFile {
+  """The URL of the Weta Release notes."""
+  url: URL!
+
+  """
+  The Subresource Integrity of the Weta Release notes as defined by the [W3C
+  Recommendation Subresource Integrity](https://www.w3.org/TR/SRI/). For
+  example, `sha1-OTVjZTI0ZTk5MDg0YTMyYTBmZTdiNTU1NTMwZGRhYjQ3OWMzYzc1MQo=`.
+  """
+  integrity: SubresourceIntegrity
+
+  """The file type of the Weta Release notes."""
+  type: FileType!
+}
+
+"""A relay style offset paginated Weta Release Connection."""
+type WetaReleaseOffsetConnection {
+  """The list of offset paginated Weta Release edges."""
+  edges: [WetaReleaseOffsetEdge!]!
+
+  """The total count of all available Weta Release edges in the connection."""
+  totalCount: Int!
+
+  """The page information for offset pagination."""
+  pageInfo: WetaReleaseOffsetPageInfo!
+}
+
+"""A relay style offset paginated Weta Release Edge."""
+type WetaReleaseOffsetEdge {
+  """A Weta Release node."""
+  node: WetaRelease!
+}
+
+"""The WetaRelease Offset Pagination Information related to a connection."""
+type WetaReleaseOffsetPageInfo {
+  """The flag indicating if there is a next results page."""
+  hasNextPage: Boolean!
+
+  """The flag indicating if there is a previous results page."""
+  hasPreviousPage: Boolean!
+}
+
+"""Possible values of Weta Release Order."""
+enum WetaReleaseOrder {
+  RELEASE_DATE_ASC
+  RELEASE_DATE_DESC
+}
+
+"""Possible product names of Weta Release."""
+enum WetaReleaseProductName {
+  EDDY
+  DEEP_COMPOSITING
+  WIG
+  SPEEDTREE
+  SPEEDTREE_GAMES
+  SPEEDTREE_CINEMA
+  ZIVA_VFX
+  ZIVA_RT
+  ZIVA_FACE_TRAINER
+}
+

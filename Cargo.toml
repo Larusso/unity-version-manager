@@ -4,6 +4,7 @@ members = [
   "uvm_core",
   "uvm_cli",
   "uvm_install_graph",
+  "uvm_live_platform",
   "uvm_move_dir",
   "commands/*",
   "install/*"

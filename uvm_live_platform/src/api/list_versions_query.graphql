@@ -1,0 +1,21 @@
+query MyQuery2($architecture: [UnityReleaseDownloadArchitecture!] = ARM64, $platform: [UnityReleaseDownloadPlatform!] = MAC_OS, $limit: Int = 10, $skip: Int = 0, $stream: [UnityReleaseStream!] = LTS) {
+    getUnityReleases(
+        architecture: $architecture
+        platform: $platform
+        skip: $skip
+        limit: $limit
+        stream: $stream
+    ) {
+        edges {
+            node {
+                version
+                shortRevision
+            }
+        }
+        pageInfo {
+            hasNextPage
+            hasPreviousPage
+        }
+        totalCount
+    }
+}
