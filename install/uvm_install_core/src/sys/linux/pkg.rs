@@ -2,7 +2,7 @@ use crate::*;
 use std::ffi::OsStr;
 use std::fs::DirBuilder;
 use std::io::Read;
-use std::io::Write;
+use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
 
@@ -61,11 +61,10 @@ impl ModulePkgInstaller {
                 .stdin(Stdio::piped())
                 .spawn()?;
             {
-                let stdin = cpio.stdin.as_mut().expect("stdin");
+                let stdin = cpio.stdin.as_mut().ok_or("Failed to open cpio stdin")?;
                 let mut file = File::open(payload)?;
-                let mut buffer = Vec::new();
-                file.read_to_end(&mut buffer)?;
-                stdin.write(&buffer)?;
+                let mut reader = BufReader::new(file);
+                io::copy(&mut reader, stdin)?;
             }
             cpio
         } else {
@@ -81,15 +80,14 @@ impl ModulePkgInstaller {
                 .stdin(Stdio::piped())
                 .spawn()?;
             {
-                let stdin = cpio.stdin.as_mut().expect("stdin");
-                let gzip_std_out = gzip.stdout.as_mut().expect("stdout");
-                let mut buffer = Vec::new();
-                gzip_std_out.read_to_end(&mut buffer)?;
-                stdin.write(&buffer)?;
+                let gzip_stdout = gzip.stdout.as_mut().ok_or("Failed to open gzip stdout")?;
+                let cpio_stdin = cpio.stdin.as_mut().ok_or("Failed to open cpio stdin")?;
+
+                io::copy(gzip_stdout, cpio_stdin)?;
             }
             cpio
         };
-
+    
         let tar_output = tar_child.wait_with_output()?;
         if !tar_output.status.success() {
             return Err(format!(
