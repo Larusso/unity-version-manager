@@ -21,7 +21,7 @@ serde_derive = "1.0"
 structopt = "0.3"
 uvm_core = { path = "../../uvm_core", version = "0.13.2" }
 uvm_cli = { path = "../../uvm_cli", version = "0.4.0" }
-uvm_install_core = {path = "../uvm_install_core", version = "0.9.1" }
+uvm_install_core = {path = "../uvm_install_core", version = "0.9.2" }
 uvm_install_graph = { path = "../../uvm_install_graph", version = "0.8.1" }
 
 [dev-dependencies]
