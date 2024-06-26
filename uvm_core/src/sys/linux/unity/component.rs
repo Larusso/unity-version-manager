@@ -22,7 +22,7 @@ pub fn installpath(component:Component) -> Option<PathBuf> {
         Samsungtv | SamsungTV => Some("Editor/Data/PlaybackEngines/STVPlayer"),
         Tizen => Some("Editor/Data/PlaybackEngines/TizenPlayer"),
         Vuforia | VuforiaAR => Some("Editor/Data/PlaybackEngines/VuforiaSupport"),
-        WebGl => Some("Editor/Data/PlaybackEngines/WebGLSupport"),
+        WebGl => Some(""),
         Windows | WindowsMono | WindowsServer => Some("Editor/Data/PlaybackEngines/WindowsStandaloneSupport"),
         Facebook | FacebookGames => Some("Editor/Data/PlaybackEngines/Facebook"),
         Language(_) => Some("Editor/Data/Localization"),
