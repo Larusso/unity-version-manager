@@ -87,7 +87,7 @@
         "downloadSize": 334387956,
         "visible": true,
         "selected": false,
-        "destination": "{UNITY_PATH}/Editor/Data/PlaybackEngines/WebGLSupport",
+        "destination": "{UNITY_PATH}",
         "checksum": "118d50792f60b3037210f43ea59e0274"
     },
     {
