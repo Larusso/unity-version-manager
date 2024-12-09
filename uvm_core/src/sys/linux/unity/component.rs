@@ -42,6 +42,7 @@ pub fn install_location(component: Component) -> Option<PathBuf> {
         AndroidSdkNdkTools => {
             Some("Editor/Data/PlaybackEngines/AndroidPlayer/SDK/tools")
         }
+        WebGl => Some("Editor/Data/PlaybackEngines/WebGLSupport"),
         _ => None,
     };
     path.map(|p| Path::new(p).to_path_buf()).or_else(|| installpath(component))

@@ -289,3 +289,61 @@ mod tests {
         }
     }
 }
+
+#[cfg(all(test, target_os = "linux"))]
+mod linux_tests {
+    use std::fs;
+    use std::fs::{create_dir_all, File};
+    use std::path::PathBuf;
+    use crate::Installation;
+    use crate::unity::Component;
+
+    macro_rules! prepare_unity_installation {
+        ($version:expr) => {{
+            let test_dir = tempfile::Builder::new()
+                .prefix("installation")
+                .rand_bytes(5)
+                .tempdir()
+                .unwrap();
+            let unity_path = create_unity_installation(&test_dir.path().to_path_buf(), $version);
+            (test_dir, unity_path)
+        }};
+    }
+
+    fn create_unity_installation(base_dir: &PathBuf, version: &str) -> PathBuf {
+        let path = base_dir.join(version);
+        let mut dir_builder = fs::DirBuilder::new();
+        dir_builder.recursive(true);
+        dir_builder.create(&path).unwrap();
+
+        let exec_path = path.join("Editor/Unity");
+        dir_builder
+            .create(exec_path.parent().unwrap())
+            .unwrap();
+        File::create(exec_path).unwrap();
+        path
+    }
+
+    #[test]
+    fn installation_recognizes_installed_webgl_module() {
+        let(_t, path) = prepare_unity_installation!("2021.3.35f1");
+        //Create WegGL module directory, so that the installation thinks its installed
+        create_dir_all(path.join("Editor/Data/PlaybackEngines/WebGLSupport")).unwrap();
+        let installation = Installation::new(path).unwrap();
+        let mut components = installation.installed_components();
+        let has_webgl_component = components.any(|c| c == Component::WebGl);
+
+        assert_eq!(has_webgl_component, true);
+    }
+
+    #[test]
+    fn installation_recognizes_non_installed_webgl_module() {
+        let(_t, path) = prepare_unity_installation!("2021.3.35f1");
+        //Create WegGL module directory, so that the installation thinks its installed
+        let installation = Installation::new(path).unwrap();
+        let mut components = installation.installed_components();
+        let has_webgl_component = components.any(|c| c == Component::WebGl);
+
+        assert_eq!(has_webgl_component, false);
+    }
+}
