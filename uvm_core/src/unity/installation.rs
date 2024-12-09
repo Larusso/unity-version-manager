@@ -208,15 +208,15 @@ impl From<crate::unity::hub::editors::EditorInstallation> for Installation {
     }
 }
 
+#[cfg(all(test, target_os = "macos"))]
 mod tests {
     use super::*;
     use plist::serde::serialize_to_xml;
     use std::fs;
-    use std::fs::{create_dir_all, File};
+    use std::fs::File;
     use std::path::Path;
     use std::str::FromStr;
     use tempfile::Builder;
-    use crate::unity::Component;
 
     fn create_unity_installation(base_dir: &PathBuf, version: &str) -> PathBuf {
         let path = base_dir.join("Unity");
@@ -259,7 +259,6 @@ mod tests {
         }};
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn create_installtion_from_path() {
         let (_t, path) = prepare_unity_installation!("2017.1.2f5");
@@ -267,7 +266,7 @@ mod tests {
 
         assert_eq!(subject.version.to_string(), "2017.1.2f5");
     }
-    #[cfg(target_os = "macos")]
+
     #[test]
     fn create_installation_from_executable_path() {
         let(_t, path) = prepare_unity_installation!("2017.1.2f5");
@@ -277,15 +276,59 @@ mod tests {
         assert_eq!(subject.version.to_string(), "2017.1.2f5");
     }
 
-    #[cfg(target_os = "linux")]
+    proptest! {
+        #[test]
+        fn doesnt_crash(ref s in "\\PC*") {
+            let _ = Installation::new(Path::new(s).to_path_buf()).is_ok();
+        }
+
+        #[test]
+        fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
+            let (_t, path) = prepare_unity_installation!(s);
+            Installation::new(path).unwrap();
+        }
+    }
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod linux_tests {
+    use std::fs;
+    use std::fs::{create_dir_all, File};
+    use std::path::PathBuf;
+    use crate::Installation;
+    use crate::unity::Component;
+
+    macro_rules! prepare_unity_installation {
+        ($version:expr) => {{
+            let test_dir = tempfile::Builder::new()
+                .prefix("installation")
+                .rand_bytes(5)
+                .tempdir()
+                .unwrap();
+            let unity_path = create_unity_installation(&test_dir.path().to_path_buf(), $version);
+            (test_dir, unity_path)
+        }};
+    }
+
+    fn create_unity_installation(base_dir: &PathBuf, version: &str) -> PathBuf {
+        let path = base_dir.join(version);
+        let mut dir_builder = fs::DirBuilder::new();
+        dir_builder.recursive(true);
+        dir_builder.create(&path).unwrap();
+
+        let exec_path = path.join("Editor/Unity");
+        dir_builder
+            .create(exec_path.parent().unwrap())
+            .unwrap();
+        File::create(exec_path).unwrap();
+        path
+    }
+
     #[test]
     fn installation_recognizes_installed_webgl_module() {
         let(_t, path) = prepare_unity_installation!("2021.3.35f1");
         //Create WegGL module directory, so that the installation thinks its installed
-        match create_dir_all(path.join("Editor/Data/PlaybackEngines/WebGLSupport")) {
-            Ok(_) => (),
-            Err(e) => panic!("Failed to create directory: {}", e),
-        }
+        create_dir_all(path.join("Editor/Data/PlaybackEngines/WebGLSupport")).unwrap();
         let installation = Installation::new(path).unwrap();
         let mut components = installation.installed_components();
         let has_webgl_component = components.any(|c| c == Component::WebGl);
@@ -293,7 +336,6 @@ mod tests {
         assert_eq!(has_webgl_component, true);
     }
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn installation_recognizes_non_installed_webgl_module() {
         let(_t, path) = prepare_unity_installation!("2021.3.35f1");
@@ -303,20 +345,5 @@ mod tests {
         let has_webgl_component = components.any(|c| c == Component::WebGl);
 
         assert_eq!(has_webgl_component, false);
-    }
-
-    proptest! {
-        #[cfg(target_os = "macos")]
-        #[test]
-        fn doesnt_crash(ref s in "\\PC*") {
-            let _ = Installation::new(Path::new(s).to_path_buf()).is_ok();
-        }
-
-        #[cfg(target_os = "macos")]
-        #[test]
-        fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
-            let (_t, path) = prepare_unity_installation!(s);
-            Installation::new(path).unwrap();
-        }
     }
 }
