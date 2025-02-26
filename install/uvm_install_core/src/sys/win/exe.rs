@@ -15,7 +15,7 @@ impl<V> InstallHandler for Installer<V, Exe, InstallerWithDestinationAndOptional
         let installer = self.installer();
         let destination = self.destination();
 
-        debug!("install unity from installer exe");
+        debug!("install api from installer exe");
         let mut install_helper = Builder::new().suffix(".cmd").rand_bytes(20).tempfile()?;
 
         info!(
@@ -65,7 +65,7 @@ impl InstallHandler for ModuleExeInstaller {
     fn install_handler(&self) -> Result<()> {
         let installer = self.installer();
 
-        debug!("install unity from installer exe");
+        debug!("install api from installer exe");
         let mut install_helper = Builder::new().suffix(".cmd").rand_bytes(20).tempfile()?;
 
         info!(

@@ -27,7 +27,7 @@ struct Opts {
     #[structopt(short, long, parse(from_occurrences))]
     verbose: i32,
 
-    /// Detects a unity project recursivly from current working or <project-path> directory.
+    /// Detects a api project recursivly from current working or <project-path> directory.
     #[structopt(short, long)]
     recursive: bool,
 
@@ -100,10 +100,10 @@ fn launch(options: &Opts) -> Result<()> {
     info!("launch project: {}", style(&project_path.display()).cyan());
 
     let installtion = get_installation(&project_path, options.force_project_version)
-        .map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to fetch unity installation!"))?;
+        .map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to fetch api installation!"))?;
 
     info!(
-        "launch unity version: {}",
+        "launch api version: {}",
         style(installtion.version().to_string()).cyan()
     );
 

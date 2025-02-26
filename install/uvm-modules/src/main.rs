@@ -25,7 +25,7 @@ struct Opts {
     #[structopt(long = "show-sync-modules", short)]
     show_sync_modules: bool,
 
-    /// The unity version to list modules for in the form of `2018.1.0f3`
+    /// The api version to list modules for in the form of `2018.1.0f3`
     version: Version,
 
     /// list also invsible modules

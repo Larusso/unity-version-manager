@@ -10,7 +10,7 @@ impl InstallHandler for ModuleMsiInstaller {
     fn install_handler(&self) -> Result<()> {
         let installer = self.installer();
 
-        debug!("install unity module from installer msi");
+        debug!("install api module from installer msi");
         let mut install_helper = Builder::new().suffix(".cmd").rand_bytes(20).tempfile()?;
 
         info!(

@@ -7,12 +7,12 @@ use uvm_cli;
 
 const COMMANDS: &str = "
 COMMANDS:
-  detect            Find which version of unity was used to generate a project
-  launch            Launch the current active version of unity
-  list              List unity versions available
-  install           Install specified unity version
-  install2          Install specified unity version
-  uninstall         Uninstall specified unity version
+  detect            Find which version of api was used to generate a project
+  launch            Launch the current active version of api
+  list              List api versions available
+  install           Install specified api version
+  install2          Install specified api version
+  uninstall         Uninstall specified api version
   versions          List available Unity versions to install
   help              show command help and exit
 ";

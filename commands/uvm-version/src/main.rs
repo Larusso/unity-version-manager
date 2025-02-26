@@ -64,7 +64,7 @@ enum Command {
         #[structopt(parse(try_from_str = version_req))]
         version_req: VersionReq,
 
-        /// The unity release type
+        /// The api release type
         ///
         /// The release type to limit the search for.
         #[structopt(possible_values=&["f", "final","p", "patch","b", "beta","a", "alpha"], case_insensitive=false, default_value)]
@@ -96,7 +96,7 @@ fn main() -> Result<()> {
         .template("{prefix:.bold.dim} {spinner} {wide_msg}");
     progress.set_style(spinner_style);
     progress.set_draw_target(progress_draw_target(&opt));
-    progress.set_prefix("search unity version");
+    progress.set_prefix("search api version");
     progress.enable_steady_tick(100);
     progress.tick();
 

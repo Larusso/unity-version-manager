@@ -51,7 +51,7 @@ impl Editors {
             let check_installation = unity::Installation::new(installation.location.to_path_buf());
             if let Ok(check_installation) = check_installation {
                 trace!(
-                    "Found unity installation at with version {} at location: {}",
+                    "Found api installation at with version {} at location: {}",
                     check_installation.version(),
                     installation.location.display()
                 );
@@ -176,7 +176,7 @@ pub mod editor_value_location {
             .ok_or_else(|| {
                 serde::de::Error::invalid_value(
                     Unexpected::Other("location with empty parent"),
-                    &"valid unity location",
+                    &"valid api location",
                 )
             })?;
         Ok(location.to_path_buf())

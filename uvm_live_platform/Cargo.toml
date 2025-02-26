@@ -20,3 +20,6 @@ serde = { version = "1.0.183", features = ["derive"] }
 serde_json = "1.0.105"
 thiserror = "1.0.47"
 typed-builder = "0.15.2"
+ordered-float = "5.0.0"
+unity-version = { path = "../unity-version", version = "0.1.0"}
+ssri = "9.2.0"

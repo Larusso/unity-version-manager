@@ -36,7 +36,7 @@ pub fn list_versions<O: VersionListOptions>(options: &O) -> io::Result<()> {
     progress.set_style(spinner_style);
     progress.set_draw_target(progress_draw_target(options));
     progress.set_prefix(&format!(
-        "search unity versions: {}",
+        "search api versions: {}",
         format!("{:#}", &variants.iter().format(", "))
     ));
     progress.enable_steady_tick(100);

@@ -1,4 +1,5 @@
-use serde::{Serialize, Deserialize};
+use std::fmt;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -15,7 +16,7 @@ impl Default for UnityReleaseDownloadArchitecture {
             Self::Arm64
         } else {
             panic!("Not supported on current architecture")
-        } 
+        }
     }
 }
 
@@ -54,4 +55,37 @@ impl Default for UnityReleaseStream {
     fn default() -> Self {
         Self::Lts
     }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum UnityReleaseCategory {
+    Documentation,
+    Platform,
+    LanguagePack,
+    DevTool,
+    Plugin,
+    Component,
+}
+
+impl fmt::Display for UnityReleaseCategory {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use UnityReleaseCategory::*;
+        let s = match self {
+            DevTool => "Dev tools",
+            Plugin => "Plugins",
+            Documentation => "Documentation",
+            Component => "Components",
+            Platform => "Platform",
+            LanguagePack => "Language packs (Preview)",
+        };
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum UnityReleaseSkuFamily {
+    Classic,
+    Dots
 }

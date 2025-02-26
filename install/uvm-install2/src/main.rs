@@ -33,7 +33,7 @@ struct Opts {
     #[structopt(long = "with-sync")]
     sync: bool,
 
-    /// The unity version to install in the form of `2018.1.0f3`
+    /// The api version to install in the form of `6000.0.35f1`
     version: Version,
 
     /// A directory to install the requested version to

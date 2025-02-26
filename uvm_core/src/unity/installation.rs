@@ -2,7 +2,6 @@ use crate::error::*;
 use std::cmp::Ordering;
 use std::path::{Path, PathBuf};
 use std::convert::TryFrom;
-use crate::unity::InstalledComponents;
 use crate::unity::Version;
 
 #[derive(Deserialize, Serialize)]
@@ -148,10 +147,10 @@ impl Installation {
             .map_err(|err| err.into())
     }
 
-    //TODO remove clone()
-    pub fn installed_components(&self) -> InstalledComponents {
-        InstalledComponents::new(self.clone())
-    }
+    // //TODO remove clone()
+    // pub fn installed_components(&self) -> InstalledComponents {
+    //     InstalledComponents::new(self.clone())
+    // }
 
     pub fn version(&self) -> &Version {
         &self.version

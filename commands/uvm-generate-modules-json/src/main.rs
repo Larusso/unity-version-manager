@@ -25,7 +25,7 @@ struct Opts {
     output_dir: Option<PathBuf>,
 
     /// name of the output file.
-    #[structopt(short, long, default_value = "unity-{version}.json")]
+    #[structopt(short, long, default_value = "api-{version}.json")]
     name: String,
 
     /// force override of existing files.

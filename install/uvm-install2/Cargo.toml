@@ -1,6 +1,6 @@
 [package]
 name = "uvm-install2"
-version = "0.9.3"
+version = "0.10.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Install specified unity version."
 repository = "https://github.com/Larusso/unity-version-manager"
@@ -11,20 +11,17 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-console = "0.9.0"
+console = "0.15.10"
 error-chain = "0.12.4"
 dirs-2 = "3.0.1"
-indicatif = "0.15.0"
-log = "0.4.11"
-serde = "1.0"
-serde_derive = "1.0"
-structopt = "0.3"
+log = "0.4.26"
+structopt = "0.3.26"
 uvm_core = { path = "../../uvm_core", version = "0.13.3" }
 uvm_cli = { path = "../../uvm_cli", version = "0.4.0" }
 uvm_install_core = {path = "../uvm_install_core", version = "0.9.3" }
-uvm_install_graph = { path = "../../uvm_install_graph", version = "0.8.2" }
+uvm_install_graph = { version = "0.8.2" }
 
 [dev-dependencies]
-tempfile = "3.1.0"
-test-env-log = "0.2.2"
-env_logger = "0.8"
+tempfile = "3.17.1"
+test-env-log = "0.2.8"
+env_logger = "0.11.6"

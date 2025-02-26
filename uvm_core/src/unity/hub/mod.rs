@@ -8,7 +8,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum UvmHubError {
-    #[error("unity hub config: '{0}' is missing")]
+    #[error("api hub config: '{0}' is missing")]
     ConfigNotFound(String),
 
     #[error("Unity Hub config directory missing")]
@@ -47,7 +47,7 @@ pub fn list_installations() -> Result<unity::Installations> {
     let install_path = paths::install_path()
         .ok_or_else(|| UvmHubError::InstallPathNotFound)?;
 
-    debug!("unity hub install path: {}", install_path.display());
+    debug!("api hub install path: {}", install_path.display());
 
     let editors = editors::Editors::load()?;
     debug!("raw editors map: {:?}", editors);

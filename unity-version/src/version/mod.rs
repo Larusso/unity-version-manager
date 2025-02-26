@@ -1,6 +1,5 @@
+use crate::sys::version as version_impl;
 use derive_more::Display;
-use std::{cmp::Ordering, str::FromStr};
-
 use nom::{
     branch::alt,
     character::complete::{char, digit1},
@@ -9,9 +8,13 @@ use nom::{
     sequence::tuple,
     IResult,
 };
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::path::{Path, PathBuf};
+use std::{cmp::Ordering, str::FromStr};
 
 mod release_type;
 mod revision_hash;
+use crate::error::VersionError;
 pub use release_type::ReleaseType;
 pub use revision_hash::RevisionHash;
 
@@ -21,6 +24,26 @@ pub struct Version {
     base: semver::Version,
     release_type: ReleaseType,
     revision: u64,
+}
+
+impl Serialize for Version {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = self.to_string();
+        serializer.serialize_str(&s)
+    }
+}
+
+impl<'de> Deserialize<'de> for Version {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Version::from_str(&s).map_err(serde::de::Error::custom)
+    }
 }
 
 impl Ord for Version {
@@ -53,7 +76,7 @@ impl AsMut<Version> for Version {
 }
 
 impl FromStr for Version {
-    type Err = String;
+    type Err = VersionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match parse_version(s) {
@@ -65,9 +88,25 @@ impl FromStr for Version {
                         errors: vec![(s, nom::error::VerboseErrorKind::Context("unknown error"))],
                     },
                 };
-                Err(convert_error(s, verbose_error))
+                Err(VersionError::ParsingFailed(convert_error(s, verbose_error)))
             }
         }
+    }
+}
+
+impl TryFrom<PathBuf> for Version {
+    type Error = VersionError;
+
+    fn try_from(path: PathBuf) -> Result<Self, VersionError> {
+        Version::from_path(path)
+    }
+}
+
+impl TryFrom<&Path> for Version {
+    type Error = VersionError;
+
+    fn try_from(path: &Path) -> Result<Self, VersionError> {
+        Version::from_path(path)
     }
 }
 
@@ -105,6 +144,10 @@ impl Version {
 
     pub fn revision(&self) -> u64 {
         self.revision
+    }
+
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, VersionError> {
+        version_impl::read_version_from_path(path)
     }
 }
 

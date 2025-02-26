@@ -13,8 +13,8 @@ error_chain! {
 
     errors {
         UnsupportedModuleError(c: String, v:String) {
-            description("unsupported unity module for unity version"),
-            display("unsupported module: '{}' for selected unity version {}", c, v),
+            description("unsupported api module for api version"),
+            display("unsupported module: '{}' for selected api version {}", c, v),
         }
     }
 }

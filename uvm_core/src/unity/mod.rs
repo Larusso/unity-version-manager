@@ -44,7 +44,7 @@ pub struct InstalledComponents {
 impl Installations {
     fn new(install_location: &Path) -> Result<Installations> {
         debug!(
-            "fetch unity installations from {}",
+            "fetch api installations from {}",
             install_location.display()
         );
         let read_dir = fs::read_dir(install_location)?;

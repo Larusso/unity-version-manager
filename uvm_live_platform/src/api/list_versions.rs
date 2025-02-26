@@ -1,6 +1,7 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::{UnityReleaseStream, UnityReleaseDownloadPlatform, UnityReleaseDownloadArchitecture, Result, error::LivePlatformError};
+use crate::error::ListVersionsError;
+use crate::{UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseStream};
 
 #[derive(Debug)]
 pub struct ListVersions(std::vec::IntoIter<String>);
@@ -43,7 +44,7 @@ impl ListVersionsBuilder {
         }
     }
 
-    pub fn list(self) -> Result<ListVersions> {
+    pub fn list(self) -> Result<ListVersions, ListVersionsError> {
         let mut result = vec![];
         let mut p = self.send()?;
     
@@ -59,23 +60,17 @@ impl ListVersionsBuilder {
         Ok(ListVersions(result.into_iter())) 
     } 
 
-    fn send(self) -> Result<ListVersionsPageResult> {
+    fn send(self) -> Result<ListVersionsPageResult, ListVersionsError> {
         let url = "https://live-platform-api.prd.ld.unity3d.com/graphql";
-        let request_body = UnityReleaseDownloadGetUnityReleasesRequestBody::new(self.into());
+        let request_body = ListVersionsRequestBody::new(self.into());
         let client = reqwest::blocking::Client::new();
-        let res: UnityReleaseDownloadGetUnityReleasesResultBody = client
+        let res: ListVersionsResultBody = client
             .post(url)
             .json(&request_body)
             .send()
-            .map_err(|err| LivePlatformError {
-                msg: "Call to LivePlatform service failed".to_string(),
-                source: err.into(),
-            })?
+            .map_err(ListVersionsError::NetworkError)?
             .json()
-            .map_err(|err| LivePlatformError {
-                msg: "Json serialization failed".to_string(),
-                source: err.into(),
-            })?;
+            .map_err(ListVersionsError::JsonError)?;
         let page_info = res.data.get_unity_releases.page_info;
         let versions = res.data.get_unity_releases.edges.iter().map(|e| {
             if self.include_revision {
@@ -139,7 +134,7 @@ const LIST_VERSIONS_QUERY: &str = include_str!("list_versions_query.graphql");
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct UnityReleaseDownloadGetUnityReleasesOptions {
+struct ListVersionsOptions {
     architecture: UnityReleaseDownloadArchitecture,
     platform: UnityReleaseDownloadPlatform,
     skip: usize,
@@ -147,7 +142,7 @@ struct UnityReleaseDownloadGetUnityReleasesOptions {
     stream: UnityReleaseStream,
 }
 
-impl Default for UnityReleaseDownloadGetUnityReleasesOptions {
+impl Default for ListVersionsOptions {
     fn default() -> Self {
         Self {
             architecture: Default::default(),
@@ -161,58 +156,55 @@ impl Default for UnityReleaseDownloadGetUnityReleasesOptions {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct UnityReleaseDownloadGetUnityReleasesRequestBody {
+struct ListVersionsRequestBody {
     query: String,
-    variables: UnityReleaseDownloadGetUnityReleasesOptions,
+    variables: ListVersionsOptions,
 }
 
-impl UnityReleaseDownloadGetUnityReleasesRequestBody {
-    pub fn new(variables: UnityReleaseDownloadGetUnityReleasesOptions) -> Self {
+impl ListVersionsRequestBody {
+    pub fn new(variables: ListVersionsOptions) -> Self {
         Self {
             query: LIST_VERSIONS_QUERY.to_string(),
-            variables: variables,
+            variables,
         }
     }
 }
 
-impl Default for UnityReleaseDownloadGetUnityReleasesRequestBody {
+impl Default for ListVersionsRequestBody {
     fn default() -> Self {
-        Self {
-            query: LIST_VERSIONS_QUERY.to_string(),
-            variables: Default::default(),
-        }
+        Self::new(Default::default())
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct UnityReleaseDownloadGetUnityReleasesResultBody {
-    data: UnityReleaseDownloadGetUnityReleasesResultBodyData,
+struct ListVersionsResultBody {
+    data: ListVersionsResultBodyData,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct UnityReleaseDownloadGetUnityReleasesResultBodyData {
-    get_unity_releases: UnityReleaseDownloadGetUnityReleasesResultBodyDataGetUnityReleases,
+struct ListVersionsResultBodyData {
+    get_unity_releases: GetUnityReleases,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct UnityReleaseDownloadGetUnityReleasesResultBodyDataGetUnityReleases {
-    edges: Vec<UnityReleaseDownloadGetUnityReleasesResultBodyDataGetUnityReleasesEdge>,
+struct GetUnityReleases {
+    edges: Vec<UnityReleaseOffsetEdge>,
     page_info: PageInfo,
     total_count: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct UnityReleaseDownloadGetUnityReleasesResultBodyDataGetUnityReleasesEdge {
-    node: UnityReleaseDownloadGetUnityReleasesResultBodyDataGetUnityReleasesEdgeNode,
+struct UnityReleaseOffsetEdge {
+    node: UnityRelease,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct UnityReleaseDownloadGetUnityReleasesResultBodyDataGetUnityReleasesEdgeNode {
+struct UnityRelease {
     version: String,
     short_revision: String,
 }
@@ -238,7 +230,7 @@ impl ListVersionsPageResult {
         next_page_options: Option<ListVersionsBuilder>,
     ) -> Self {
         Self {
-            next_page_options: next_page_options,
+            next_page_options,
             content: content.into_iter().collect(),
         }
     }
@@ -247,7 +239,7 @@ impl ListVersionsPageResult {
         self.next_page_options.is_some()
     }
 
-    pub fn next_page(self) -> Option<Result<Self>> {
+    pub fn next_page(self) -> Option<Result<Self, ListVersionsError>> {
         let b = self.next_page_options?;
         Some(b.send())
     }
@@ -262,9 +254,7 @@ impl IntoIterator for ListVersionsPageResult {
     }
 }
 
-
-
-impl From<ListVersionsBuilder> for UnityReleaseDownloadGetUnityReleasesOptions {
+impl From<ListVersionsBuilder> for ListVersionsOptions {
     fn from(value: ListVersionsBuilder) -> Self {
         Self {
             architecture: value.architecture,

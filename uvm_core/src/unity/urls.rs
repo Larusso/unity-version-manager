@@ -74,7 +74,7 @@ impl IniUrlBuilder {
 
         let url = download_url
             .join(&format!(
-                "unity-{}-{}.ini",
+                "api-{}-{}.ini",
                 version.to_string(),
                 self.platform
             ))
@@ -129,7 +129,7 @@ mod tests {
         assert!(url
             .to_string()
             .as_str()
-            .contains(&format!("unity-{}-{}.ini", &v, platform)));
+            .contains(&format!("api-{}-{}.ini", &v, platform)));
     }
 
     #[test]
@@ -141,7 +141,7 @@ mod tests {
         assert!(url
             .to_string()
             .as_str()
-            .contains(&format!("unity-{}-{}.ini", &v, platform)));
+            .contains(&format!("api-{}-{}.ini", &v, platform)));
     }
 
     fn get_test_platform() -> Platform {
@@ -161,6 +161,6 @@ mod tests {
         assert!(url
             .to_string()
             .as_str()
-            .contains(&format!("unity-{}-{}.ini", &v, platform)));
+            .contains(&format!("api-{}-{}.ini", &v, platform)));
     }
 }

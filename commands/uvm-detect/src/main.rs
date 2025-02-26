@@ -22,7 +22,7 @@ struct Opts {
     /// path to project directory.
     project_path: Option<PathBuf>,
 
-    /// Detects a unity version recursivly from current working directory.
+    /// Detects a api version recursivly from current working directory.
     /// With this flag set, the tool returns the first version it finds.
     #[structopt(short, long)]
     recursive: bool,

@@ -1,0 +1,113 @@
+query FetchReleaseQuery(
+  $architecture: [UnityReleaseDownloadArchitecture!] = ARM64
+  $platform: [UnityReleaseDownloadPlatform!] = MAC_OS
+  $stream: [UnityReleaseStream!] = LTS
+  $version: String
+) {
+  getUnityReleases(
+    architecture: $architecture
+    platform: $platform
+    skip: 0
+    limit: 1
+    stream: $stream
+    version: $version
+  ) {
+    edges {
+      node {
+        version
+        productName
+        releaseDate
+        releaseNotes {
+          ...ReleaseNotesFields
+        }
+        stream
+        skuFamily
+        recommended
+        unityHubDeepLink
+        shortRevision
+        downloads {
+          ...UnityReleaseHubDownloadFields
+        }
+      }
+    }
+    totalCount
+  }
+}
+
+fragment ReleaseNotesFields on UnityReleaseNotes {
+  url
+  integrity
+  type
+}
+
+fragment UnityReleaseHubDownloadFields on UnityReleaseHubDownload {
+  url
+  integrity
+  type
+  platform
+  architecture
+  modules {
+    ...UnityReleaseModuleFields_Level1
+  }
+  downloadSize(format: BYTE) {
+    value
+    unit
+  }
+  installedSize(format: BYTE) {
+    value
+    unit
+  }
+}
+
+fragment UnityReleaseModuleFields_Level1 on UnityReleaseModule {
+  ...UnityReleaseModuleCommonFields
+  subModules {
+    ...UnityReleaseModuleFields_Level2
+  }
+}
+
+fragment UnityReleaseModuleFields_Level2 on UnityReleaseModule {
+  ...UnityReleaseModuleCommonFields
+  subModules {
+    ...UnityReleaseModuleFields_Level3
+  }
+}
+
+fragment UnityReleaseModuleFields_Level3 on UnityReleaseModule {
+  ...UnityReleaseModuleCommonFields
+  subModules {
+    name
+    slug
+    id
+    description
+    url
+    destination
+  }
+}
+
+fragment UnityReleaseModuleCommonFields on UnityReleaseModule {
+  url
+  integrity
+  type
+  id
+  slug
+  name
+  description
+  category
+  required
+  hidden
+  preSelected
+  destination
+  extractedPathRename {
+    from
+    to
+  }
+  downloadSize(format: BYTE) {
+    unit
+    value
+  }
+  installedSize(format: BYTE) {
+    unit
+    value
+  }
+}

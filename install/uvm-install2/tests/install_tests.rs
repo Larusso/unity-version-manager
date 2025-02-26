@@ -18,9 +18,9 @@ mod macos_tests {
         );
         assert!(result.is_ok());
 
-        Installation::new(destination).expect("a unity installation");
+        Installation::new(destination).expect("a api installation");
         uvm_core::find_installation(&version)
-            .expect("a unity installation from unity hub editors list");
+            .expect("a api installation from api hub editors list");
     }
 
     #[ignore]
@@ -52,7 +52,7 @@ mod macos_tests {
         assert!(installed_components.is_superset(&expected_components));
 
         uvm_core::find_installation(&version)
-            .expect("a unity installation from unity hub editors list");
+            .expect("a api installation from api hub editors list");
     }
 
     #[ignore]
@@ -68,10 +68,10 @@ mod macos_tests {
         );
         assert!(result.is_ok());
 
-        Installation::new(destination).expect("a unity installation");
+        Installation::new(destination).expect("a api installation");
 
         uvm_core::find_installation(&version)
-            .expect("a unity installation from unity hub editors list");
+            .expect("a api installation from api hub editors list");
     }
 
     #[ignore]
@@ -92,6 +92,6 @@ mod macos_tests {
         assert!(installed_components.is_superset(&components));
 
         uvm_core::find_installation(&version)
-            .expect("a unity installation from unity hub editors list");
+            .expect("a api installation from api hub editors list");
     }
 }

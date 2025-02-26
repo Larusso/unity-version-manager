@@ -28,15 +28,15 @@ struct Opts {
     #[structopt(short, long)]
     debug: bool,
 
-    /// print unity hub installations [default listing]
+    /// print api hub installations [default listing]
     #[structopt(long = "hub")]
     use_hub: bool,
 
-    /// print all unity installations
+    /// print all api installations
     #[structopt(long)]
     all: bool,
 
-    /// print unity installations at default installation location
+    /// print api installations at default installation location
     #[structopt(long)]
     system: bool,
 
@@ -67,10 +67,10 @@ fn list(options: &Opts) -> io::Result<()> {
         info!("fetch all installations");
         uvm_core::list_all_installations
     } else if options.use_hub {
-        info!("fetch installations from unity hub");
+        info!("fetch installations from api hub");
         uvm_core::list_hub_installations
     } else {
-        info!("fetch installations from unity hub");
+        info!("fetch installations from api hub");
         uvm_core::list_hub_installations
     };
 

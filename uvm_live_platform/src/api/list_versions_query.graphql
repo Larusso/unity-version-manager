@@ -1,4 +1,4 @@
-query MyQuery2($architecture: [UnityReleaseDownloadArchitecture!] = ARM64, $platform: [UnityReleaseDownloadPlatform!] = MAC_OS, $limit: Int = 10, $skip: Int = 0, $stream: [UnityReleaseStream!] = LTS) {
+query ListVersionsQuery($architecture: [UnityReleaseDownloadArchitecture!] = ARM64, $platform: [UnityReleaseDownloadPlatform!] = MAC_OS, $limit: Int = 10, $skip: Int = 0, $stream: [UnityReleaseStream!] = LTS) {
     getUnityReleases(
         architecture: $architecture
         platform: $platform

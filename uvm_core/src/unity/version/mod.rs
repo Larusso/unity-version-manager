@@ -44,15 +44,6 @@ pub struct Version {
     hash: Option<String>,
 }
 
-impl Ord for Version {
-    fn cmp(&self, other: &Version) -> Ordering {
-        self.base
-            .cmp(&other.base)
-            .then(self.release_type.cmp(&other.release_type))
-            .then(self.revision.cmp(&other.revision))
-    }
-}
-
 impl Serialize for Version {
     fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
@@ -175,7 +166,7 @@ impl Version {
         use std::process::{Command, Stdio};
 
         let path = path.as_ref();
-        debug!("find unity version in Unity executable {}", path.display());
+        debug!("find api version in Unity executable {}", path.display());
 
         let child = Command::new("strings")
             .arg("--")

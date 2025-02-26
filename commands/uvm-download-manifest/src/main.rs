@@ -17,7 +17,7 @@ const SETTINGS: &'static [AppSettings] = &[AppSettings::ColoredHelp, AppSettings
 #[derive(StructOpt, Debug)]
 #[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!(), settings = SETTINGS)]
 struct Opts {
-    /// The unity version to download the manifest.ini file for in the form of `2018.1.0f3`
+    /// The api version to download the manifest.ini file for in the form of `2018.1.0f3`
     version: Version,
 
     /// the output path. default stdout
@@ -25,7 +25,7 @@ struct Opts {
     output_dir: Option<PathBuf>,
 
     /// name of the output file.
-    #[structopt(short, long, default_value = "unity-{version}-{platform}.ini")]
+    #[structopt(short, long, default_value = "api-{version}-{platform}.ini")]
     name: String,
 
     /// the platform to download (macos,win,linux).

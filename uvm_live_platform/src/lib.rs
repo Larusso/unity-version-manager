@@ -3,7 +3,10 @@ mod model;
 pub use model::*;
 mod api;
 
+use crate::error::ErrorRepr;
+pub use api::fetch_release::FetchRelease;
 pub use api::list_versions::ListVersions;
+use unity_version::Version;
 
 pub type Result<T> = std::result::Result<T, error::LivePlatformError>;
 
@@ -19,8 +22,19 @@ pub fn all_versions_with_revision() -> Result<impl Iterator<Item = String>> {
     _list_all_versions(true, true)
 }
 
-fn _list_all_versions(include_revisions: bool, autopage: bool) -> Result<ListVersions> {
-    ListVersions::builder().include_revision(include_revisions).autopage(autopage).list()
+fn _list_all_versions(include_revisions: bool, auto_page: bool) -> Result<ListVersions> {
+    Ok(ListVersions::builder()
+        .include_revision(include_revisions)
+        .autopage(auto_page)
+        .list()
+        .map_err(ErrorRepr::ListVersionsError)?)
+}
+
+pub fn fetch_release<V: Into<Version>>(version: V) -> Result<Release> {
+    let r = FetchRelease::builder(version)
+        .fetch()
+        .map_err(ErrorRepr::FetchReleaseError)?;
+    Ok(r)
 }
 
 #[cfg(test)]

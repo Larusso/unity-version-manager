@@ -2,7 +2,7 @@
 macro_rules! lock_process {
     ($lock_path:expr) => {
         let lock_file = fs::File::create($lock_path)?;
-        let _lock = uvm_core::utils::lock_process_or_wait(&lock_file)?;
+        let _lock = lock_process_or_wait(&lock_file)?;
     };
 }
 

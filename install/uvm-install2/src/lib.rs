@@ -125,7 +125,7 @@ where
             .flat_map(|component| {
                 let component = component.as_ref();
                 let node = graph.get_node_id(*component).ok_or_else(|| {
-                    debug!("Unsupported module '{}' for selected unity version {}", component, version);
+                    debug!("Unsupported module '{}' for selected api version {}", component, version);
                     ErrorKind::UnsupportedModuleError(component.to_string(), version.to_string())
                 });
 
@@ -163,7 +163,7 @@ where
 
     let installation = installation.or_else(|_| Installation::new(&base_dir))?;
 
-    //write new unity hub editor installation
+    //write new api hub editor installation
     if let Some(installation) = editor_installation {
         let mut _editors = Editors::load().and_then(|mut editors| {
             editors.add(&installation);
