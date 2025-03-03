@@ -3,8 +3,8 @@ use crate::{UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, Unit
 
 #[test]
 fn test_fetch_release_basic() {
-    let version = "2023.1.5f1".to_string(); // Use a real Unity version
-    let result = FetchRelease::builder(version.clone())
+    let version = "2022.3.33f1"; // Use a real Unity version
+    let result = FetchRelease::try_builder(version).unwrap()
         .platform(UnityReleaseDownloadPlatform::MacOs)
         .architecture(UnityReleaseDownloadArchitecture::Arm64)
         .stream(UnityReleaseStream::Lts)
@@ -20,7 +20,7 @@ fn test_fetch_release_basic() {
 #[test]
 fn test_fetch_release_invalid_version() {
     let version = "9999.9.9f9".to_string(); // Nonexistent version
-    let result = FetchRelease::builder(version)
+    let result = FetchRelease::try_builder(version).unwrap()
         .platform(UnityReleaseDownloadPlatform::Linux)
         .architecture(UnityReleaseDownloadArchitecture::X86_64)
         .stream(UnityReleaseStream::Lts)
@@ -41,7 +41,7 @@ fn test_fetch_release_different_platforms() {
     ];
 
     for platform in platforms {
-        let result = FetchRelease::builder(version.clone())
+        let result = FetchRelease::try_builder(version.clone()).unwrap()
             .platform(platform)
             .architecture(UnityReleaseDownloadArchitecture::X86_64)
             .stream(UnityReleaseStream::Lts)

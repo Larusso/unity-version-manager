@@ -1,5 +1,6 @@
 pub mod editors;
 pub mod paths;
+pub mod module;
 
 use std::io;
 use log::debug;

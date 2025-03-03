@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use super::*;
 use crate::unity;
 use crate::unity::hub::paths;
-use crate::unity::installation::{UnityInstallation, Installation};
+use crate::unity::installation::{UnityInstallation, Installation, FromInstallation};
 use serde_json;
 use std::collections::HashMap;
 use std::fs;
@@ -233,9 +233,9 @@ impl PartialOrd for EditorInstallation {
 //     }
 // }
 
-impl<I> From<I> for EditorInstallation
+impl<I> FromInstallation<I> for EditorInstallation
 where I: Installation + Sized {
-    fn from(value: I) -> Self {
+    fn from_installation(value: I) -> Self {
         EditorInstallation {
             location: value.location().to_path_buf(),
             version: value.version().clone(),

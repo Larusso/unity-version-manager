@@ -94,6 +94,22 @@ impl FromStr for Version {
     }
 }
 
+impl TryFrom<&str> for Version {
+    type Error = <Version as FromStr>::Err;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Version::from_str(value)
+    }
+}
+
+impl TryFrom<String> for Version {
+    type Error = <Version as FromStr>::Err;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Version::from_str(&value)
+    }
+}
+
 impl TryFrom<PathBuf> for Version {
     type Error = VersionError;
 

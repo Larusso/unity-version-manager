@@ -1,18 +1,19 @@
 pub mod hub;
 mod installation;
+pub mod error;
 
-use std::{fs, io};
-use std::path::Path;
+use crate::error::UnityHubError;
+pub use installation::FromInstallation;
+pub use installation::Installation;
+pub use installation::UnityInstallation;
 use itertools::Itertools;
 use log::{debug, warn};
-pub use installation::UnityInstallation;
+use std::path::Path;
+use std::{fs, io};
 use unity_version::Version;
-use crate::error::UnityHubError;
 
-pub struct Installations(Box<dyn Iterator<Item =UnityInstallation>>);
+pub struct Installations(Box<dyn Iterator<Item = UnityInstallation>>);
 pub struct Versions(Box<dyn Iterator<Item = Version>>);
-
-
 
 impl Installations {
     fn new(install_location: &Path) -> Result<Installations, UnityHubError> {
@@ -41,7 +42,9 @@ impl Installations {
 
 impl From<hub::editors::Editors> for Installations {
     fn from(editors: hub::editors::Editors) -> Self {
-        let iter = editors.into_iter().map(UnityInstallation::from);
+        let iter = editors
+            .into_iter()
+            .map(UnityInstallation::from_installation);
         Installations(Box::new(iter))
     }
 }
@@ -70,13 +73,13 @@ impl From<Installations> for Versions {
 }
 
 impl FromIterator<UnityInstallation> for Installations {
-    fn from_iter<I: IntoIterator<Item=UnityInstallation>>(iter: I) -> Self {
-        let c:Vec<UnityInstallation> = iter.into_iter().collect();
+    fn from_iter<I: IntoIterator<Item = UnityInstallation>>(iter: I) -> Self {
+        let c: Vec<UnityInstallation> = iter.into_iter().collect();
         Installations(Box::new(c.into_iter()))
     }
 }
 
-pub fn list_all_installations() -> Result<Installations> {
+pub fn list_all_installations() -> Result<Installations, UnityHubError> {
     let i1 = list_installations()?;
     let i2 = hub::list_installations()?;
     let iter = i1.chain(i2);
@@ -91,27 +94,26 @@ pub fn list_installations() -> Result<Installations, UnityHubError> {
     #[cfg(target_os = "linux")]
     let application_path = dirs_2::executable_dir();
 
-    application_path.ok_or_else(|| {
-        io::Error::new(io::ErrorKind::NotFound, "unable to locate application_dir").into()
-    })
+    application_path
+        .ok_or_else(|| {
+            io::Error::new(io::ErrorKind::NotFound, "unable to locate application_dir").into()
+        })
         .and_then(|application_dir| {
-            list_installations_in_dir(&application_dir)
-                .or_else(|err| {
-                    match err {
-                        UnityHubError::IoError(ref io_error) => {
-                            io_error.raw_os_error().and_then(|os_error|
-                                match os_error {
-                                    2 => {
-                                        warn!("{}", io_error);
-                                        Some(Installations::empty())
-                                    },
-                                    _ => None
-                                }
-                            )
-                        },
-                        _ => None
-                    }.ok_or_else(|| err)
-                })
+            list_installations_in_dir(&application_dir).or_else(|err| {
+                match err {
+                    UnityHubError::IoError(ref io_error) => {
+                        io_error.raw_os_error().and_then(|os_error| match os_error {
+                            2 => {
+                                warn!("{}", io_error);
+                                Some(Installations::empty())
+                            }
+                            _ => None,
+                        })
+                    }
+                    _ => None,
+                }
+                .ok_or_else(|| err)
+            })
         })
 }
 
@@ -131,7 +133,8 @@ pub fn find_installation(version: &Version) -> Result<UnityInstallation, UnityHu
                 io::Error::new(
                     io::ErrorKind::NotFound,
                     format!("unable to locate installation with version {}", version),
-                ).into()
+                )
+                .into()
             })
     })
 }
@@ -139,6 +142,7 @@ pub fn find_installation(version: &Version) -> Result<UnityInstallation, UnityHu
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::unity::installation::AppInfo;
     use plist::serde::serialize_to_xml;
     use std::fs;
     use std::fs::File;
@@ -146,7 +150,6 @@ mod tests {
     use std::path::PathBuf;
     use std::str::FromStr;
     use tempfile::Builder;
-    use crate::unity::installation::AppInfo;
 
     fn create_test_path(base_dir: &PathBuf, version: &str) -> PathBuf {
         let path = base_dir.join(format!("Unity-{version}", version = version));

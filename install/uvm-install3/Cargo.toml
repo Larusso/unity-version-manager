@@ -25,6 +25,7 @@ unity-version = { path = "../../unity-version", version = "0.1.0"}
 uvm_live_platform = { path = "../../uvm_live_platform", version = "0.1.1"}
 uvm_paths = { path = "../../uvm_paths", version = "0.1.0"}
 uvm_install_graph = { path = "../../uvm_install_graph", version = "0.8.2"}
+unity-hub = {path = "../../unity-hub", version = "0.1.0" }
 anyhow = "1.0.75"
 [target.'cfg(unix)'.dependencies]
 cluFlock = "1.2.5"

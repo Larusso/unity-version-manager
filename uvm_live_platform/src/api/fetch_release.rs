@@ -1,5 +1,7 @@
 use crate::error::FetchReleaseError;
-use crate::{Release, UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseStream};
+use crate::{
+    Release, UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseStream,
+};
 use serde::{Deserialize, Serialize};
 use unity_version::Version;
 
@@ -7,20 +9,24 @@ use unity_version::Version;
 pub struct FetchRelease {}
 
 impl FetchRelease {
-    pub fn builder<V: Into<Version>>(version: V) -> FetchReleaseBuilder { FetchReleaseBuilder::new(version.into().to_string()) }
+    pub fn builder<V: Into<Version>>(version: V) -> FetchReleaseBuilder {
+        FetchReleaseBuilder::new(version.into())
+    }
+    pub fn try_builder<V: TryInto<Version>>(version: V) -> Result<FetchReleaseBuilder, V::Error> {
+        version.try_into().map(|v| FetchReleaseBuilder::new(v))
+    }
 }
-
 
 #[derive(Debug, Clone)]
 pub struct FetchReleaseBuilder {
     architecture: UnityReleaseDownloadArchitecture,
     platform: UnityReleaseDownloadPlatform,
     stream: UnityReleaseStream,
-    version: String
+    version: Version,
 }
 
 impl FetchReleaseBuilder {
-    fn new(version: String) -> Self {
+    fn new(version: Version) -> Self {
         Self {
             version,
             architecture: Default::default(),
@@ -44,10 +50,10 @@ impl FetchReleaseBuilder {
             .send()
             .map_err(FetchReleaseError::NetworkError)?
             .json()
-            .map_err(FetchReleaseError::JsonError)?;
+            .map_err(|err| FetchReleaseError::JsonError(err))?;
 
         if res.data.get_unity_releases.edges.is_empty() {
-            Err(FetchReleaseError::NotFound(version))
+            Err(FetchReleaseError::NotFound(version.to_string()))
         } else {
             let release_edge = res.data.get_unity_releases.edges.remove(0);
             let release = release_edge.node;
@@ -110,7 +116,6 @@ struct FetchReleaseResultBodyData {
     get_unity_releases: GetUnityReleases,
 }
 
-
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
 pub enum UnityReleaseOrder {
     #[serde(rename(serialize = "RELEASE_DATE_ASC"))]
@@ -158,7 +163,7 @@ impl From<FetchReleaseBuilder> for FetchReleaseOptions {
             architecture: value.architecture,
             platform: value.platform,
             stream: value.stream,
-            version: value.version,
+            version: value.version.to_string(),
         }
     }
 }

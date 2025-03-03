@@ -1,7 +1,7 @@
 use std::io;
 use thiserror::Error;
 use unity_version::error::VersionError;
-
+pub use crate::unity::error::*;
 #[derive(Error, Debug)]
 pub enum UnityHubError {
     #[error("Unity Version error")]

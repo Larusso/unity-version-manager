@@ -1,3 +1,4 @@
+use std::fs::File;
 use std::str::FromStr;
 use serde::{Deserialize, Deserializer, Serialize};
 use ssri::Integrity;
@@ -18,17 +19,15 @@ pub struct Release {
     pub recommended: bool,
     pub unity_hub_deep_link: String,
     pub short_revision: String,
-
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub third_party_notices: Vec<UnityThirdPartyNotice>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Download {
-    pub url: String,
-    #[serde(deserialize_with = "deserialize_sri")]
-    pub integrity: Option<Integrity>,
-    #[serde(rename = "type")]
-    pub file_type: FileType,
+    #[serde(flatten)]
+    release_file: UnityReleaseFile,
     pub platform: UnityReleaseDownloadPlatform,
     pub architecture: UnityReleaseDownloadArchitecture,
     pub modules: Vec<Module>,
@@ -39,16 +38,16 @@ pub struct Download {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Module {
-    pub url: String,
-    #[serde(deserialize_with = "deserialize_sri")]
-    pub integrity: Option<Integrity>,
-    #[serde(rename = "type")]
-    pub file_type: FileType,
+    #[serde(rename = "__typename")]
+    pub type_name: String,
+    #[serde(flatten)]
+    release_file: UnityReleaseFile,
     pub id: String,
     pub slug: String,
     pub name: String,
     pub description: String,
     pub category: UnityReleaseCategory,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub sub_modules: Vec<Module>,
     pub required: bool,
     pub hidden: bool,
@@ -57,17 +56,36 @@ pub struct Module {
     pub extracted_path_rename: Option<ExtractedPathRename>,
     pub download_size: DigitalValue,
     pub installed_size: DigitalValue,
+    #[serde(default, deserialize_with = "null_to_empty_vec")]
+    pub eula: Vec<Eula>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Eula {
+    #[serde(flatten)]
+    release_file: UnityReleaseFile,
+    pub label: String,
+    pub message: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ReleaseNotes {
-    pub url: String,
-    #[serde(deserialize_with = "deserialize_sri")]
-    pub integrity: Option<Integrity>,
-    #[serde(rename = "type")]
-    pub file_type: FileType,
+pub struct UnityThirdPartyNotice {
+    #[serde(flatten)]
+    release_file: UnityReleaseFile,
+    original_file_name: String,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UnityReleaseFile {
+    url: String,
+    #[serde(deserialize_with = "deserialize_sri")]
+    integrity: Option<Integrity>,
+    #[serde(rename = "type")]
+    file_type: FileType,
+}
+
+pub type ReleaseNotes = UnityReleaseFile;
 
 fn deserialize_sri<'de, D>(deserializer: D) -> Result<Option<Integrity>, D::Error>
 where
@@ -82,4 +100,13 @@ where
         },
         None => Ok(None),
     }
+}
+
+fn null_to_empty_vec<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    let opt = Option::deserialize(deserializer)?;
+    Ok(opt.unwrap_or_default())
 }

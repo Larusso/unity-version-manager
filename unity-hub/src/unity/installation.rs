@@ -39,6 +39,14 @@ pub trait Installation: Eq + Ord {
     fn exec_path(&self) -> PathBuf {
         self.path().join("Unity.app/Contents/MacOS/Unity")
     }
+
+    fn installed_modules(&self) -> Result<impl IntoIterator<Item = Module>, UnityError> {
+        let modules_json_path = self.path().join("modules.json");
+        let file_content = fs::read_to_string(&modules_json_path)?;
+        let modules: Vec<Module> = serde_json::from_str(&file_content)?;
+        let installed_modules = modules.into_iter().filter(|m| m.is_installed);
+        Ok(installed_modules)
+    }
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -146,7 +154,7 @@ impl UnityInstallation {
     }
 
     // //TODO remove clone()
-    // pub fn installed_components(&self) -> InstalledComponents {
+    // pub fn installed_modules(&self) -> InstalledComponents {
     //     InstalledComponents::new(self.clone())
     // }
 
@@ -192,10 +200,12 @@ impl UnityInstallation {
     }
 }
 
-use std::fmt;
+use std::{fmt, fs};
 use serde::{Deserialize, Serialize};
 use unity_version::Version;
 use crate::error::UnityHubError;
+use crate::unity::error::UnityError;
+use crate::unity::hub::module::Module;
 
 impl fmt::Display for UnityInstallation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -203,15 +213,32 @@ impl fmt::Display for UnityInstallation {
     }
 }
 
-impl<I> From<I> for UnityInstallation
-where I: Installation {
-    fn from(value: I) -> Self {
+pub trait FromInstallation<T:Sized> {
+    fn from_installation(value: T) -> Self;
+}
+
+impl<I> FromInstallation<I> for UnityInstallation
+where
+    I: Installation,
+    I: Sized, // Ensures this does not apply to trait objects
+{
+    fn from_installation(value: I) -> UnityInstallation {
         UnityInstallation {
-            version: value.version().to_owned(),
             path: value.location().to_path_buf(),
+            version: value.version().clone(),
         }
     }
 }
+
+// impl<I> From<I> for UnityInstallation
+// where I: Installation {
+//     fn from(value: I) -> Self {
+//         UnityInstallation {
+//             version: value.version().to_owned(),
+//             path: value.location().to_path_buf(),
+//         }
+//     }
+// }
 
 #[cfg(all(test, target_os = "macos"))]
 mod tests {

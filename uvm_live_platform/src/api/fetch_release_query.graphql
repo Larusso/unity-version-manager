@@ -28,6 +28,12 @@ query FetchReleaseQuery(
         downloads {
           ...UnityReleaseHubDownloadFields
         }
+        thirdPartyNotices {
+      		url
+          integrity
+          type
+          originalFileName
+        }
       }
     }
     totalCount
@@ -86,6 +92,7 @@ fragment UnityReleaseModuleFields_Level3 on UnityReleaseModule {
 }
 
 fragment UnityReleaseModuleCommonFields on UnityReleaseModule {
+  __typename
   url
   integrity
   type
@@ -109,5 +116,12 @@ fragment UnityReleaseModuleCommonFields on UnityReleaseModule {
   installedSize(format: BYTE) {
     unit
     value
+  }
+  eula {
+    url
+    integrity
+    type
+    label
+    message
   }
 }

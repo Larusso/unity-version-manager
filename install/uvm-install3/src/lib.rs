@@ -1,13 +1,17 @@
 mod error;
 
-use error::*;
-use std::path::Path;
-use std::{fs, io};
-use std::fs::File;
 use cluFlock::{FlockLock, SharedFlock};
+use error::*;
 use log::{debug, info, trace};
+use std::collections::HashSet;
+use std::fs::File;
+use std::path::{Path, PathBuf};
+use std::{fs, io};
+use unity_hub::unity::hub::editors::EditorInstallation;
+use unity_hub::unity::UnityInstallation;
+use unity_hub::unity::{hub, Installation};
 use unity_version::Version;
-use uvm_install_graph::{InstallGraph, InstallStatus, Walker};
+use uvm_install_graph::{InstallGraph, InstallStatus, UnityComponent, Walker};
 use uvm_paths::locks_dir;
 
 #[macro_export]
@@ -31,8 +35,7 @@ pub fn lock_process_or_wait<'a>(lock_file: &'a File) -> io::Result<FlockLock<&'a
             debug!("wait for other process to finish.");
             let lock = lock_file.wait_lock()?;
             Ok(lock)
-        }
-        //Err(err) => Err(err),
+        } //Err(err) => Err(err),
     }
 }
 
@@ -40,7 +43,6 @@ pub fn lock_process_or_wait<'a>(lock_file: &'a File) -> io::Result<FlockLock<&'a
 pub fn lock_process_or_wait(_: &File) -> io::Result<()> {
     Ok(())
 }
-
 
 fn print_graph<'a>(graph: &'a InstallGraph<'a>) {
     use console::Style;
@@ -102,13 +104,6 @@ where
 
     //
 
-
-
-
-
-
-
-
     let mut editor_installation: Option<EditorInstallation> = None;
     let base_dir = if let Some(destination) = destination {
         let destination = destination.as_ref();
@@ -117,7 +112,7 @@ where
                 io::ErrorKind::InvalidInput,
                 "Requested destination is not a directory.",
             )
-                .into());
+            .into());
         }
 
         editor_installation = Some(EditorInstallation::new(
@@ -136,31 +131,113 @@ where
                     let application_path = dirs_2::executable_dir();
                     application_path
                 }
-                    .map(|path| path.join(format!("Unity-{}", version)))
+                .map(|path| path.join(format!("Unity-{}", version)))
             })
             .expect("default installation directory")
     };
 
-    let installation = Installation::new(&base_dir);
-
+    let installation = UnityInstallation::new(&base_dir);
     if let Ok(ref installation) = installation {
-        let mut installed_components: HashSet<Component> =
-            installation.installed_components().collect();
-        installed_components.insert(Component::Editor);
-        graph.mark_installed(&installed_components);
+        let modules = installation.installed_modules()?;
+        let mut module_ids: HashSet<String> = modules.into_iter().map(|m| m.id).collect();
+        module_ids.insert("Unity".to_string());
+        graph.mark_installed(&module_ids);
     } else {
         info!("\nFresh install");
         graph.mark_all_missing();
     }
 
+    // info!("All available modules for Unity {}", version);
+    // print_graph(&graph);
 
+    let base_iterator = ["Unity".to_string()].into_iter();
+    let all_components: HashSet<String> = match requested_modules {
+        Some(modules) => modules
+            .into_iter()
+            .flat_map(|module| {
+                let module = module.into();
+                let node = graph.get_node_id(module.clone()).ok_or_else(|| {
+                    debug!(
+                        "Unsupported module '{}' for selected api version {}",
+                        module, version
+                    );
+                    InstallError::UnsupportedModule(module.to_string(), version.to_string())
+                });
 
+                match node {
+                    Ok(node) => {
+                        let mut out = vec![Ok(module.to_string())];
+                        out.append(
+                            &mut graph
+                                .get_dependend_modules(node)
+                                .iter()
+                                .map({
+                                    |((c, _), _)| match c {
+                                        UnityComponent::Editor(_) => Ok("Unity".to_string()),
+                                        UnityComponent::Module(m) => Ok(m.id.to_string()),
+                                    }
+                                })
+                                .collect(),
+                        );
+                        if install_sync {
+                            out.append(
+                                &mut graph
+                                    .get_sub_modules(node)
+                                    .iter()
+                                    .map({
+                                        |((c, _), _)| match c {
+                                            UnityComponent::Editor(_) => Ok("Unity".to_string()),
+                                            UnityComponent::Module(m) => Ok(m.id.to_string()),
+                                        }
+                                    })
+                                    .collect(),
+                            );
+                        }
+                        out
+                    }
+                    Err(err) => vec![Err(err.into())],
+                }
+            })
+            .chain(base_iterator.map(|c| Ok(c)))
+            .collect::<Result<HashSet<_>>>(),
+        None => base_iterator.map(|c| Ok(c)).collect::<Result<HashSet<_>>>(),
+    }?;
 
+    debug!("\nAll requested components");
+    for c in all_components.iter() {
+        debug!("- {}", c);
+    }
 
+    graph.keep(&all_components);
 
-
-
-    info!("All available modules for Unity {}", version);
+    info!("\nInstall Graph");
     print_graph(&graph);
+
+    Ok(())
+}
+
+fn install_module_and_dependencies<P: AsRef<Path>>(
+    graph: &InstallGraph,
+    base_dir: P,
+) -> Result<()> {
+    let base_dir = base_dir.as_ref();
+    for node in graph.topo().iter(graph.context()) {
+        if let Some(InstallStatus::Missing) = graph.install_status(node) {
+            let component = graph.component(node).unwrap();
+            info!("install {}", component);
+            info!("download installer for {}", component);
+            let loader = Loader::new(*component, graph.manifest());
+            let installer = loader.download()?;
+
+            info!("create installer for {}", component);
+            let module = graph.manifest().get(&component).unwrap();
+            let installer = create_installer(base_dir, installer, module)?;
+            info!("install");
+            installer
+                .install()
+                .chain_err(|| Error::from(format!("failed to install {}", component)))?;
+        }
+    }
+
     Ok(())
 }
