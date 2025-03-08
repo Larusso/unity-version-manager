@@ -1,7 +1,6 @@
 use crate::error::Result;
 use crate::utils::UrlUtils;
 use log::*;
-use md5::{Digest, Md5};
 use reqwest::header::{RANGE, USER_AGENT};
 use reqwest::{StatusCode, Url};
 use ssri::Integrity;
@@ -10,7 +9,6 @@ use std::io;
 use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
-use cluFlock::ExclusiveFlock;
 use unity_hub::unity::hub::paths;
 use crate::utils::lock_process;
 use crate::utils;

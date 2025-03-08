@@ -45,8 +45,8 @@ impl From<&uvm_live_platform::Module> for ModuleBackwardsCompatible {
         let visible = !value.hidden();
         let preselected = value.pre_selected();
 
-        let (eula_url_1, eula_label_1, eula_message) = value.eula().first().as_ref().map(|eula| {
-            (eula.release_file.url.to_string(), eula.label.to_string(), eula.message.to_string())
+        let (eula_url_1, eula_label_1, eula_message) = value.eula().first().map(|eula| {
+            (eula.release_file.url.to_owned(), eula.label.to_owned(), eula.message.to_owned())
         }).unwrap_or(("".to_string(), "".to_string(), "".to_string()));
 
 

@@ -1,6 +1,3 @@
-#[no_mangle]
-#[macro_export]
-
 use log::*;
 use std::fs::DirBuilder;
 use std::fs::File;
