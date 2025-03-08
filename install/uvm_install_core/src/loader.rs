@@ -1,16 +1,19 @@
 use crate::error::Result;
+use crate::utils::UrlUtils;
 use log::*;
 use md5::{Digest, Md5};
 use reqwest::header::{RANGE, USER_AGENT};
-use reqwest::StatusCode;
+use reqwest::{StatusCode, Url};
+use ssri::Integrity;
 use std::fs;
 use std::io;
 use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
-use uvm_core::progress::ProgressHandler;
-use uvm_core::unity::hub::paths;
-use uvm_core::unity::{v2::Manifest, Component, MD5};
+use cluFlock::ExclusiveFlock;
+use unity_hub::unity::hub::paths;
+use crate::utils::lock_process;
+use crate::utils;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
 enum CheckSumResult {
@@ -19,6 +22,24 @@ enum CheckSumResult {
     Equal,
     NotEqual,
     Skipped,
+}
+
+pub trait ProgressHandler {
+    fn finish(&self);
+    fn inc(&self, delta: u64);
+    fn set_length(&self, len: u64);
+    fn set_position(&self, pos: u64);
+}
+
+pub trait InstallManifest {
+    fn is_editor(&self) -> bool;
+    fn id(&self) -> &str;
+    fn install_size(&self) -> u64;
+    fn download_url(&self) -> &str;
+    fn integrity(&self) -> Option<Integrity>;
+    fn install_rename_from_to<P: AsRef<Path>>(&self, base_path: P) -> Option<(PathBuf, PathBuf)>;
+
+    fn install_destination<P: AsRef<Path>>(&self, base_path: P) -> Option<PathBuf>;
 }
 
 struct DownloadProgress<'a, R, P> {
@@ -44,22 +65,22 @@ impl<'a, R: Read, P: 'a + ProgressHandler + ?Sized> Read for DownloadProgress<'a
     }
 }
 
-pub struct Loader<'a> {
-    component: Component,
-    manifest: &'a Manifest<'a>,
+pub struct Loader<'a, M> {
+    version: &'a str,
+    short_revision: &'a str,
+    manifest: &'a M,
     verify: bool,
     progress_handle: Option<Box<&'a dyn ProgressHandler>>,
 }
 
-impl<'a> Loader<'a> {
-    pub fn new<C>(component: C, manifest: &'a Manifest<'a>) -> Loader<'a>
-    where
-        C: Into<Component>,
-    {
-        let component = component.into();
-
+impl<'a, M> Loader<'a, M>
+where
+    M: InstallManifest,
+{
+    pub fn new(version: &'a str, short_revision: &'a str, manifest: &'a M) -> Loader<'a, M> {
         Loader {
-            component,
+            version,
+            short_revision,
             manifest,
             verify: true,
             progress_handle: None,
@@ -75,31 +96,21 @@ impl<'a> Loader<'a> {
     }
 
     pub fn download(&self) -> Result<PathBuf> {
-        use uvm_core::utils::UrlUtils;
-
         let manifest = &self.manifest;
         debug!(
             "download installer for component: {} and version: {}",
-            self.component,
-            manifest.version()
+            self.manifest.id(),
+            self.version
         );
 
-        let component: Component = self.component;
-        let component_url = manifest
-            .url(component)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Failed to fetch installer url"))?;
-        let component_data = manifest.get(&component).ok_or_else(|| {
-            io::Error::new(io::ErrorKind::Other, "Failed to fetch component data")
-        })?;
+        let module_url = Url::parse(self.manifest.download_url())?;
 
         // set total size in progress
         if let Some(ref p) = self.progress_handle {
-            if let Some(size) = manifest.size(component) {
-                p.set_length(size);
-            }
+            p.set_length(manifest.install_size());
         }
 
-        let version_string = format!("{}-{}", manifest.version(), manifest.version().version_hash()?);
+        let version_string = format!("{}-{}", self.version, self.short_revision);
         let installer_dir = paths::cache_dir()
             .map(|c| c.join(&format!("installer/{}", version_string)))
             .ok_or_else(|| {
@@ -118,14 +129,12 @@ impl<'a> Loader<'a> {
                 )
             })?;
 
-        let file_name = UrlUtils::get_file_name_from_url(&component_url)?;
+        let file_name = UrlUtils::get_file_name_from_url(&module_url)?;
 
         let temp_file_name = format!("{}.part", file_name);
 
         trace!("ensure installer temp dir");
-        fs::DirBuilder::new()
-            .recursive(true)
-            .create(&temp_dir)?;
+        fs::DirBuilder::new().recursive(true).create(&temp_dir)?;
 
         trace!("ensure installer cache dir");
         fs::DirBuilder::new()
@@ -138,7 +147,7 @@ impl<'a> Loader<'a> {
         trace!("installer_path: {}", installer_path.display());
         if installer_path.exists() {
             debug!("found installer at {}", installer_path.display());
-            let r = self.verify_checksum(&installer_path, component_data.checksum)?;
+            let r = self.verify_checksum(&installer_path, manifest.integrity())?;
             if CheckSumResult::Equal == r
                 || CheckSumResult::Skipped == r
                 || CheckSumResult::NoCheckSum == r
@@ -171,9 +180,9 @@ impl<'a> Loader<'a> {
 
         debug!("request installer with offset {}", start_range);
 
-        let client = reqwest::Client::new();
+        let client = reqwest::blocking::Client::new();
         let response = client
-            .get(component_url.as_str())
+            .get(module_url.as_str())
             .header(USER_AGENT, "uvm")
             .header(RANGE, format!("bytes={}-", start_range))
             .send()?;
@@ -214,7 +223,7 @@ impl<'a> Loader<'a> {
 
         fs::rename(&temp_file, &installer_path)?;
 
-        match self.verify_checksum(&installer_path, component_data.checksum)? {
+        match self.verify_checksum(&installer_path, self.manifest.integrity())? {
             CheckSumResult::NotEqual => Err(io::Error::new(
                 io::ErrorKind::Other,
                 format!("Checksum verify failed for {}", installer_path.display()),
@@ -230,10 +239,10 @@ impl<'a> Loader<'a> {
     fn verify_checksum<P: AsRef<Path>>(
         &self,
         path: P,
-        check_sum: Option<MD5>,
+        check_sum: Option<Integrity>,
     ) -> Result<CheckSumResult> {
         if !self.verify {
-            debug!("skip intaller checksum verification");
+            debug!("skip installer checksum verification");
             return Ok(CheckSumResult::Skipped);
         }
 
@@ -241,18 +250,15 @@ impl<'a> Loader<'a> {
         if path.exists() {
             debug!("installer already downloaded at {}", path.display());
             debug!("check installer checksum");
-            if let Some(md5) = check_sum {
-                let mut hasher = Md5::new();
+
+            if let Some(i) = check_sum {
                 let mut installer = fs::File::open(&path)?;
-                io::copy(&mut installer, &mut hasher)?;
-                let hash = hasher.result();
-                if hash[..] == md5.0 {
-                    debug!("checksum check success.");
-                    return Ok(CheckSumResult::Equal);
-                } else {
-                    warn!("checksum miss match.");
-                    return Ok(CheckSumResult::NotEqual);
-                }
+                let mut installer_bytes = Vec::new();
+                installer.read_to_end(&mut installer_bytes)?;
+                return match i.check(&installer_bytes) {
+                    Ok(_) => Ok(CheckSumResult::Equal),
+                    _ => Ok(CheckSumResult::NotEqual),
+                };
             } else {
                 return Ok(CheckSumResult::NoCheckSum);
             }

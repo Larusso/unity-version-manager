@@ -1,3 +1,4 @@
 pub mod unity;
-mod error;
+pub mod error;
 
+pub use unity::hub::editors::Editors;

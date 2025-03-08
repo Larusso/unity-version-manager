@@ -93,3 +93,45 @@ impl fmt::Display for DigitalValue {
         write!(f, "{} {}", self.value, self.unit)
     }
 }
+
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum Size {
+    Bytes(usize),
+    DigitalValue(DigitalValue),
+}
+
+impl Size {
+    pub fn as_bytes_representation(&mut self) {
+        match self {
+            Size::Bytes(_) => {}
+            Size::DigitalValue(d) => {
+                *self = Size::Bytes(d.to_bytes().value as usize)
+            }
+        }
+    }
+
+    pub fn to_bytes(&self) -> f64 {
+        match self {
+            Size::Bytes(b) => *b as f64,
+            Size::DigitalValue(d) => {
+                d.to_bytes().value
+            }
+        }
+    }
+}
+
+impl fmt::Display for Size {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Size::*;
+        match self {
+            Bytes(bytes) => {
+                write!(f, "{} byte", bytes)
+            }
+            DigitalValue(d) => {
+                write!(f, "{} {}", d.value, d.unit)
+            }
+        }
+    }
+}

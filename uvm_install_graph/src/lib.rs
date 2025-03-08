@@ -6,7 +6,6 @@ use daggy::petgraph::visit::Topo;
 use daggy::Dag;
 use daggy::NodeIndex;
 pub use daggy::Walker;
-use itertools::Itertools;
 use std::collections::HashSet;
 use std::fmt;
 use std::fmt::Display;
@@ -51,7 +50,7 @@ impl Display for UnityComponent<'_> {
                 write!(f, "Editor")
             }
             UnityComponent::Module(module) => {
-                write!(f, "{} - {}", module.id, module.description)
+                write!(f, "{} - {}", module.id(), module.description())
             }
         }
     }
@@ -99,7 +98,7 @@ impl<'a> InstallGraph<'a> {
             |_n, (c, install_status)| {
                 match c {
                     UnityComponent::Editor(_) if modules.contains("Unity") => Some((*c, *install_status)),
-                    UnityComponent::Module(module) if modules.contains(&module.id) => Some((*c, *install_status)),
+                    UnityComponent::Module(module) if modules.contains(module.id()) => Some((*c, *install_status)),
                     _ => None,
                 }
             },
@@ -109,7 +108,7 @@ impl<'a> InstallGraph<'a> {
 
     /// Builds a Dag representation of the given **Manifest**.
     pub fn from(release: &'a Release) -> Self {
-        let mut dag = Dag::new();
+        let dag = Dag::new();
         let mut graph = InstallGraph {
             release,
             dag
@@ -129,10 +128,10 @@ impl<'a> InstallGraph<'a> {
                 let module = self
                     .dag
                     .add_child(d, (), (UnityComponent::Module(&m), InstallStatus::default()));
-                for sub in &m.sub_modules {
+                for sub in m.sub_modules() {
                     let subModule = self.dag
                         .add_child(module.1, (), (UnityComponent::Module(&sub), InstallStatus::default()));
-                    for sub2 in &sub.sub_modules {
+                    for sub2 in sub.sub_modules() {
                         self.dag.add_child(subModule.1, (), (UnityComponent::Module(&sub2), InstallStatus::default()));
                     }
                 }
@@ -172,7 +171,7 @@ impl<'a> InstallGraph<'a> {
             |_n, (c, _)| {
                 match c {
                     UnityComponent::Editor(_) if components.contains("Unity") => Some((*c, InstallStatus::Installed)),
-                    UnityComponent::Module(module) if components.contains(&module.id) => Some((*c, InstallStatus::Installed)),
+                    UnityComponent::Module(module) if components.contains(module.id()) => Some((*c, InstallStatus::Installed)),
                     _ => Some((*c, InstallStatus::Missing)),
                 }
             },
@@ -189,12 +188,12 @@ impl<'a> InstallGraph<'a> {
         self.dag.node_weight(node).map(|(_, status)| status)
     }
 
-    pub fn get_node_id(&self, component: String) -> Option<NodeIndex> {
+    pub fn get_node_id(&self, component: &str) -> Option<NodeIndex> {
         self.dag.raw_nodes().iter().enumerate().find(|(_, node)| {
             let (c, _) = &node.weight;
             match c {
                 UnityComponent::Editor(_) if component == "Unity" => true,
-                UnityComponent::Module(module) => module.id == component,
+                UnityComponent::Module(module) => module.id() == component,
                 _ => false,
             }
         }).map(|(index,_)| self.dag.from_index(index))

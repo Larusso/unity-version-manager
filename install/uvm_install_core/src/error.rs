@@ -6,7 +6,7 @@ error_chain! {
         Io(::std::io::Error);
         NetworkError(::reqwest::Error);
         ZipError(::zip::result::ZipError);
-        VersionError(::uvm_core::unity::VersionError);
+        URL(url::ParseError);
     }
 
     errors {

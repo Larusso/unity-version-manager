@@ -23,3 +23,4 @@ typed-builder = "0.15.2"
 ordered-float = "5.0.0"
 unity-version = { path = "../unity-version", version = "0.1.0"}
 ssri = "9.2.0"
+derive-getters = { version = "0.5.0", features = ["auto_copy_getters"] }

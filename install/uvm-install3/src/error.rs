@@ -17,4 +17,10 @@ pub enum InstallError {
 
     #[error("Module '{0}' not supported for version '{1}'")]
     UnsupportedModule(String, String),
+
+    #[error("Installation failed")]
+    InstallFailed(#[from] uvm_install_core::error::Error),
+
+    #[error("Some Hub error")]
+    HubError(#[from]unity_hub::error::UnityHubError),
 }

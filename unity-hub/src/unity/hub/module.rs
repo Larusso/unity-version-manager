@@ -1,61 +1,78 @@
 use serde::{Deserialize, Serialize};
-use unity_types::digital::{DigitalValue, Size};
-use unity_types::file::ExtractedPathRename;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Module {
-    pub url: String,
-    pub integrity: Option<String>,
-    #[serde(rename = "type")]
-    pub file_type: FileType,
-    pub id: String,
-    pub slug: String,
-    pub name: String,
-    pub description: String,
-    pub category: String,
-    #[serde(default)]
-    pub sub_modules: Vec<Module>,
-    pub required: bool,
-    pub hidden: bool,
-    pub pre_selected: bool,
-    pub destination: Option<String>,
-    pub extracted_path_rename: Option<ExtractedPathRename>,
-    pub download_size: Size,
-    pub installed_size: Size,
+    #[serde(flatten)]
+    pub base: uvm_live_platform::Module,
     #[serde(default)]
     pub is_installed: bool,
+    #[serde(flatten)]
+    module_backwards_compatible: ModuleBackwardsCompatible,
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum FileType {
-    Text,
-    TarGz,
-    TarXz,
-    Zip,
-    Pkg,
-    Exe,
-    Po,
-    Dmg,
-    Lzma,
-    Lz4,
-    Md,
-    Pdf
+impl Module {
+    pub fn id(&self) -> &str {
+        &self.base.id()
+    }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum UnityReleaseCategory {
-    Documentation,
-    Platform,
-    LanguagePack,
-    DevTool,
-    Plugin,
-    Component,
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModuleBackwardsCompatible {
+    rename_from: String,
+    rename_to: String,
+    sync: String,
+    parent: String,
+    visible: bool,
+    preselected: bool,
+    eula_url_1: String,
+    eula_label_1: String,
+    eula_message: String,
 }
 
-pub enum SizeOrDigitalValue {
-    Size(usize),
-    Value(DigitalValue),
+impl From<&uvm_live_platform::Module> for ModuleBackwardsCompatible {
+    fn from(value: &uvm_live_platform::Module) -> Self {
+        let (rename_from, rename_to) = value
+            .extracted_path_rename().as_ref()
+            .map(|e| {
+                (
+                    e.from.to_path_buf().display().to_string(),
+                    e.to.to_path_buf().display().to_string(),
+                )
+            })
+            .unwrap_or(("".to_string(), "".to_string()));
+        let visible = !value.hidden();
+        let preselected = value.pre_selected();
+
+        let (eula_url_1, eula_label_1, eula_message) = value.eula().first().as_ref().map(|eula| {
+            (eula.release_file.url.to_string(), eula.label.to_string(), eula.message.to_string())
+        }).unwrap_or(("".to_string(), "".to_string(), "".to_string()));
+
+
+        Self {
+            rename_from,
+            rename_to,
+            visible,
+            preselected,
+            sync: "".to_string(),
+            parent: "".to_string(),
+            eula_url_1,
+            eula_label_1,
+            eula_message,
+        }
+    }
+}
+
+impl From<uvm_live_platform::Module> for Module {
+    fn from(mut value: uvm_live_platform::Module) -> Self {
+        value.download_size.as_bytes_representation();
+        value.installed_size.as_bytes_representation();
+        let module_backwards_compatible = ModuleBackwardsCompatible::from(&value);
+        Self {
+            base: value,
+            is_installed: false,
+            module_backwards_compatible
+        }
+    }
 }

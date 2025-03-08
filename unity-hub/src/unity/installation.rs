@@ -41,11 +41,16 @@ pub trait Installation: Eq + Ord {
     }
 
     fn installed_modules(&self) -> Result<impl IntoIterator<Item = Module>, UnityError> {
+        let modules = self.get_modules()?;
+        let installed_modules = modules.into_iter().filter(|m| m.is_installed);
+        Ok(installed_modules)
+    }
+
+    fn get_modules(&self) -> Result<Vec<Module>, UnityError> {
         let modules_json_path = self.path().join("modules.json");
         let file_content = fs::read_to_string(&modules_json_path)?;
         let modules: Vec<Module> = serde_json::from_str(&file_content)?;
-        let installed_modules = modules.into_iter().filter(|m| m.is_installed);
-        Ok(installed_modules)
+        Ok(modules) 
     }
 }
 

@@ -1,15 +1,5 @@
-#[cfg(unix)]
-macro_rules! lock_process {
-    ($lock_path:expr) => {
-        let lock_file = fs::File::create($lock_path)?;
-        let _lock = lock_process_or_wait(&lock_file)?;
-    };
-}
-
-#[cfg(windows)]
-macro_rules! lock_process {
-    ($lock_path:expr) => {};
-}
+#[no_mangle]
+#[macro_export]
 
 use log::*;
 use std::fs::DirBuilder;
@@ -23,12 +13,13 @@ pub mod installer;
 mod loader;
 
 mod sys;
-
+pub mod utils;
 use self::installer::*;
 use error::*;
 
-pub use self::loader::Loader;
+pub use self::loader::{Loader, ProgressHandler, InstallManifest};
 pub use self::sys::*;
+pub use ssri::Integrity;
 
 pub struct UnityModule;
 pub struct UnityEditor;

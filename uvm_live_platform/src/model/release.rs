@@ -1,10 +1,16 @@
-use std::fs::File;
-use std::str::FromStr;
+use crate::model::digital::DigitalValue;
+use crate::model::file::{ExtractedPathRename, FileType};
+use crate::model::platform::{
+    UnityReleaseCategory, UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform,
+    UnityReleaseSkuFamily, UnityReleaseStream,
+};
+use crate::Size;
+use derive_getters::Getters;
 use serde::{Deserialize, Deserializer, Serialize};
 use ssri::Integrity;
-use crate::model::digital::DigitalValue;
-use crate::model::platform::{UnityReleaseCategory, UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseSkuFamily, UnityReleaseStream};
-use crate::model::file::{ExtractedPathRename, FileType};
+use std::fmt::format;
+use std::fs::File;
+use std::str::FromStr;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,47 +29,66 @@ pub struct Release {
     pub third_party_notices: Vec<UnityThirdPartyNotice>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Download {
     #[serde(flatten)]
-    release_file: UnityReleaseFile,
+    pub release_file: UnityReleaseFile,
     pub platform: UnityReleaseDownloadPlatform,
     pub architecture: UnityReleaseDownloadArchitecture,
     pub modules: Vec<Module>,
-    pub download_size: DigitalValue,
-    pub installed_size: DigitalValue,
+    pub download_size: Size,
+    pub installed_size: Size,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct Module {
     #[serde(rename = "__typename")]
-    pub type_name: String,
+    #[getter(skip)]
+    type_name: String,
     #[serde(flatten)]
     release_file: UnityReleaseFile,
-    pub id: String,
-    pub slug: String,
-    pub name: String,
-    pub description: String,
-    pub category: UnityReleaseCategory,
+    id: String,
+    #[getter(skip)]
+    slug: String,
+    #[getter(skip)]
+    name: String,
+    description: String,
+    category: UnityReleaseCategory,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub sub_modules: Vec<Module>,
-    pub required: bool,
-    pub hidden: bool,
-    pub pre_selected: bool,
-    pub destination: Option<String>,
-    pub extracted_path_rename: Option<ExtractedPathRename>,
-    pub download_size: DigitalValue,
-    pub installed_size: DigitalValue,
+    sub_modules: Vec<Module>,
+    #[getter(skip)]
+    required: bool,
+    hidden: bool,
+    pre_selected: bool,
+    #[getter(skip)]
+    destination: Option<String>,
+    extracted_path_rename: Option<ExtractedPathRename>,
+    #[getter(skip)]
+    pub download_size: Size,
+    #[getter(skip)]
+    pub installed_size: Size,
     #[serde(default, deserialize_with = "null_to_empty_vec")]
-    pub eula: Vec<Eula>,
+    eula: Vec<Eula>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+impl Module {
+    pub fn destination(&self) -> Option<String> {
+        if &self.id == "ios" {
+            self.destination
+                .as_ref()
+                .map(|d| format!("{}/iOSSupport", d.to_string()).to_string())
+        } else {
+            self.destination.clone()
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Eula {
     #[serde(flatten)]
-    release_file: UnityReleaseFile,
+    pub release_file: UnityReleaseFile,
     pub label: String,
     pub message: String,
 }
@@ -76,13 +101,13 @@ pub struct UnityThirdPartyNotice {
     original_file_name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UnityReleaseFile {
-    url: String,
+    pub url: String,
     #[serde(deserialize_with = "deserialize_sri")]
-    integrity: Option<Integrity>,
+    pub integrity: Option<Integrity>,
     #[serde(rename = "type")]
-    file_type: FileType,
+    pub file_type: FileType,
 }
 
 pub type ReleaseNotes = UnityReleaseFile;

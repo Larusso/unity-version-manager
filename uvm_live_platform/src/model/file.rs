@@ -18,8 +18,10 @@ pub enum FileType {
     Pdf
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ExtractedPathRename {
     pub from: PathBuf,
     pub to: PathBuf,
+    #[serde(rename = "__typename")]
+    pub typename: Option<String>
 }

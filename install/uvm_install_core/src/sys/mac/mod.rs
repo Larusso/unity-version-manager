@@ -4,29 +4,27 @@ use crate::error::*;
 use crate::installer::{ModulePoInstaller, ModuleZipInstaller};
 use crate::*;
 use std::path::Path;
-use uvm_core::unity::Component;
-use uvm_core::unity::Module;
 mod dmg;
 mod pkg;
 
-pub fn create_installer<P, I>(
+pub fn create_installer<P, I, M>(
     base_install_path: P,
     installer: I,
-    module: &Module,
+    module: &M,
 ) -> Result<Box<dyn InstallHandler>>
 where
     P: AsRef<Path>,
     I: AsRef<Path>,
+    M: InstallManifest,
 {
     let base_install_path = base_install_path.as_ref();
-    let rename = module.install_rename_from_to(base_install_path);
+    let rename = module.install_rename_from_to(&base_install_path);
 
-    match module.id {
-        Component::Editor => parse_editor_installer(installer, base_install_path, rename),
-        _ => {
-            let destination = module.install_destination(base_install_path);
-            parse_module_installer(installer, destination, rename)
-        }
+    if module.is_editor() {
+        parse_editor_installer(installer, &base_install_path, rename)
+    } else {
+        let destination = module.install_destination(&base_install_path);
+        parse_module_installer(installer, destination, rename)
     }
     .chain_err(|| ErrorKind::InstallerCreationFailed)
 }
