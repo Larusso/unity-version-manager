@@ -55,7 +55,7 @@ pub struct Module {
     #[getter(skip)]
     name: String,
     description: String,
-    category: UnityReleaseCategory,
+    category: String,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     sub_modules: Vec<Module>,
     #[getter(skip)]

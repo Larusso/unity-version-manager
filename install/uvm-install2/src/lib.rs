@@ -1,20 +1,24 @@
 mod error;
-use uvm_install_core::utils;
+mod install;
+mod sys;
+use crate::error::InstallError::{InstallFailed, InstallerCreatedFailed, LoadingInstallerFailed};
 use error::*;
+use install::utils;
+use install::{InstallManifest, Loader};
 use lazy_static::lazy_static;
 use log::{debug, info, trace};
+use ssri::Integrity;
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
+use sys::create_installer;
 use unity_hub::unity::hub::editors::EditorInstallation;
+use unity_hub::unity::hub::paths::locks_dir;
 use unity_hub::unity::UnityInstallation;
 use unity_hub::unity::{hub, Installation};
 use unity_version::Version;
-use uvm_install_core::lock_process;
-use uvm_install_core::{create_installer, InstallManifest, Loader};
 use uvm_install_graph::{InstallGraph, InstallStatus, UnityComponent, Walker};
-use uvm_paths::locks_dir;
 
 lazy_static! {
     static ref UNITY_BASE_PATTERN: &'static Path = Path::new("{UNITY_PATH}");
@@ -115,7 +119,8 @@ where
     let installation = UnityInstallation::new(&base_dir);
     if let Ok(ref installation) = installation {
         let modules = installation.installed_modules()?;
-        let mut module_ids: HashSet<String> = modules.into_iter().map(|m| m.id().to_string()).collect();
+        let mut module_ids: HashSet<String> =
+            modules.into_iter().map(|m| m.id().to_string()).collect();
         module_ids.insert("Unity".to_string());
         graph.mark_installed(&module_ids);
     } else {
@@ -192,7 +197,12 @@ where
     install_module_and_dependencies(&graph, &base_dir)?;
     let installation = installation.or_else(|_| UnityInstallation::new(&base_dir))?;
     let mut modules = match installation.get_modules() {
-        Err(_) => unity_release.downloads.first().cloned().map(|d| d.modules.into_iter().map(|m| m.into()).collect()).unwrap(),
+        Err(_) => unity_release
+            .downloads
+            .first()
+            .cloned()
+            .map(|d| d.modules.into_iter().map(|m| m.into()).collect())
+            .unwrap(),
         Ok(m) => m,
     };
 
@@ -216,13 +226,19 @@ where
     Ok(())
 }
 
-
-fn write_modules_json(installation: UnityInstallation, modules: Vec<unity_hub::unity::hub::module::Module>) -> io::Result<()> {
-    use std::fs::OpenOptions;
+fn write_modules_json(
+    installation: UnityInstallation,
+    modules: Vec<unity_hub::unity::hub::module::Module>,
+) -> io::Result<()> {
     use console::style;
+    use std::fs::OpenOptions;
     use std::io::Write;
 
-    let output_path = installation.location().parent().unwrap().join("modules.json");
+    let output_path = installation
+        .location()
+        .parent()
+        .unwrap()
+        .join("modules.json");
     info!(
         "{}",
         style(format!("write {}", output_path.display())).green()
@@ -284,17 +300,14 @@ impl<'a> InstallManifest for UnityComponent2<'a> {
     }
 
     //TODO find a way without clone
-    fn integrity(&self) -> Option<uvm_install_core::Integrity> {
+    fn integrity(&self) -> Option<Integrity> {
         match self.0 {
             UnityComponent::Editor(e) => e.release_file.integrity.clone(),
             UnityComponent::Module(m) => m.release_file().integrity.clone(),
         }
     }
 
-    fn install_rename_from_to<P: AsRef<Path>>(
-        &self,
-        base_path: P,
-    ) -> Option<(PathBuf, PathBuf)> {
+    fn install_rename_from_to<P: AsRef<Path>>(&self, base_path: P) -> Option<(PathBuf, PathBuf)> {
         match self.0 {
             UnityComponent::Editor(_) => None,
             UnityComponent::Module(m) => {
@@ -347,16 +360,18 @@ fn install_module_and_dependencies<'a, P: AsRef<Path>>(
             info!("download installer for {}", module.id());
 
             let loader = Loader::new(version, hash, &module);
-            let installer = loader.download()?;
+            let installer = loader
+                .download()
+                .map_err(|installer_err| LoadingInstallerFailed(installer_err))?;
 
             info!("create installer for {}", component);
-            let installer = create_installer(base_dir, installer, &module)?;
+            let installer = create_installer(base_dir, installer, &module)
+                .map_err(|installer_err| InstallerCreatedFailed(installer_err))?;
+
             info!("install");
-            installer.install()?;
-
-
-
-
+            installer
+                .install()
+                .map_err(|installer_err| InstallFailed(installer_err))?;
         }
     }
 
