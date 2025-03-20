@@ -26,7 +26,8 @@ impl<V, I> Installer<V, Xz, I> {
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .spawn()?;
+            .spawn()
+            .map_err(|e| handle_notfound("tar", e))?;
 
         let tar_output = tar_child.wait_with_output()?;
         if !tar_output.status.success() {

@@ -30,7 +30,8 @@ impl ModulePkgInstaller {
             .arg(installer)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .spawn()?;
+            .spawn()
+            .map_err(|e| handle_notfound("7z", e))?;
 
         let output = child.wait_with_output()?;
         if !output.status.success() {
@@ -59,7 +60,8 @@ impl ModulePkgInstaller {
                 .arg("-iu")
                 .current_dir(destination)
                 .stdin(Stdio::piped())
-                .spawn()?;
+                .spawn()
+                .map_err(|e| handle_notfound("cpio", e))?;
             {
                 let stdin = cpio.stdin.as_mut().ok_or("Failed to open cpio stdin")?;
                 let mut file = File::open(payload)?;
@@ -72,13 +74,15 @@ impl ModulePkgInstaller {
                 .arg("-dc")
                 .arg(payload)
                 .stdout(Stdio::piped())
-                .spawn()?;
+                .spawn()
+                .map_err(|e| handle_notfound("gzip", e))?;
 
             let mut cpio = Command::new("cpio")
                 .arg("-iu")
                 .current_dir(destination)
                 .stdin(Stdio::piped())
-                .spawn()?;
+                .spawn()
+                .map_err(|e| handle_notfound("cpio", e))?;
             {
                 let gzip_stdout = gzip.stdout.as_mut().ok_or("Failed to open gzip stdout")?;
                 let cpio_stdin = cpio.stdin.as_mut().ok_or("Failed to open cpio stdin")?;

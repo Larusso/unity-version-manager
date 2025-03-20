@@ -59,3 +59,10 @@ pub trait InstallHandler {
         Ok(())
     }
 }
+
+pub fn handle_notfound(program: &str, e: std::io::Error) -> Error {
+    if let std::io::ErrorKind::NotFound = e.kind() {
+        error!("Error: '{0}' command not found.\nuvm requires '{0}' to install modules. Please ensure '{0}' is installed and accessible in your PATH.", program);
+    }
+    e.into()
+}
