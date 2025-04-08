@@ -11,6 +11,7 @@ use nom::{
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::path::{Path, PathBuf};
 use std::{cmp::Ordering, str::FromStr};
+use regex::Regex;
 
 mod release_type;
 mod revision_hash;
@@ -165,15 +166,26 @@ impl Version {
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, VersionError> {
         version_impl::read_version_from_path(path)
     }
+
+    pub fn from_string_containing<S: AsRef<str>>(s: S) -> Result<Self, VersionError> {
+        let s = s.as_ref();
+
+            let re = Regex::new(r"\b\d+\.\d+\.\d+[fabp]\d+\b").unwrap();
+            for mat in re.find_iter(s){
+                if let Ok(version) = Version::from_str(mat.as_str()) {
+                    return Ok(version);
+                }
+            }
+            Err(VersionError::ParsingFailed(format!("Could not find a valid Unity version in string: {}", s)))
+    }
 }
 
 #[derive(Eq, Debug, Clone, Hash, Display)]
 #[display(fmt = "{} ({})", version, revision)]
-pub struct CompleteVersion{
-    version: Version, 
-    revision: RevisionHash
+pub struct CompleteVersion {
+    version: Version,
+    revision: RevisionHash,
 }
-
 
 impl PartialEq for CompleteVersion {
     fn eq(&self, other: &Self) -> bool {
@@ -183,10 +195,9 @@ impl PartialEq for CompleteVersion {
 
 impl PartialOrd for CompleteVersion {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.version.partial_cmp(&other.version) 
+        self.version.partial_cmp(&other.version)
     }
 }
-
 
 fn parse_release_type(input: &str) -> IResult<&str, ReleaseType, VerboseError<&str>> {
     context(
@@ -242,12 +253,41 @@ mod tests {
         let version_string = "11.2.3f4";
         let version = Version::from_str(version_string).unwrap();
 
-        assert!(version.base.major == 11, "parse correct major component");
-        assert!(version.base.minor == 2, "parse correct minor component");
-        assert!(version.base.patch == 3, "parse correct patch component");
+        assert_eq!(version.base.major, 11, "parse correct major component");
+        assert_eq!(version.base.minor, 2, "parse correct minor component");
+        assert_eq!(version.base.patch, 3, "parse correct patch component");
 
         assert_eq!(version.release_type, ReleaseType::Final);
-        assert!(version.revision == 4, "parse correct revision component");
+        assert_eq!(version.revision, 4, "parse correct revision component");
+    }
+
+    #[test]
+    fn extracts_version_from_text() {
+        let text = "Some text before 2023.1.4f5 and some after";
+        let result = Version::from_string_containing(text);
+        assert!(result.is_ok(), "Should successfully extract the version");
+
+        let version = result.unwrap();
+        assert_eq!(version.base.major, 2023);
+        assert_eq!(version.base.minor, 1);
+        assert_eq!(version.base.patch, 4);
+        assert_eq!(version.release_type, ReleaseType::Final);
+        assert_eq!(version.revision, 5);
+    }
+
+
+    #[test]
+    fn extracts_version_from_text_and_returns_first_complete_version() {
+        let text = "Some text 23 before 2023.1.4f5 and some after";
+        let result = Version::from_string_containing(text);
+        assert!(result.is_ok(), "Should successfully extract the version");
+
+        let version = result.unwrap();
+        assert_eq!(version.base.major, 2023);
+        assert_eq!(version.base.minor, 1);
+        assert_eq!(version.base.patch, 4);
+        assert_eq!(version.release_type, ReleaseType::Final);
+        assert_eq!(version.revision, 5);
     }
 
     proptest! {

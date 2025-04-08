@@ -36,7 +36,7 @@ impl PartialOrd for VersionType {
     }
 }
 
-#[derive(Eq, Debug, Clone, Hash, PartialOrd)]
+#[derive(Eq, Debug, Clone, Hash, PartialOrd, Ord)]
 pub struct Version {
     base: semver::Version,
     release_type: VersionType,

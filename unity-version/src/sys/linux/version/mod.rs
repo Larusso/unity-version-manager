@@ -1,11 +1,10 @@
-use crate::unity::Version;
-use crate::unity::VersionError;
+use crate::Version;
+use crate::error::VersionError;
 use std::convert::AsRef;
 use std::io;
-use std::path::Path;
 use std::str::FromStr;
-
-pub mod module;
+use std::path::Path;
+use log::{debug, trace};
 
 pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version, VersionError> {
     let path = path.as_ref();
@@ -34,11 +33,37 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version, Versio
                     VersionError::Other(io::Error::new(io::ErrorKind::Other, "Unknown").into())
                 })
                 .and_then(|path| Version::from_str(path))
-                .or_else(|_| Version::find_version_in_file(executable_path));
+                .or_else(|_| find_version_in_file(executable_path));
         }
     }
 
     Err(VersionError::PathContainsNoVersion(
         path.display().to_string(),
     ))
+}
+
+pub fn find_version_in_file<P: AsRef<Path>>(path: P) -> Result<Version, VersionError> {
+    use std::process::{Command, Stdio};
+
+    let path = path.as_ref();
+    debug!("find api version in Unity executable {}", path.display());
+
+    let child = Command::new("strings")
+        .arg("--")
+        .arg(path)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+
+    let output = child.wait_with_output()?;
+
+    if !output.status.success() {
+        return Err(VersionError::ExecutableContainsNoVersion(
+            path.display().to_string(),
+        ));
+    }
+
+    let version = Version::from_str(&String::from_utf8_lossy(&output.stdout))?;
+    debug!("found version {}", &version);
+    Ok(version)
 }

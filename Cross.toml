@@ -1,5 +1,8 @@
 [target.x86_64-unknown-linux-gnu]
-image = "tslarusso/uvm_x86_64-unknown-linux-gnu:v0.1.4"
+pre-build = [
+  "dpkg --add-architecture $CROSS_DEB_ARCH",
+  "apt-get update && apt-get install --assume-yes libssl-dev:$CROSS_DEB_ARCH"
+]
 
 [build.env]
 passthrough = [

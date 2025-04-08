@@ -6,13 +6,11 @@ use crate::install::{InstallHandler, UnityModule};
 use std::process::{Command, Stdio};
 use log::debug;
 use thiserror_context::Context;
-use crate::install::error::InstallerErrorInner::{CopyFailed, InstallationFailed};
+use crate::install::error::InstallerErrorInner::CopyFailed;
 
 pub struct Dmg;
 pub type ModuleDmgWithDestinationInstaller = Installer<UnityModule, Dmg, InstallerWithDestination>;
 pub type ModuleDmgInstaller = Installer<UnityModule, Dmg, BaseInstaller>;
-
-struct Attach<'a>(&'a Path);
 
 impl<V, I> Installer<V, Dmg, I> {
     // TODO use fs_extra or similar

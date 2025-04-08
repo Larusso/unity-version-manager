@@ -125,17 +125,15 @@ impl<'a> InstallGraph<'a> {
                 .add_node((UnityComponent::Editor(&download), InstallStatus::default()));
 
             for m in &download.modules {
-                let module = self
-                    .dag
-                    .add_child(d, (), (UnityComponent::Module(&m), InstallStatus::default()));
-                for sub in m.sub_modules() {
-                    let subModule = self.dag
-                        .add_child(module.1, (), (UnityComponent::Module(&sub), InstallStatus::default()));
-                    for sub2 in sub.sub_modules() {
-                        self.dag.add_child(subModule.1, (), (UnityComponent::Module(&sub2), InstallStatus::default()));
-                    }
-                }
+                Self::setup_graph_modules(&mut self.dag, d, m);
             }
+        }
+    }
+
+    fn setup_graph_modules<'b>(graph: &mut ModulesDag<'b>, parent: NodeIndex, module: &'b Module) {
+        let module_node = graph.add_child(parent, (), (UnityComponent::Module(module), InstallStatus::default()));
+        for sub_module in module.sub_modules() {
+            Self::setup_graph_modules(graph, module_node.1, sub_module);
         }
     }
 

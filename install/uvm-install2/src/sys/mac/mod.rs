@@ -1,10 +1,9 @@
 use self::dmg::{ModuleDmgInstaller, ModuleDmgWithDestinationInstaller};
 use self::pkg::{EditorPkgInstaller, ModulePkgInstaller, ModulePkgNativeInstaller};
-use crate::install::error::{InstallerError, InstallerErrorInner, InstallerResult};
+use crate::install::error::{InstallerErrorInner, InstallerResult};
 use crate::install::installer::{ModulePoInstaller, ModuleZipInstaller};
 use crate::install::InstallHandler;
-use crate::*;
-use anyhow::Context;
+use crate::InstallManifest;
 use std::path::Path;
 
 mod dmg;
