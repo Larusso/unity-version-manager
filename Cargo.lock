@@ -2094,16 +2094,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "md-5"
-version = "0.10.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d89e7ee0cfbedfc4da3340218492196241d89eefb6dab27de5df917a6d2e78cf"
-dependencies = [
- "cfg-if 1.0.0",
- "digest 0.10.7",
-]
-
-[[package]]
 name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4495,7 +4485,7 @@ dependencies = [
  "lazy_static 1.4.0",
  "libc",
  "log 0.4.26",
- "md-5 0.8.0",
+ "md-5",
  "plist 0.3.0",
  "proptest 0.9.6",
  "rand 0.7.3",
@@ -4534,7 +4524,7 @@ dependencies = [
  "lazy_static 1.4.0",
  "libc",
  "log 0.4.26",
- "md-5 0.8.0",
+ "md-5",
  "plist 0.3.0",
  "regex 1.5.6",
  "reqwest 0.9.24",
@@ -4564,7 +4554,7 @@ dependencies = [
  "hex 0.4.3",
  "hex-serde",
  "log 0.4.26",
- "md-5 0.8.0",
+ "md-5",
  "reqwest 0.9.24",
  "tempfile",
  "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4578,18 +4568,14 @@ version = "0.10.0"
 dependencies = [
  "cfg-if 1.0.0",
  "cluFlock",
- "derive_deref",
  "dmg",
  "error-chain",
- "hex 0.4.3",
- "hex-serde",
  "log 0.4.26",
- "md-5 0.10.6",
  "reqwest 0.12.12",
  "ssri",
- "tempfile",
  "unity-hub",
  "url 2.5.4",
+ "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_move_dir 0.1.1",
  "zip 2.2.3",
 ]

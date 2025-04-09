@@ -143,12 +143,13 @@ pub fn find_installation(version: &Version) -> Result<UnityInstallation, UnityHu
 mod tests {
     use super::*;
     use crate::unity::installation::AppInfo;
-    use plist::serde::serialize_to_xml;
+    use plist::to_writer_xml;
     use std::fs;
     use std::fs::File;
     use std::path::Path;
     use std::path::PathBuf;
     use std::str::FromStr;
+    use proptest::proptest;
     use tempfile::Builder;
 
     fn create_test_path(base_dir: &PathBuf, version: &str) -> PathBuf {
@@ -167,8 +168,7 @@ mod tests {
             unity_build_number: String::from_str("ssdsdsdd").unwrap(),
         };
         let file = File::create(info_plist_path).unwrap();
-        serialize_to_xml(file, &info).unwrap();
-
+        to_writer_xml(&file, &info).unwrap();
         path
     }
 
