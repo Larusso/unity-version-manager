@@ -34,7 +34,7 @@
               rustc = pkgs.rust-bin.stable.latest.minimal;
             }).buildRustPackage {
               name = "uvm";
-              version = "1.0.0";
+              version = "2.7.0";
 #              inherit (cargoToml.package) name version;
               src = ./.;
               cargoLock.lockFile = ./Cargo.lock;
@@ -45,9 +45,6 @@
               postInstall = ''
                 wrapProgram "$out/bin/uvm" --prefix LD_LIBRARY_PATH : "${libPath}"
               '';
-              # Uncomment if your cargo tests require networking or otherwise
-              # don't play nicely with the Nix build sandbox:
-              # doCheck = false;
             };
 
           mkDevShell = rustc:
@@ -65,9 +62,8 @@
           };
 
           packages.default = self'.packages.uvm;
-          devShells.default = self'.devShells.nightly;
+          devShells.default = self'.devShells.stable;
 
-#          packages.example = (rustPackage "foobar");
           packages.uvm = (rustPackage "");
 
           devShells.nightly = (mkDevShell (pkgs.rust-bin.selectLatestNightlyWith
