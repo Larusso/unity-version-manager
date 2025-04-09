@@ -8,4 +8,4 @@ members = [
   "uvm_move_dir",
   "commands/*",
   "install/*"
-, "unity-version", "uvm_paths", "unity-hub", "unity-types"]
+, "unity-version", "unity-hub", "unity-types"]

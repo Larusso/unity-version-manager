@@ -4279,7 +4279,7 @@ dependencies = [
  "stringreader",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4",
+ "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -4313,7 +4313,7 @@ dependencies = [
  "log 0.4.26",
  "rayon",
  "serde_yaml 0.9.25",
- "uvm_core 0.13.4",
+ "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_live_platform",
 ]
 
@@ -4340,7 +4340,7 @@ dependencies = [
  "log 0.4.26",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4",
+ "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_install_core 0.9.3",
 ]
 
@@ -4399,7 +4399,7 @@ dependencies = [
  "serde_derive",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4",
+ "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -4430,7 +4430,7 @@ dependencies = [
  "serde_derive",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4",
+ "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "uvm_install_core 0.9.3",
 ]
 
@@ -4645,13 +4645,6 @@ dependencies = [
  "tempfile",
  "widestring",
  "winapi 0.3.9",
-]
-
-[[package]]
-name = "uvm_paths"
-version = "0.1.0"
-dependencies = [
- "dirs-2",
 ]
 
 [[package]]
