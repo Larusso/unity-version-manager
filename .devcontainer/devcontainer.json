@@ -1,0 +1,23 @@
+{
+  "name": "Rust (Cross Image + Toolchain)",
+  "image": "mcr.microsoft.com/devcontainers/rust:latest",
+  "customizations": {
+    "vscode": {
+      "settings": {},
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "matklad.rust-analyzer",
+        "serayuzgur.crates",
+        "vadimcn.vscode-lldb"
+      ]
+    }
+  },
+  "customizations": {
+    "jetbrains": {
+      "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+      "workspaceFolder": "/workspace"
+    }
+  },
+
+  "postCreateCommand": "apt-get update && apt-get install -y curl build-essential libssl-dev libssh-dev"
+}

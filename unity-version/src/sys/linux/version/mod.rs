@@ -1,10 +1,10 @@
-use crate::Version;
 use crate::error::VersionError;
+use crate::Version;
+use log::{debug, trace};
 use std::convert::AsRef;
 use std::io;
-use std::str::FromStr;
 use std::path::Path;
-use log::{debug, trace};
+use std::str::FromStr;
 
 pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version, VersionError> {
     let path = path.as_ref();
@@ -30,7 +30,10 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version, Versio
                 .and_then(|name| name.to_str())
                 .ok_or_else(|| {
                     debug!("Unable to read filename from path {}", path.display());
-                    VersionError::Other(io::Error::new(io::ErrorKind::Other, "Unknown").into())
+                    VersionError::Other {
+                        source: io::Error::new(io::ErrorKind::Other, "Unknown").into(),
+                        msg: "Unknown".to_string(),
+                    }
                 })
                 .and_then(|path| Version::from_str(path))
                 .or_else(|_| find_version_in_file(executable_path));
@@ -53,13 +56,20 @@ pub fn find_version_in_file<P: AsRef<Path>>(path: P) -> Result<Version, VersionE
         .arg(path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn()?;
+        .spawn()
+        .map_err(|e| VersionError::Other {
+            source: e.into(),
+            msg: "failed to spawn strings".to_string(),
+        })?;
 
-    let output = child.wait_with_output()?;
+    let output = child.wait_with_output().map_err(|e| VersionError::Other {
+        source: e.into(),
+        msg: "failed to spawn strings".to_string(),
+    })?;
 
     if !output.status.success() {
         return Err(VersionError::ExecutableContainsNoVersion(
-            path.display().to_string(),
+            path.to_path_buf(),
         ));
     }
 

@@ -12,6 +12,9 @@ pub enum VersionError {
     #[error("Failed to parse unity version from path: {0}")]
     FetchVersionFromPathFailed(PathBuf),
 
+    #[error("Executable at {0} contains no version information")]
+    ExecutableContainsNoVersion(PathBuf),
+
     #[error("Unexpected error: {msg}")]
     Other {
         msg: String,
