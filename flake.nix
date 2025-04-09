@@ -25,7 +25,7 @@
             openssl
           ];
 
-          cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+          cargoToml = builtins.fromTOML (builtins.readFile ./commands/uvm/Cargo.toml);
           msrv = cargoToml.package.rust-version;
 
           rustPackage = features:
@@ -33,9 +33,7 @@
               cargo = pkgs.rust-bin.stable.latest.minimal;
               rustc = pkgs.rust-bin.stable.latest.minimal;
             }).buildRustPackage {
-              name = "uvm";
-              version = "2.7.0";
-#              inherit (cargoToml.package) name version;
+              inherit (cargoToml.package) name version;
               src = ./.;
               cargoLock.lockFile = ./Cargo.lock;
               buildFeatures = features;
