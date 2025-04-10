@@ -1,15 +1,19 @@
 use crate::*;
 use std::ffi::OsStr;
-use std::fs::DirBuilder;
+use std::fs::{DirBuilder, File};
 use std::io::Read;
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
+use crate::install::installer::{Installer, InstallerWithDestination, Pkg};
+use crate::install::{InstallHandler, UnityModule};
+use crate::install::error::InstallerErrorInner::{InstallationFailed, Other};
+use crate::install::error::InstallerResult;
 
 pub type ModulePkgInstaller = Installer<UnityModule, Pkg, InstallerWithDestination>;
 
 impl ModulePkgInstaller {
-    fn xar<P, D>(&self, installer: P, destination: D) -> Result<()>
+    fn xar<P, D>(&self, installer: P, destination: D) -> InstallerResult<()>
     where
         P: AsRef<Path>,
         D: AsRef<Path>,
@@ -34,16 +38,16 @@ impl ModulePkgInstaller {
 
         let output = child.wait_with_output()?;
         if !output.status.success() {
-            return Err(format!(
+            return Err(Other(format!(
                 "failed to extract installer:/n{}",
                 String::from_utf8_lossy(&output.stderr)
-            )
+            ))
             .into());
         }
         Ok(())
     }
 
-    fn untar<P, D>(&self, base_payload_path: P, destination: D) -> Result<()>
+    fn untar<P, D>(&self, base_payload_path: P, destination: D) -> InstallerResult<()>
     where
         P: AsRef<Path>,
         D: AsRef<Path>,
@@ -61,7 +65,7 @@ impl ModulePkgInstaller {
                 .stdin(Stdio::piped())
                 .spawn()?;
             {
-                let stdin = cpio.stdin.as_mut().ok_or("Failed to open cpio stdin")?;
+                let stdin = cpio.stdin.as_mut().ok_or(Other("Failed to open cpio stdin".to_string()))?;
                 let mut file = File::open(payload)?;
                 let mut reader = BufReader::new(file);
                 io::copy(&mut reader, stdin)?;
@@ -80,8 +84,8 @@ impl ModulePkgInstaller {
                 .stdin(Stdio::piped())
                 .spawn()?;
             {
-                let gzip_stdout = gzip.stdout.as_mut().ok_or("Failed to open gzip stdout")?;
-                let cpio_stdin = cpio.stdin.as_mut().ok_or("Failed to open cpio stdin")?;
+                let gzip_stdout = gzip.stdout.as_mut().ok_or(Other("Failed to open gzip stdout".to_string()))?;
+                let cpio_stdin = cpio.stdin.as_mut().ok_or(Other("Failed to open cpio stdin".to_string()))?;
 
                 io::copy(gzip_stdout, cpio_stdin)?;
             }
@@ -90,10 +94,10 @@ impl ModulePkgInstaller {
     
         let tar_output = tar_child.wait_with_output()?;
         if !tar_output.status.success() {
-            return Err(format!(
+            return Err(Other(format!(
                 "failed to untar payload:/n{}",
                 String::from_utf8_lossy(&tar_output.stderr)
-            )
+            ))
             .into());
         }
 
@@ -102,7 +106,7 @@ impl ModulePkgInstaller {
 }
 
 impl InstallHandler for ModulePkgInstaller {
-    fn install_handler(&self) -> Result<()> {
+    fn install_handler(&self) -> InstallerResult<()> {
         let destination = self.destination();
         let installer = self.installer();
 
@@ -120,9 +124,9 @@ impl InstallHandler for ModulePkgInstaller {
         Ok(())
     }
 
-    fn after_install(&self) -> Result<()> {
+    fn after_install(&self) -> InstallerResult<()> {
         if let Some((from, to)) = &self.rename() {
-            uvm_move_dir::move_dir(from, to).chain_err(|| "failed to rename installed module")?;
+            uvm_move_dir::move_dir(from, to)?;
         }
         Ok(())
     }

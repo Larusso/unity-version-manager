@@ -15,4 +15,4 @@ reqwest = "0.9.22"
 serde = "1.0"
 serde_derive = "1.0"
 uvm_cli = { path = "../../uvm_cli" }
-uvm_core = { path = "../../uvm_core" }
+uvm_core = "0.13.4"

@@ -1,11 +1,17 @@
 use crate::*;
 use std::fs::DirBuilder;
+use std::process::{Command, Stdio};
+use crate::install::installer::{Installer, InstallerWithDestination};
+use crate::install::{InstallHandler, UnityEditor, UnityModule};
+use crate::install::error::InstallerErrorInner::{InstallationFailed, InstallerCreateFailed};
+use crate::install::error::InstallerResult;
+
 pub struct Xz;
 pub type EditorXzInstaller = Installer<UnityEditor, Xz, InstallerWithDestination>;
 pub type ModuleXzInstaller = Installer<UnityModule, Xz, InstallerWithDestination>;
 
 impl<V, I> Installer<V, Xz, I> {
-    fn untar<P, D>(&self, source: P, destination: D) -> Result<()>
+    fn untar<P, D>(&self, source: P, destination: D) -> InstallerResult<()>
     where
         P: AsRef<Path>,
         D: AsRef<Path>,
@@ -30,30 +36,33 @@ impl<V, I> Installer<V, Xz, I> {
 
         let tar_output = tar_child.wait_with_output()?;
         if !tar_output.status.success() {
-            return Err(format!(
-                "failed to untar payload:/n{}",
-                String::from_utf8_lossy(&tar_output.stderr)
+            return Err(InstallationFailed(
+                "failed to untar payload:/n{}".to_string(),
+                String::from_utf8_lossy(&tar_output.stderr).to_string()
             )
             .into());
         }
-
         Ok(())
     }
 }
 
 impl InstallHandler for EditorXzInstaller {
-    fn before_install(&self) -> Result<()> {
+    fn before_install(&self) -> InstallerResult<()> {
         self.clean_directory(self.destination())
     }
 
-    fn install_handler(&self) -> Result<()> {
+    fn install_handler(&self) -> InstallerResult<()> {
         debug!("install editor from xz archive");
         self.untar(self.installer(), self.destination())
     }
 }
 
+impl EditorXzInstaller {
+
+}
+
 impl InstallHandler for ModuleXzInstaller {
-    fn install_handler(&self) -> Result<()> {
+    fn install_handler(&self) -> InstallerResult<()> {
         debug!(
             "install module from xz archive {} to {}",
             self.installer().display(),
@@ -102,9 +111,9 @@ impl InstallHandler for ModuleXzInstaller {
         self.untar(installer, destination)
     }
 
-    fn after_install(&self) -> Result<()> {
+    fn after_install(&self) -> InstallerResult<()> {
         if let Some((from, to)) = &self.rename() {
-            uvm_move_dir::move_dir(from, to).chain_err(|| "failed to rename installed module")?;
+            uvm_move_dir::move_dir(from, to)?;
         }
         Ok(())
     }

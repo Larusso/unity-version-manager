@@ -10,4 +10,4 @@ console = "0.9.1"
 log = "0.4.11"
 structopt = "0.3"
 uvm_cli = { path = "../../uvm_cli" }
-uvm_core = { path = "../../uvm_core" }
+uvm_core = "0.13.4"

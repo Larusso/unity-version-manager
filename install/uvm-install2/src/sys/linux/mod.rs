@@ -1,43 +1,44 @@
+use std::fs::DirBuilder;
 use self::pkg::ModulePkgInstaller;
 use self::xz::{EditorXzInstaller, ModuleXzInstaller};
 use self::zip::EditorZipInstaller;
 use crate::error::*;
-use crate::installer::{ModulePoInstaller, ModuleZipInstaller};
 use crate::*;
 use std::path::Path;
-use uvm_core::unity::Component;
-use uvm_core::unity::Module;
+use crate::install::error::{InstallerErrorInner, InstallerResult};
+use crate::install::installer::{Installer, ModulePoInstaller, ModuleZipInstaller};
+use crate::install::InstallHandler;
+
 mod pkg;
 mod xz;
 mod zip;
 
-pub fn create_installer<P, I>(
+pub fn create_installer<P, I, M>(
     base_install_path: P,
     installer: I,
-    module: &Module,
-) -> Result<Box<dyn InstallHandler>>
+    module: &M,
+) -> InstallerResult<Box<dyn InstallHandler>>
 where
     P: AsRef<Path>,
     I: AsRef<Path>,
+    M: InstallManifest,
 {
     let base_install_path = base_install_path.as_ref();
     let rename = module.install_rename_from_to(base_install_path);
 
-    match module.id {
-        Component::Editor => parse_editor_installer(installer, base_install_path, rename),
-        _ => {
-            let destination = module.install_destination(base_install_path);
-            parse_module_installer(installer, destination, rename)
-        }
+    if module.is_editor() {
+        parse_editor_installer(installer, &base_install_path, rename)
+    } else {
+        let destination = module.install_destination(&base_install_path);
+        parse_module_installer(installer, destination, rename)
     }
-    .chain_err(|| ErrorKind::InstallerCreationFailed)
 }
 
 fn parse_editor_installer<P, D, R>(
     installer: P,
     destination: D,
     rename: Option<(R, R)>,
-) -> Result<Box<dyn InstallHandler>>
+) -> InstallerResult<Box<dyn InstallHandler>>
 where
     P: AsRef<Path>,
     D: AsRef<Path>,
@@ -55,7 +56,7 @@ where
             destination,
             rename,
         ))),
-        _ => Err(ErrorKind::UnknownInstallerType(
+        _ => Err(InstallerErrorInner::UnknownInstaller(
             installer.display().to_string(),
             ".zip, .xz".to_string(),
         )
@@ -67,7 +68,7 @@ fn parse_module_installer<P, D, R>(
     installer: P,
     destination: Option<D>,
     rename: Option<(R, R)>,
-) -> Result<Box<dyn InstallHandler>>
+) -> InstallerResult<Box<dyn InstallHandler>>
 where
     P: AsRef<Path>,
     D: AsRef<Path>,
@@ -84,7 +85,7 @@ where
                     rename,
                 )))
             } else {
-                Err(ErrorKind::MissingDestination("xz".to_string()).into())
+                Err(InstallerErrorInner::MissingDestination("xz".to_string()).into())
             }
         }
 
@@ -96,7 +97,7 @@ where
                     rename,
                 )))
             } else {
-                Err(ErrorKind::MissingDestination("zip".to_string()).into())
+                Err(InstallerErrorInner::MissingDestination("zip".to_string()).into())
             }
         }
 
@@ -108,7 +109,7 @@ where
                     rename,
                 )))
             } else {
-                Err(ErrorKind::MissingDestination("po".to_string()).into())
+                Err(InstallerErrorInner::MissingDestination("po".to_string()).into())
             }
         }
 
@@ -120,10 +121,10 @@ where
                     rename,
                 )))
             } else {
-                Err(ErrorKind::MissingDestination("po".to_string()).into())
+                Err(InstallerErrorInner::MissingDestination("po".to_string()).into())
             }
         }
-        _ => Err(ErrorKind::UnknownInstallerType(
+        _ => Err(InstallerErrorInner::UnknownInstaller(
             installer.display().to_string(),
             ".pkg, .zip, .xz or .po".to_string(),
         )
@@ -132,7 +133,7 @@ where
 }
 
 impl<V, T, I> Installer<V, T, I> {
-    pub fn clean_directory<P: AsRef<Path>>(&self, dir: P) -> Result<()> {
+    pub fn clean_directory<P: AsRef<Path>>(&self, dir: P) -> InstallerResult<()> {
         let dir = dir.as_ref();
         debug!("clean output directory {}", dir.display());
         if dir.exists() && dir.is_dir() {

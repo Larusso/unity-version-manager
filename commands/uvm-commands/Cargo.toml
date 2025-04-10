@@ -8,4 +8,4 @@ anyhow = "1.0.38"
 console = "0.9.1"
 structopt = "0.3"
 uvm_cli = { path = "../../uvm_cli" }
-uvm_core = { path = "../../uvm_core" }
+uvm_core = "0.13.4"

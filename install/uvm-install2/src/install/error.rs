@@ -38,6 +38,9 @@ pub enum InstallerErrorInner {
 
     #[error("io error: {0}")]
     IO(#[from]#[source] std::io::Error),
+
+    #[error("error while installation: {0}")]
+    Other(String)
 }
 
 impl_context!(InstallerError(InstallerErrorInner));

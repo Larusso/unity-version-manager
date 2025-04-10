@@ -1,7 +1,6 @@
 [workspace]
 resolver = "1"
 members = [
-  "uvm_core",
   "uvm_cli",
   "uvm_install_graph",
   "uvm_live_platform",

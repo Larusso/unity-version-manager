@@ -1193,17 +1193,6 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.1.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fc3cb4d91f53b50155bdcfd23f6a4c39ae1969c2ae85982b135750cccaf5fce"
-dependencies = [
- "cfg-if 1.0.0",
- "libc",
- "wasi 0.9.0+wasi-snapshot-preview1",
-]
-
-[[package]]
-name = "getrandom"
 version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "190092ea657667030ac6a35e305e62fc4dd69fd98ac98631e5d3a2b1575a12b5"
@@ -1858,12 +1847,6 @@ dependencies = [
  "unicode-width 0.2.0",
  "web-time",
 ]
-
-[[package]]
-name = "indoc"
-version = "1.0.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adab1eaa3408fb7f0c777a73e7465fd5656136fc93b670eb6df3c88c2c1344e3"
 
 [[package]]
 name = "indoc"
@@ -2568,26 +2551,6 @@ dependencies = [
 
 [[package]]
 name = "proptest"
-version = "0.9.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01c477819b845fe023d33583ebf10c9f62518c8d79a0960ba5c36d6ac8a55a5b"
-dependencies = [
- "bit-set",
- "bitflags 1.3.2",
- "byteorder",
- "lazy_static 1.4.0",
- "num-traits",
- "quick-error",
- "rand 0.6.5",
- "rand_chacha 0.1.1",
- "rand_xorshift 0.1.1",
- "regex-syntax 0.6.26",
- "rusty-fork 0.2.2",
- "tempfile",
-]
-
-[[package]]
-name = "proptest"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "31b476131c3c86cb68032fdc5cb6d5a1045e3e42d96b69fa599fd77701e1f5bf"
@@ -2601,7 +2564,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "rand_xorshift 0.3.0",
  "regex-syntax 0.8.2",
- "rusty-fork 0.3.0",
+ "rusty-fork",
  "tempfile",
  "unarray",
 ]
@@ -2674,26 +2637,13 @@ dependencies = [
  "libc",
  "rand_chacha 0.1.1",
  "rand_core 0.4.2",
- "rand_hc 0.1.0",
+ "rand_hc",
  "rand_isaac",
  "rand_jitter",
  "rand_os",
  "rand_pcg",
  "rand_xorshift 0.1.1",
  "winapi 0.3.9",
-]
-
-[[package]]
-name = "rand"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a6b1679d49b24bbfe0c803429aa1874472f50d9b363131f0e89fc356b544d03"
-dependencies = [
- "getrandom 0.1.16",
- "libc",
- "rand_chacha 0.2.2",
- "rand_core 0.5.1",
- "rand_hc 0.2.0",
 ]
 
 [[package]]
@@ -2715,16 +2665,6 @@ checksum = "556d3a1ca6600bfcbab7c7c91ccb085ac7fbbcd70e008a98742e7847f4f7bcef"
 dependencies = [
  "autocfg 0.1.8",
  "rand_core 0.3.1",
-]
-
-[[package]]
-name = "rand_chacha"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4c8ed856279c9737206bf725bf36935d8666ead7aa69b52be55af369d193402"
-dependencies = [
- "ppv-lite86",
- "rand_core 0.5.1",
 ]
 
 [[package]]
@@ -2754,15 +2694,6 @@ checksum = "9c33a3c44ca05fa6f1807d8e6743f3824e8509beca625669633be0acbdf509dc"
 
 [[package]]
 name = "rand_core"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90bde5296fc891b0cef12a6d03ddccc162ce7b2aff54160af9338f8d40df6d19"
-dependencies = [
- "getrandom 0.1.16",
-]
-
-[[package]]
-name = "rand_core"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
@@ -2777,15 +2708,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b40677c7be09ae76218dc623efbf7b18e34bced3f38883af07bb75630a21bc4"
 dependencies = [
  "rand_core 0.3.1",
-]
-
-[[package]]
-name = "rand_hc"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca3129af7b92a17112d59ad498c6f81eaf463253766b90396d39ea7a39d6613c"
-dependencies = [
- "rand_core 0.5.1",
 ]
 
 [[package]]
@@ -3161,18 +3083,6 @@ name = "rustversion"
 version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7c45b9784283f1b2e7fb61b42047c2fd678ef0960d4f6f1eba131594cc369d4"
-
-[[package]]
-name = "rusty-fork"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3dd93264e10c577503e926bd1430193eeb5d21b059148910082245309b424fae"
-dependencies = [
- "fnv",
- "quick-error",
- "tempfile",
- "wait-timeout",
-]
 
 [[package]]
 name = "rusty-fork"
@@ -4103,7 +4013,7 @@ dependencies = [
  "itertools 0.14.0",
  "log 0.4.26",
  "plist 1.7.0",
- "proptest 1.4.0",
+ "proptest",
  "serde",
  "serde_json",
  "tempfile",
@@ -4130,7 +4040,7 @@ dependencies = [
  "log 0.4.26",
  "nom",
  "plist 1.7.0",
- "proptest 1.4.0",
+ "proptest",
  "quickcheck",
  "regex 1.5.6",
  "semver 1.0.22",
@@ -4222,7 +4132,7 @@ dependencies = [
  "console 0.9.2",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4",
+ "uvm_core",
 ]
 
 [[package]]
@@ -4233,7 +4143,7 @@ dependencies = [
  "console 0.9.2",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4",
+ "uvm_core",
 ]
 
 [[package]]
@@ -4249,7 +4159,7 @@ dependencies = [
  "serde_derive",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4",
+ "uvm_core",
 ]
 
 [[package]]
@@ -4268,7 +4178,7 @@ dependencies = [
  "stringreader",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uvm_core",
 ]
 
 [[package]]
@@ -4288,7 +4198,7 @@ dependencies = [
  "stringreader",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4",
+ "uvm_core",
 ]
 
 [[package]]
@@ -4302,7 +4212,7 @@ dependencies = [
  "log 0.4.26",
  "rayon",
  "serde_yaml 0.9.25",
- "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uvm_core",
  "uvm_live_platform",
 ]
 
@@ -4314,7 +4224,7 @@ dependencies = [
  "console 0.9.2",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4",
+ "uvm_core",
 ]
 
 [[package]]
@@ -4329,7 +4239,7 @@ dependencies = [
  "log 0.4.26",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uvm_core",
  "uvm_install_core 0.9.3",
 ]
 
@@ -4374,7 +4284,7 @@ dependencies = [
  "log 0.4.26",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4",
+ "uvm_core",
 ]
 
 [[package]]
@@ -4388,7 +4298,7 @@ dependencies = [
  "serde_derive",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uvm_core",
 ]
 
 [[package]]
@@ -4405,7 +4315,7 @@ dependencies = [
  "serde_derive",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4",
+ "uvm_core",
 ]
 
 [[package]]
@@ -4419,7 +4329,7 @@ dependencies = [
  "serde_derive",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uvm_core",
  "uvm_install_core 0.9.3",
 ]
 
@@ -4434,7 +4344,7 @@ dependencies = [
  "semver 1.0.22",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4",
+ "uvm_core",
 ]
 
 [[package]]
@@ -4451,7 +4361,7 @@ dependencies = [
  "serde_derive",
  "structopt",
  "uvm_cli",
- "uvm_core 0.13.4",
+ "uvm_core",
 ]
 
 [[package]]
@@ -4465,44 +4375,6 @@ dependencies = [
  "serde",
  "serde_derive",
  "structopt",
-]
-
-[[package]]
-name = "uvm_core"
-version = "0.13.4"
-dependencies = [
- "anyhow",
- "cfg-if 1.0.0",
- "cluFlock",
- "derive_deref",
- "dirs-2",
- "dmg",
- "error-chain",
- "hex 0.4.3",
- "hex-serde",
- "indoc 1.0.7",
- "itertools 0.9.0",
- "lazy_static 1.4.0",
- "libc",
- "log 0.4.26",
- "md-5",
- "plist 0.3.0",
- "proptest 0.9.6",
- "rand 0.7.3",
- "regex 1.5.6",
- "reqwest 0.9.24",
- "semver 1.0.22",
- "serde",
- "serde_derive",
- "serde_ini",
- "serde_json",
- "serde_yaml 0.8.23",
- "stringreader",
- "tempfile",
- "thiserror 1.0.57",
- "widestring",
- "winapi 0.3.9",
- "zip 0.5.13",
 ]
 
 [[package]]
@@ -4557,7 +4429,7 @@ dependencies = [
  "md-5",
  "reqwest 0.9.24",
  "tempfile",
- "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uvm_core",
  "uvm_move_dir 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "zip 0.5.13",
 ]
@@ -4575,7 +4447,7 @@ dependencies = [
  "ssri",
  "unity-hub",
  "url 2.5.4",
- "uvm_core 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uvm_core",
  "uvm_move_dir 0.1.1",
  "zip 2.2.3",
 ]
@@ -4599,7 +4471,7 @@ version = "0.1.1"
 dependencies = [
  "anyhow",
  "derive-getters",
- "indoc 2.0.3",
+ "indoc",
  "ordered-float",
  "reqwest 0.11.18",
  "serde",
@@ -4684,12 +4556,6 @@ checksum = "bfa7760aed19e106de2c7c0b581b509f2f25d3dacaf737cb82ac61bc6d760b0e"
 dependencies = [
  "try-lock",
 ]
-
-[[package]]
-name = "wasi"
-version = "0.9.0+wasi-snapshot-preview1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
 
 [[package]]
 name = "wasi"
