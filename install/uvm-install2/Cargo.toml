@@ -39,3 +39,5 @@ thiserror-context = "0.1.2"
 cluFlock = "1.2.5"
 [target.'cfg(target_os="macos")'.dependencies]
 dmg = "0.1.1"
+[target.'cfg(target_os="windows")'.dependencies]
+tempfile = "3.19.1"

@@ -2,6 +2,9 @@ use crate::error::*;
 use crate::*;
 use std::io::Write;
 use tempfile::Builder;
+use crate::install::installer::{Installer, InstallerWithDestinationAndOptionalCommand, InstallerWithOptionalCommand};
+use crate::install::{InstallHandler, UnityEditor, UnityModule};
+use crate::install::error::InstallerResult;
 
 pub struct Exe;
 pub type EditorExeInstaller =
@@ -11,7 +14,7 @@ pub type ModuleExeTargetInstaller =
 pub type ModuleExeInstaller = Installer<UnityModule, Exe, InstallerWithOptionalCommand>;
 
 impl<V> InstallHandler for Installer<V, Exe, InstallerWithDestinationAndOptionalCommand> {
-    fn install_handler(&self) -> Result<()> {
+    fn install_handler(&self) -> InstallerResult<()> {
         let installer = self.installer();
         let destination = self.destination();
 
@@ -53,16 +56,16 @@ impl<V> InstallHandler for Installer<V, Exe, InstallerWithDestinationAndOptional
         Ok(())
     }
 
-    fn after_install(&self) -> Result<()> {
+    fn after_install(&self) -> InstallerResult<()> {
         if let Some((from, to)) = &self.rename() {
-            uvm_move_dir::move_dir(from, to).chain_err(|| "failed to rename installed module")?;
+            uvm_move_dir::move_dir(from, to)?;
         }
         Ok(())
     }
 }
 
 impl InstallHandler for ModuleExeInstaller {
-    fn install_handler(&self) -> Result<()> {
+    fn install_handler(&self) -> InstallerResult<()> {
         let installer = self.installer();
 
         debug!("install api from installer exe");
@@ -99,9 +102,9 @@ impl InstallHandler for ModuleExeInstaller {
         Ok(())
     }
 
-    fn after_install(&self) -> Result<()> {
+    fn after_install(&self) -> InstallerResult<()> {
         if let Some((from, to)) = &self.rename() {
-            uvm_move_dir::move_dir(from, to).chain_err(|| "failed to rename installed module")?;
+            uvm_move_dir::move_dir(from, to)?;
         }
         Ok(())
     }

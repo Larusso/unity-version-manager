@@ -2,12 +2,15 @@ use crate::error::*;
 use crate::*;
 use std::io::Write;
 use tempfile::Builder;
+use crate::install::error::InstallerResult;
+use crate::install::installer::{Installer, InstallerWithCommand};
+use crate::install::{InstallHandler, UnityModule};
 
 pub struct Msi;
 pub type ModuleMsiInstaller = Installer<UnityModule, Msi, InstallerWithCommand>;
 
 impl InstallHandler for ModuleMsiInstaller {
-    fn install_handler(&self) -> Result<()> {
+    fn install_handler(&self) -> InstallerResult<()> {
         let installer = self.installer();
 
         debug!("install api module from installer msi");
@@ -39,7 +42,7 @@ impl InstallHandler for ModuleMsiInstaller {
         Ok(())
     }
 
-    fn after_install(&self) -> Result<()> {
+    fn after_install(&self) -> InstallerResult<()> {
         if let Some((from, to)) = &self.rename() {
             uvm_move_dir::move_dir(from, to).chain_err(|| "failed to rename installed module")?;
         }

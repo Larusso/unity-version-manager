@@ -37,7 +37,6 @@ pub trait InstallManifest {
     fn download_url(&self) -> &str;
     fn integrity(&self) -> Option<Integrity>;
     fn install_rename_from_to<P: AsRef<Path>>(&self, base_path: P) -> Option<(PathBuf, PathBuf)>;
-
     fn install_destination<P: AsRef<Path>>(&self, base_path: P) -> Option<PathBuf>;
 }
 
