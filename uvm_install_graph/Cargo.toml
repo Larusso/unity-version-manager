@@ -1,6 +1,6 @@
 [package]
 name = "uvm_install_graph"
-version = "0.8.2"
+version = "0.9.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "A graph view of a unity version manifest"
 repository = "https://github.com/Larusso/unity-version-manager"
@@ -20,7 +20,7 @@ daggy = "0.8.1"
 fixedbitset = "0.5.7"
 itertools = "0.14.0"
 #uvm_core = { path = "../uvm_core", version = "0.13.3" }
-uvm_live_platform = { path = "../uvm_live_platform", version = "0.1.1" }
+uvm_live_platform = { path = "../uvm_live_platform", version = "0.2.0" }
 unity-version = {path = "../unity-version", version = "0.1.0" }
 [dev-dependencies]
 cfg-if = "1.0.0"

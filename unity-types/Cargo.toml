@@ -2,6 +2,13 @@
 name = "unity-types"
 version = "0.1.0"
 edition = "2021"
+authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
+description = "Base Unity Datatypes"
+repository = "https://github.com/Larusso/unity-version-manager"
+keywords = ["unity","version-manager"]
+categories = ["development-tools"]
+license = "Apache-2.0"
+
 
 [dependencies]
 serde = { version = "1.0.218", features = ["derive"] }

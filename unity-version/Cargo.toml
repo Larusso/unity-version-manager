@@ -2,7 +2,12 @@
 name = "unity-version"
 version = "0.1.0"
 edition = "2021"
-
+authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
+description = "Unity Version parser"
+repository = "https://github.com/Larusso/unity-version-manager"
+keywords = ["unity","version-manager"]
+categories = ["development-tools"]
+license = "Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
