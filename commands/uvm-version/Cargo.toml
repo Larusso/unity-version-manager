@@ -11,4 +11,4 @@ structopt = "0.3"
 semver = "1.0.1"
 indicatif = "0.9.0"
 uvm_cli = { path = "../../uvm_cli" }
-uvm_core = { path = "../../uvm_core" }
+uvm_core = "0.13.4"

@@ -23,7 +23,7 @@ const SETTINGS: &'static [AppSettings] = &[
 #[derive(StructOpt, Debug)]
 #[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!(), settings = SETTINGS)]
 struct Opts {
-    /// The unity version to uninstall modules or editor
+    /// The api version to uninstall modules or editor
     version: Version,
 
     /// uninstall all support packages
@@ -167,7 +167,7 @@ fn uninstall(options: &Opts) -> Result<()> {
     if to_uninstall.contains(&Component::Editor) {
         eprintln!(
             "{}: {}",
-            style("uninstall unity version").green(),
+            style("uninstall api version").green(),
             &options.version
         );
         remove_dir_all(installation.path())?
@@ -175,7 +175,7 @@ fn uninstall(options: &Opts) -> Result<()> {
         if options.verbose > 0 {
             eprintln!(
                 "{}: {}",
-                style("uninstall unity components").green(),
+                style("uninstall api components").green(),
                 &options.version
             );
             eprintln!("{}", style("Components to uninstall:").green());

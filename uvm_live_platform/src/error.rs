@@ -1,17 +1,62 @@
-use std::fmt::Display;
-
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub struct LivePlatformError {
-    pub msg: String,
-    
-    #[source]
-    pub source: anyhow::Error,
+#[error(transparent)]
+pub struct LivePlatformError(#[from] ErrorRepr);
+
+impl LivePlatformError {
+    /// Create an error with a custom message (e.g., wrapping `anyhow::Error`).
+    pub fn new<E>(msg: &str, source: E) -> Self
+    where
+        E: Into<anyhow::Error>,
+    {
+        ErrorRepr::Unexpected {
+            msg: msg.to_string(),
+            source: source.into(),
+        }
+            .into()
+    }
 }
 
-impl Display for LivePlatformError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "LivePlatformError: {}", self.msg)
-    }
+#[derive(Error, Debug)]
+pub enum ErrorRepr {
+    #[error("FetchRelease error: {0}")]
+    FetchReleaseError(#[from] FetchReleaseError),
+
+    #[error("ListVersions error: {0}")]
+    ListVersionsError(#[from] ListVersionsError),
+
+    #[error("Unexpected error: {msg}")]
+    Unexpected {
+        msg: String,
+        #[source]
+        source: anyhow::Error,
+    },
+}
+
+#[derive(Error, Debug)]
+pub enum FetchReleaseError {
+    #[error("Failed to fetch release: {0}")]
+    FetchFailed(String),
+
+    #[error("Invalid JSON response")]
+    JsonError(#[source] reqwest::Error),
+
+    #[error("Release not found for version: {0}")]
+    NotFound(String),
+
+    #[error("Network error: {0}")]
+    NetworkError(#[source] reqwest::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum ListVersionsError {
+    #[error("Failed to fetch version list: {0}")]
+    FetchFailed(String),
+
+    #[error("Invalid JSON response")]
+    JsonError(#[source] reqwest::Error),
+
+    #[error("Network error: {0}")]
+    NetworkError(#[source] reqwest::Error),
 }

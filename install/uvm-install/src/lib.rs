@@ -205,7 +205,7 @@ impl UvmCommand {
         self.stderr
             .write_line(&format!(
                 "{}: {}",
-                style("install unity version").green(),
+                style("install api version").green(),
                 version.to_string()
             ))
             .ok();
@@ -405,7 +405,7 @@ impl UvmCommand {
                 acc
             })?;
 
-        //write new unity hub editor installation
+        //write new api hub editor installation
         if let Some(installation) = editor_installation {
             let mut _editors = Editors::load().and_then(|mut editors| {
                 editors.add(&installation);

@@ -1,20 +1,36 @@
-use error_chain::error_chain;
-error_chain! {
-    links {
-        UvmError(uvm_core::error::UvmError, uvm_core::error::UvmErrorKind);
-        UvmInstallCoreError(uvm_install_core::error::Error, uvm_install_core::error::ErrorKind);
-    }
+use thiserror::Error;
+use thiserror_context::impl_context;
+use unity_hub::unity::error::UnityError;
+use uvm_live_platform::error::LivePlatformError;
+use crate::install;
 
-    foreign_links {
-        Fmt(::std::fmt::Error);
-        Io(::std::io::Error);
-        VersionError(uvm_core::unity::VersionError);
-    }
+pub type Result<T> = std::result::Result<T, InstallError>;
 
-    errors {
-        UnsupportedModuleError(c: String, v:String) {
-            description("unsupported unity module for unity version"),
-            display("unsupported module: '{}' for selected unity version {}", c, v),
-        }
-    }
+#[derive(Error, Debug)]
+pub enum InstallError {
+    #[error("Failed to load Unity release")]
+    ReleaseLoadFailure(#[from] LivePlatformError),
+
+    #[error("Unable to lock install process")]
+    LockProcessFailure(#[from] std::io::Error),
+
+    #[error("Unable to load installtion")]
+    UnityError(#[from] UnityError),
+
+    #[error("Module '{0}' not supported for version '{1}'")]
+    UnsupportedModule(String, String),
+
+    #[error("Loading installer failed: {0}")]
+    LoadingInstallerFailed(#[source] install::error::InstallerError),
+
+    #[error("failed to created installer: {0}")]
+    InstallerCreatedFailed(#[source] install::error::InstallerError),
+
+    #[error("Installation failed: {0}")]
+    InstallFailed(#[source] install::error::InstallerError),
+
+    #[error("Some Hub error")]
+    HubError(#[from]unity_hub::error::UnityHubError),
 }
+
+// impl_context!(InstallError(InstallError));

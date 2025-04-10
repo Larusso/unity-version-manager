@@ -25,7 +25,7 @@ const SETTINGS: &'static [AppSettings] = &[
 #[derive(StructOpt, Debug)]
 #[structopt(version = crate_version!(), author = crate_authors!(), about = crate_description!(), settings = SETTINGS)]
 struct Opts {
-  /// The unity version to install modules or editor
+  /// The api version to install modules or editor
   version: Version,
 
   /// A directory to install the requested version to

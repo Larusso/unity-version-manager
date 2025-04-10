@@ -21,7 +21,7 @@ _install with brew_
 
 ```bash
 brew tap wooga/tools
-brew install wooga/unity-version-manager
+brew install wooga/api-version-manager
 ```
 
 To build from source a recent version of rust is needed `> 1.30`. You should use [rustup].
@@ -29,16 +29,16 @@ To build from source a recent version of rust is needed `> 1.30`. You should use
 _install from source with cmake_
 
 ```bash
-git clone git@github.com:Larusso/unity-version-manager.git
-cd unity-version-manager
+git clone git@github.com:Larusso/api-version-manager.git
+cd api-version-manager
 make install
 ```
 
 _install from source with cargo_
 
 ```bash
-git clone git@github.com:Larusso/unity-version-manager.git
-cd unity-version-manager
+git clone git@github.com:Larusso/api-version-manager.git
+cd api-version-manager
 cargo build --release
 #symlink or move binaries in target/release
 ```

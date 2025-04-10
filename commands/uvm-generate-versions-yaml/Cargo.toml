@@ -14,4 +14,4 @@ log = "0.4.20"
 rayon = "1.7.0"
 serde_yaml = "0.9.25"
 uvm_live_platform = {path = "../../uvm_live_platform"}
-uvm_core = {path = "../../uvm_core"}
+uvm_core = "0.13.4"

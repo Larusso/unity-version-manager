@@ -1,0 +1,21 @@
+{
+  "name": "Rust (Windows Cross Image + Toolchain)",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {},
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "matklad.rust-analyzer",
+        "serayuzgur.crates",
+        "vadimcn.vscode-lldb"
+      ]
+    },
+    "jetbrains": {
+      "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+      "workspaceFolder": "/workspace"
+    }
+  },
+}
