@@ -1,26 +1,22 @@
-use crate::unity::VersionError;
-use crate::unity::Version;
 use std::path::Path;
 
-extern crate core;
-extern crate libc;
-extern crate winapi;
-
-use self::winapi::ctypes::c_void;
-use self::winapi::shared::basetsd::SIZE_T;
-use self::winapi::shared::minwindef::BYTE;
-use self::winapi::shared::minwindef::DWORD;
-use self::winapi::shared::minwindef::PUINT;
-use self::winapi::shared::ntdef::CHAR;
-use self::winapi::um::winver;
+use winapi::ctypes::c_void;
+use winapi::shared::basetsd::SIZE_T;
+use winapi::shared::minwindef::BYTE;
+use winapi::shared::minwindef::DWORD;
+use winapi::shared::minwindef::PUINT;
+use winapi::shared::ntdef::CHAR;
+use winapi::um::winver;
 use std::convert::AsRef;
 use std::error::Error;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::mem;
 use std::str::FromStr;
+use log::{debug, trace};
+use crate::error::VersionError;
+use crate::Version;
 
-pub mod module;
 
 pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version, VersionError> {
     let path = path.as_ref();
@@ -48,7 +44,7 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version, Versio
             )
             .map_err(|err| {
                 debug!("{}", err.to_string());
-                VersionError::Other(err.into())
+                VersionError::Other { msg: "Failed to query version".to_string(), source: err.into() }
             })?;
             //let company_name = win_query_version_value(&path,r"\StringFileInfo\040904b0\CompanyName");
             let version_parts: Vec<&str> = version_string.as_str().split('_').collect();

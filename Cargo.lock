@@ -4055,6 +4055,7 @@ dependencies = [
  "anyhow",
  "cfg-if 1.0.0",
  "derive_more",
+ "libc",
  "log 0.4.26",
  "nom",
  "plist 1.7.0",
@@ -4064,6 +4065,8 @@ dependencies = [
  "semver 1.0.22",
  "serde",
  "thiserror 1.0.57",
+ "widestring",
+ "winapi 0.3.9",
 ]
 
 [[package]]
@@ -4258,7 +4261,7 @@ dependencies = [
  "structopt",
  "uvm_cli",
  "uvm_core",
- "uvm_install_core 0.9.3",
+ "uvm_install_core",
 ]
 
 [[package]]
@@ -4349,7 +4352,7 @@ dependencies = [
  "structopt",
  "uvm_cli",
  "uvm_core",
- "uvm_install_core 0.9.3",
+ "uvm_install_core",
 ]
 
 [[package]]
@@ -4451,24 +4454,6 @@ dependencies = [
  "uvm_core",
  "uvm_move_dir 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "zip 0.5.13",
-]
-
-[[package]]
-name = "uvm_install_core"
-version = "0.10.0"
-dependencies = [
- "cfg-if 1.0.0",
- "cluFlock",
- "dmg",
- "error-chain",
- "log 0.4.26",
- "reqwest 0.12.12",
- "ssri",
- "unity-hub",
- "url 2.5.4",
- "uvm_core",
- "uvm_move_dir 0.1.1",
- "zip 2.2.3",
 ]
 
 [[package]]

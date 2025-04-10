@@ -2,6 +2,7 @@ use std::process::{Command, Stdio};
 use crate::error::*;
 use crate::*;
 use crate::install::error::{InstallerErrorInner, InstallerResult};
+use crate::install::error::InstallerErrorInner::Other;
 use crate::install::installer::{Installer, ModulePoInstaller, ModuleZipInstaller};
 use crate::install::InstallHandler;
 use self::exe::*;
@@ -136,11 +137,11 @@ impl<V, T, I> Installer<V, T, I> {
             .spawn()?;
         let output = install_process.wait_with_output()?;
         if !output.status.success() {
-            return Err(format!(
+            return Err(Other(format!(
                 "failed to install:\
                  {}",
                 String::from_utf8_lossy(&output.stderr)
-            )
+            ))
             .into());
         }
         Ok(())

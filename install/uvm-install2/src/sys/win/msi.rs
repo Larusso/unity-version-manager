@@ -44,7 +44,7 @@ impl InstallHandler for ModuleMsiInstaller {
 
     fn after_install(&self) -> InstallerResult<()> {
         if let Some((from, to)) = &self.rename() {
-            uvm_move_dir::move_dir(from, to).chain_err(|| "failed to rename installed module")?;
+            uvm_move_dir::move_dir(from, to)?;
         }
         Ok(())
     }
