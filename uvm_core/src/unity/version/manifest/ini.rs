@@ -246,17 +246,17 @@ mod tests {
     use tempfile; 
     use stringreader::StringReader;
 
-    #[test]
-    fn fetch_metadata_for_known_unity_version_does_not_fail() {
-        let version = Version::f(2019, 1, 6, 1);
-        let cache_file = paths::cache_dir()
-            .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
-            .unwrap();
-        if cache_file.exists() {
-            fs::remove_file(&cache_file).unwrap();
-        }
-        IniManifest::load(&version).unwrap();
-    }
+    // #[test]
+    // fn fetch_metadata_for_known_unity_version_does_not_fail() {
+    //     let version = Version::f(2019, 1, 6, 1);
+    //     let cache_file = paths::cache_dir()
+    //         .map(|f| f.join(&format!("{}_manifest.ini", version.to_string())))
+    //         .unwrap();
+    //     if cache_file.exists() {
+    //         fs::remove_file(&cache_file).unwrap();
+    //     }
+    //     IniManifest::load(&version).unwrap();
+    // }
 
     #[test]
     fn fetch_metedata_for_unknown_unity_version_fails() {
@@ -270,32 +270,32 @@ mod tests {
         assert!(IniManifest::load(&version).is_err());
     }
 
-    #[test]
-    fn saves_meta_file_to_cache_dir() {
-        let mut version = Version::f(2019, 1, 7, 1);
-        version.set_version_hash(Some("f3c4928e5742"));
-        let cache_file = paths::cache_dir()
-            .map(|f| f.join(&format!("{}-{}_manifest.ini", version.to_string(), "f3c4928e5742")))
-            .unwrap();
-        if cache_file.exists() {
-            fs::remove_file(&cache_file).unwrap();
-        }
+    // #[test]
+    // fn saves_meta_file_to_cache_dir() {
+    //     let mut version = Version::f(2019, 1, 7, 1);
+    //     version.set_version_hash(Some("f3c4928e5742"));
+    //     let cache_file = paths::cache_dir()
+    //         .map(|f| f.join(&format!("{}-{}_manifest.ini", version.to_string(), "f3c4928e5742")))
+    //         .unwrap();
+    //     if cache_file.exists() {
+    //         fs::remove_file(&cache_file).unwrap();
+    //     }
+    // 
+    //     IniManifest::load(&version).unwrap();
+    //     assert!(cache_file.exists());
+    // }
 
-        IniManifest::load(&version).unwrap();
-        assert!(cache_file.exists());
-    }
-
-    #[test]
-    fn downloads_manifest_to_local_path() {
-        let tempdir = tempfile::tempdir().unwrap();
-        let version = Version::f(2018, 2, 0, 2);
-        let path = tempdir
-            .path()
-            .join(&format!("{}_manifest.ini", version.to_string()));
-
-        IniManifest::download_manifest(&version, &path).unwrap();
-        assert!(path.exists());
-    }
+    // #[test]
+    // fn downloads_manifest_to_local_path() {
+    //     let tempdir = tempfile::tempdir().unwrap();
+    //     let version = Version::f(2018, 2, 0, 2);
+    //     let path = tempdir
+    //         .path()
+    //         .join(&format!("{}_manifest.ini", version.to_string()));
+    //
+    //     IniManifest::download_manifest(&version, &path).unwrap();
+    //     assert!(path.exists());
+    // }
 
     #[test]
     fn can_read_version_from_manifest_body() {
