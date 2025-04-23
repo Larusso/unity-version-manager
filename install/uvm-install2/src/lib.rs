@@ -2,7 +2,7 @@ mod error;
 mod install;
 mod sys;
 use crate::error::InstallError::{InstallFailed, InstallerCreatedFailed, LoadingInstallerFailed};
-use error::*;
+pub use error::*;
 use install::utils;
 use install::{InstallManifest, Loader};
 use lazy_static::lazy_static;
@@ -15,10 +15,16 @@ use std::{fs, io};
 use sys::create_installer;
 use unity_hub::unity::hub::editors::EditorInstallation;
 use unity_hub::unity::hub::paths::locks_dir;
-use unity_hub::unity::UnityInstallation;
-use unity_hub::unity::{hub, Installation};
-use unity_version::Version;
+use unity_hub::unity::hub;
+pub use unity_hub::unity;
+pub use unity_hub::error::UnityError;
+pub use unity_hub::error::UnityHubError;
+pub use unity_version::error::VersionError;
+use unity_hub::unity::{UnityInstallation, Installation};
+pub use unity_version::Version;
 use uvm_install_graph::{InstallGraph, InstallStatus, UnityComponent, Walker};
+pub use uvm_live_platform::fetch_release;
+pub use uvm_live_platform::error::LivePlatformError;
 
 lazy_static! {
     static ref UNITY_BASE_PATTERN: &'static Path = Path::new("{UNITY_PATH}");
@@ -58,7 +64,7 @@ pub fn install<V, P, I>(
     requested_modules: Option<I>,
     install_sync: bool,
     destination: Option<P>,
-) -> error::Result<()>
+) -> Result<UnityInstallation>
 where
     V: AsRef<Version>,
     P: AsRef<Path>,
@@ -78,7 +84,7 @@ where
     fs::DirBuilder::new().recursive(true).create(&locks_dir)?;
     lock_process!(locks_dir.join(format!("{}.lock", version_string)));
 
-    let unity_release = uvm_live_platform::fetch_release(version.to_owned())?;
+    let unity_release = fetch_release(version.to_owned())?;
     eprintln!("{:#?}", unity_release);
     let mut graph = InstallGraph::from(&unity_release);
 
@@ -212,7 +218,7 @@ where
         }
     }
 
-    write_modules_json(installation, modules)?;
+    write_modules_json(&installation, modules)?;
 
     //write new api hub editor installation
     if let Some(installation) = editor_installation {
@@ -223,11 +229,11 @@ where
         });
     }
 
-    Ok(())
+    Ok(installation)
 }
 
 fn write_modules_json(
-    installation: UnityInstallation,
+    installation: &UnityInstallation,
     modules: Vec<unity_hub::unity::hub::module::Module>,
 ) -> io::Result<()> {
     use console::style;

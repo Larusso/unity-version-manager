@@ -2,7 +2,7 @@ pub mod hub;
 mod installation;
 pub mod error;
 
-use crate::error::UnityHubError;
+use crate::error::{UnityError, UnityHubError};
 pub use installation::FromInstallation;
 pub use installation::Installation;
 pub use installation::UnityInstallation;
@@ -11,9 +11,11 @@ use log::{debug, warn};
 use std::path::Path;
 use std::{fs, io};
 use unity_version::Version;
+use crate::unity::hub::module::Module;
 
 pub struct Installations(Box<dyn Iterator<Item = UnityInstallation>>);
 pub struct Versions(Box<dyn Iterator<Item = Version>>);
+pub struct InstalledModules(Box<dyn Iterator<Item = Module>>);
 
 impl Installations {
     fn new(install_location: &Path) -> Result<Installations, UnityHubError> {
@@ -47,6 +49,21 @@ impl From<hub::editors::Editors> for Installations {
             .map(UnityInstallation::from_installation);
         Installations(Box::new(iter))
     }
+}
+
+impl TryFrom<UnityInstallation> for InstalledModules {
+    type Error = UnityError;
+
+    fn try_from(value: UnityInstallation) -> Result<Self, Self::Error> {
+        let modules = value.get_modules()?;
+        let installed_modules_iter = modules.into_iter().filter(|m| m.is_installed);
+        Ok(InstalledModules(Box::new(installed_modules_iter)))
+    }
+}
+
+impl Iterator for InstalledModules {
+    type Item = Module;
+    fn next(&mut self) -> Option<Self::Item> { self.0.next() }
 }
 
 impl Iterator for Installations {
