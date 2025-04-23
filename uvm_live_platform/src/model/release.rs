@@ -41,6 +41,12 @@ pub struct Download {
     pub installed_size: Size,
 }
 
+impl Download {
+    pub fn iter_modules(&self) -> impl Iterator<Item = &Module> {
+        ModuleIterator::new(&self.modules)
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct Module {
@@ -134,4 +140,26 @@ where
 {
     let opt = Option::deserialize(deserializer)?;
     Ok(opt.unwrap_or_default())
+}
+
+pub struct ModuleIterator<'a> {
+    stack: Vec<&'a Module>,
+}
+
+impl<'a> ModuleIterator<'a> {
+    pub fn new(modules: &'a [Module]) -> Self {
+        Self {
+            stack: modules.iter().rev().collect(),
+        }
+    }
+}
+
+impl<'a> Iterator for ModuleIterator<'a> {
+    type Item = &'a Module;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let next = self.stack.pop()?;
+        self.stack.extend(next.sub_modules().iter().rev());
+        Some(next)
+    }
 }
