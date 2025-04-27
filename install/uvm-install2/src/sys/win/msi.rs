@@ -1,6 +1,7 @@
 use crate::error::*;
 use crate::*;
 use std::io::Write;
+use std::path::Path;
 use tempfile::Builder;
 use crate::install::error::InstallerResult;
 use crate::install::installer::{Installer, InstallerWithCommand};
@@ -47,5 +48,9 @@ impl InstallHandler for ModuleMsiInstaller {
             uvm_move_dir::move_dir(from, to)?;
         }
         Ok(())
+    }
+
+    fn installer(&self) -> &Path {
+        self.installer()
     }
 }

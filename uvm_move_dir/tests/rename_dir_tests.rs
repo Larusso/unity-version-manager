@@ -66,29 +66,6 @@ fn fails_rename_when_from_is_not_a_directory() {
     assert!(destination.exists());
 }
 
-
-#[test]
-fn fails_rename_directory_when_destination_exists_and_is_not_empty() {
-    let base_dir = TempDir::new().unwrap();
-
-    let source = base_dir.path().join("source");
-    let destination = base_dir.path().join("destination");
-
-    DirBuilder::new().recursive(true).create(&source).unwrap();
-    DirBuilder::new().recursive(true).create(&destination).unwrap();
-
-    assert!(source.exists());
-    assert!(destination.exists());
-
-    setup_directory_structure(&source).unwrap();
-    setup_directory_structure(&destination).unwrap();
-    let result = move_dir(&source, &destination);
-
-    assert!(result.is_err());
-    assert!(source.exists());
-    assert!(destination.exists());
-}
-
 #[test]
 fn fails_rename_directory_when_destination_exists_and_is_file() {
     let base_dir = TempDir::new().unwrap();

@@ -184,6 +184,10 @@ impl InstallHandler for EditorPkgInstaller {
     fn error_handler(&self) {
         self.cleanup_directory_failable(&self.destination());
     }
+
+    fn installer(&self) -> &Path {
+        self.installer()
+    }
 }
 
 impl InstallHandler for ModulePkgInstaller {
@@ -216,6 +220,10 @@ impl InstallHandler for ModulePkgInstaller {
     fn error_handler(&self) {
         self.cleanup_directory_failable(&self.destination());
     }
+
+    fn installer(&self) -> &Path {
+        self.installer()
+    }
 }
 
 impl InstallHandler for ModulePkgNativeInstaller {
@@ -242,6 +250,10 @@ impl InstallHandler for ModulePkgNativeInstaller {
             .into());
         }
         Ok(())
+    }
+
+    fn installer(&self) -> &Path {
+        self.installer()
     }
 
     fn after_install(&self) -> InstallerResult<()> {

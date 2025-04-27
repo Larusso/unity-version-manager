@@ -1,7 +1,7 @@
 query FetchReleaseQuery(
-  $architecture: [UnityReleaseDownloadArchitecture!] = ARM64
-  $platform: [UnityReleaseDownloadPlatform!] = MAC_OS
-  $stream: [UnityReleaseStream!] = LTS
+  $architecture: [UnityReleaseDownloadArchitecture!]
+  $platform: [UnityReleaseDownloadPlatform!]
+  $stream: [UnityReleaseStream!]
   $version: String
 ) {
   getUnityReleases(

@@ -1,12 +1,12 @@
-use std::{fs, io};
-use std::path::{Path, PathBuf};
+use crate::install::error::InstallerErrorInner::CopyFailed;
 use crate::install::error::{InstallerErrorInner, InstallerResult};
 use crate::install::installer::{BaseInstaller, Installer, InstallerWithDestination};
 use crate::install::{InstallHandler, UnityModule};
-use std::process::{Command, Stdio};
 use log::debug;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::{fs, io};
 use thiserror_context::Context;
-use crate::install::error::InstallerErrorInner::CopyFailed;
 
 pub struct Dmg;
 pub type ModuleDmgWithDestinationInstaller = Installer<UnityModule, Dmg, InstallerWithDestination>;
@@ -37,7 +37,7 @@ impl<V, I> Installer<V, Dmg, I> {
             return Err(CopyFailed(
                 source.display().to_string(),
                 destination.display().to_string(),
-                String::from_utf8_lossy(&output.stderr).to_string()
+                String::from_utf8_lossy(&output.stderr).to_string(),
             )
             .into());
         }
@@ -63,7 +63,8 @@ impl<V, I> Installer<V, Dmg, I> {
                         )
                     })
                     .map(|entry| entry.path())
-            }).map_err(|err| InstallerErrorInner::IO(err).into())
+            })
+            .map_err(|err| InstallerErrorInner::IO(err).into())
     }
 
     fn install_module_from_dmg(&self, dmg_file: &Path, destination: &Path) -> InstallerResult<()> {
@@ -77,11 +78,14 @@ impl<V, I> Installer<V, Dmg, I> {
         let volume = Attach::new(dmg_file).with()?;
         debug!("installer mounted at {}", volume.mount_point.display());
 
-        let app_path = self.find_file_in_dir(&volume.mount_point, |entry| {
-            entry.file_name().to_str().unwrap().ends_with(".app")
-        }).context("failed to find .app in package")?;
+        let app_path = self
+            .find_file_in_dir(&volume.mount_point, |entry| {
+                entry.file_name().to_str().unwrap().ends_with(".app")
+            })
+            .context("failed to find .app in package")?;
 
-        self.copy_dir(app_path, destination)?;
+        self.copy_dir(app_path, destination)
+            .context("failed to copy .app contents to destination")?;
         Ok(())
     }
 }
@@ -93,9 +97,13 @@ impl InstallHandler for ModuleDmgInstaller {
         self.install_module_from_dmg(installer, destination)
     }
 
+    fn installer(&self) -> &Path {
+        self.installer()
+    }
+
     fn after_install(&self) -> InstallerResult<()> {
         if let Some((from, to)) = &self.rename() {
-            uvm_move_dir::move_dir(from, to)?; //.chain_err(|| "failed to rename installed module")?;
+            uvm_move_dir::move_dir(from, to).context("failed to rename installed module")?;
         }
         Ok(())
     }
@@ -108,9 +116,13 @@ impl InstallHandler for ModuleDmgWithDestinationInstaller {
         self.install_module_from_dmg(installer, destination)
     }
 
+    fn installer(&self) -> &Path {
+        self.installer()
+    }
+
     fn after_install(&self) -> InstallerResult<()> {
         if let Some((from, to)) = &self.rename() {
-            uvm_move_dir::move_dir(from, to)?; //.chain_err(|| "failed to rename installed module")?;
+            uvm_move_dir::move_dir(from, to).context("failed to rename installed module")?;
         }
         Ok(())
     }

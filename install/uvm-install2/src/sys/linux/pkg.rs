@@ -131,6 +131,10 @@ impl InstallHandler for ModulePkgInstaller {
         Ok(())
     }
 
+    fn installer(&self) -> &Path {
+        self.installer()
+    }
+
     fn error_handler(&self) {
         self.cleanup_directory_failable(&self.destination());
     }

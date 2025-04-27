@@ -39,6 +39,7 @@ impl Editors {
             debug!("hub editors file doesn't exist return empty map");
             HashMap::new()
         };
+        trace!("loaded editors map: {:?}", map);
         Ok(Editors::create(map))
     }
 
@@ -141,6 +142,7 @@ impl Installation for EditorInstallation {
 
 impl EditorInstallation {
     pub fn new(version: Version, location: PathBuf) -> EditorInstallation {
+        trace!("create new editor installation: {} at {}", version, location.display());
         EditorInstallation {
             version,
             location,
@@ -162,6 +164,7 @@ pub mod editor_value_location {
     use serde::ser::SerializeSeq;
     use serde::{self, Deserialize, Deserializer, Serializer};
     use std::path::{Path, PathBuf};
+    use log::trace;
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<PathBuf, D::Error>
     where
@@ -185,6 +188,7 @@ pub mod editor_value_location {
                     &"valid api location",
                 )
             })?;
+        trace!("found Editor location: {}", location.display());
         Ok(location.to_path_buf())
     }
 

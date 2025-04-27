@@ -5,6 +5,7 @@ use std::fs::DirBuilder;
 use tempfile::TempDir;
 
 #[test]
+#[cfg(unix)]
 fn move_dir_one_level_up() {
     let base_dir = TempDir::new().unwrap();
 
@@ -23,6 +24,7 @@ fn move_dir_one_level_up() {
 }
 
 #[test]
+#[cfg(unix)]
 fn move_dir_multiple_empty_level_up() {
     let base_dir = TempDir::new().expect("a temp dir");
 
@@ -44,6 +46,7 @@ fn move_dir_multiple_empty_level_up() {
 }
 
 #[test]
+#[cfg(unix)]
 fn move_dir_multiple_non_empty_level_up() {
     let base_dir = TempDir::new().unwrap();
 
@@ -60,8 +63,8 @@ fn move_dir_multiple_non_empty_level_up() {
     setup_directory_structure(&source).expect("directory setup");
     setup_directory_structure(&middle).expect("directory setup 2");
 
-    let result = move_dir(&source, &destination);
-
-    assert!(result.is_err());
-    //assert!(source.exists());
+    move_dir(&source, &destination).expect("successful move operation");
+    assert!(!source.exists());
+    assert!(!middle.exists());
+    assert_moved_structure_at(&destination)
 }

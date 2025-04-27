@@ -1,6 +1,7 @@
 use crate::error::*;
 use crate::*;
 use std::io::Write;
+use std::path::Path;
 use tempfile::Builder;
 use crate::install::installer::{Installer, InstallerWithDestinationAndOptionalCommand, InstallerWithOptionalCommand};
 use crate::install::{InstallHandler, UnityEditor, UnityModule};
@@ -56,6 +57,10 @@ impl<V> InstallHandler for Installer<V, Exe, InstallerWithDestinationAndOptional
         Ok(())
     }
 
+    fn installer(&self) -> &Path {
+        self.installer()
+    }
+
     fn after_install(&self) -> InstallerResult<()> {
         if let Some((from, to)) = &self.rename() {
             uvm_move_dir::move_dir(from, to)?;
@@ -107,5 +112,9 @@ impl InstallHandler for ModuleExeInstaller {
             uvm_move_dir::move_dir(from, to)?;
         }
         Ok(())
+    }
+
+    fn installer(&self) -> &Path {
+        self.installer()
     }
 }

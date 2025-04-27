@@ -1,5 +1,6 @@
 use crate::*;
 use std::fs::DirBuilder;
+use std::path::Path;
 use std::process::{Command, Stdio};
 use crate::install::installer::{Installer, InstallerWithDestination};
 use crate::install::{InstallHandler, UnityEditor, UnityModule};
@@ -54,6 +55,10 @@ impl InstallHandler for EditorXzInstaller {
     fn install_handler(&self) -> InstallerResult<()> {
         debug!("install editor from xz archive");
         self.untar(self.installer(), self.destination())
+    }
+
+    fn installer(&self) -> &Path {
+        self.installer()
     }
 }
 
@@ -116,6 +121,10 @@ impl InstallHandler for ModuleXzInstaller {
             uvm_move_dir::move_dir(from, to)?;
         }
         Ok(())
+    }
+
+    fn installer(&self) -> &Path {
+        self.installer()
     }
 
     fn error_handler(&self) {

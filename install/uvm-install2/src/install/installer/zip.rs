@@ -1,10 +1,11 @@
-use std::fs::File;
 use crate::error::*;
-use crate::*;
-use ::zip;
+use crate::install::error::InstallerResult;
 use crate::install::installer::{Installer, InstallerWithDestination};
 use crate::install::{InstallHandler, UnityModule};
-use crate::install::error::InstallerResult;
+use crate::*;
+use ::zip;
+use std::fs::File;
+use thiserror_context::Context;
 
 pub struct Zip;
 pub type ModuleZipInstaller = Installer<UnityModule, Zip, InstallerWithDestination>;
@@ -23,12 +24,12 @@ impl<V, I> Installer<V, Zip, I> {
     where
         F: Fn(&Path) -> PathBuf,
     {
-        let file = File::open(installer)?;
+        let file = File::open(installer).context("failed to open zip file")?;
         let mut archive = zip::ZipArchive::new(file)?;
 
         for i in 0..archive.len() {
-            let mut file = archive.by_index(i).unwrap();
-            let outpath = rename_handler(&destination.join(file.mangled_name()));
+            let mut file = archive.by_index(i).expect("expect file entry at index 0");
+            let output_path = rename_handler(&destination.join(file.mangled_name()));
             {
                 let comment = file.comment();
                 if !comment.is_empty() {
@@ -40,32 +41,52 @@ impl<V, I> Installer<V, Zip, I> {
                 debug!(
                     "File {} extracted to \"{}\"",
                     i,
-                    outpath.as_path().display()
+                    output_path.as_path().display()
                 );
                 fs::DirBuilder::new()
                     .recursive(true)
-                    .create(&outpath)?;
+                    .create(&output_path)
+                    .context(format!(
+                        "failed to create output path {}",
+                        output_path.display()
+                    ))?;
             } else {
                 debug!(
                     "File {} extracted to \"{}\" ({} bytes)",
                     i,
-                    outpath.as_path().display(),
+                    output_path.as_path().display(),
                     file.size()
                 );
-                if let Some(p) = outpath.parent() {
+                if let Some(p) = output_path.parent() {
                     if !p.exists() {
-                        fs::DirBuilder::new().recursive(true).create(&p)?;
+                        fs::DirBuilder::new()
+                            .recursive(true)
+                            .create(&p)
+                            .context(format!(
+                                "failed to create parent directory {} for output path {}",
+                                p.display(),
+                                output_path.display()
+                            ))?;
                     }
                 }
-                let mut outfile = fs::File::create(&outpath)?;
-                io::copy(&mut file, &mut outfile)?;
+                let mut outfile = fs::File::create(&output_path)?;
+                io::copy(&mut file, &mut outfile).context(format!(
+                    "failed to copy file {} to output path {}",
+                    file.name(),
+                    output_path.display()
+                ))?;
             }
 
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;
                 if let Some(mode) = file.unix_mode() {
-                    fs::set_permissions(&outpath, fs::Permissions::from_mode(mode))?;
+                    fs::set_permissions(&output_path, fs::Permissions::from_mode(mode)).context(
+                        format!(
+                            "failed to set permissions on file {}",
+                            output_path.display()
+                        ),
+                    )?;
                 }
             }
         }
@@ -97,5 +118,9 @@ impl InstallHandler for ModuleZipInstaller {
 
     fn error_handler(&self) {
         self.cleanup_directory_failable(self.destination());
+    }
+
+    fn installer(&self) -> &Path {
+        self.installer()
     }
 }

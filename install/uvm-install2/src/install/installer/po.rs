@@ -58,4 +58,8 @@ impl InstallHandler for ModulePoInstaller {
             Ok(())
         }
     }
+
+    fn installer(&self) -> &Path {
+        self.installer()
+    }
 }
