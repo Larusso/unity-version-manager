@@ -13,18 +13,20 @@ use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 use sys::create_installer;
-use unity_hub::unity::hub::editors::EditorInstallation;
-use unity_hub::unity::hub::paths::locks_dir;
-use unity_hub::unity::hub;
-pub use unity_hub::unity;
 pub use unity_hub::error::UnityError;
 pub use unity_hub::error::UnityHubError;
+pub use unity_hub::unity;
+use unity_hub::unity::hub;
+use unity_hub::unity::hub::editors::EditorInstallation;
+use unity_hub::unity::hub::module::Module;
+use unity_hub::unity::hub::paths::locks_dir;
+use unity_hub::unity::{Installation, UnityInstallation};
 pub use unity_version::error::VersionError;
-use unity_hub::unity::{UnityInstallation, Installation};
 pub use unity_version::Version;
 use uvm_install_graph::{InstallGraph, InstallStatus, UnityComponent, Walker};
-pub use uvm_live_platform::fetch_release;
 pub use uvm_live_platform::error::LivePlatformError;
+pub use uvm_live_platform::fetch_release;
+use uvm_live_platform::Release;
 
 lazy_static! {
     static ref UNITY_BASE_PATTERN: &'static Path = Path::new("{UNITY_PATH}");
@@ -207,14 +209,21 @@ where
             .downloads
             .first()
             .cloned()
-            .map(|d| d.modules.into_iter().map(|m| m.into()).collect())
+            .map(|d| {
+                let mut modules = vec![];
+                for module in &d.modules {
+                   fetch_modules_from_release(&mut modules, module);
+                }
+                modules
+            })
             .unwrap(),
         Ok(m) => m,
     };
 
     for module in modules.iter_mut() {
         if module.is_installed == false {
-            module.is_installed = all_components.contains(module.id())
+            module.is_installed = all_components.contains(module.id());
+            trace!("module {} is installed", module.id());
         }
     }
 
@@ -230,6 +239,15 @@ where
     }
 
     Ok(installation)
+}
+
+fn fetch_modules_from_release(
+    modules: &mut Vec<Module>, module: &uvm_live_platform::Module,
+) {
+    modules.push(module.clone().into());
+    for sub_module in module.sub_modules() {
+        fetch_modules_from_release(modules, sub_module);
+    }
 }
 
 fn write_modules_json(
@@ -374,10 +392,10 @@ fn install_module_and_dependencies<'a, P: AsRef<Path>>(
             let installer = create_installer(base_dir, installer, &module)
                 .map_err(|installer_err| InstallerCreatedFailed(installer_err))?;
 
-            info!("install");
+            info!("install {}", component);
             installer
                 .install()
-                .map_err(|installer_err| InstallFailed(installer_err))?;
+                .map_err(|installer_err| InstallFailed(module.id().to_string(), installer_err))?;
         }
     }
 

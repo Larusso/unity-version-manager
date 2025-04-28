@@ -47,7 +47,10 @@ pub trait Installation: Eq + Ord {
 
     fn get_modules(&self) -> Result<Vec<Module>, UnityError> {
         let modules_json_path = self.path().join("modules.json");
-        let file_content = fs::read_to_string(&modules_json_path)?;
+        let file_content = fs::read_to_string(&modules_json_path).map_err(|e| {
+            error!("Failed to read modules.json file from {}: {}", &modules_json_path.display(), e);
+            e
+        })?;
         let modules: Vec<Module> = serde_json::from_str(&file_content)?;
         Ok(modules) 
     }
@@ -150,6 +153,8 @@ impl UnityInstallation {
             path
         };
 
+        trace!("Create UnityInstallation object with path: {}", path.display());
+
         let version = Version::try_from(path)?;
         Ok(UnityInstallation {
             version,
@@ -205,6 +210,8 @@ impl UnityInstallation {
 }
 
 use std::{fmt, fs};
+use std::fmt::Debug;
+use log::{debug, error, trace};
 use serde::{Deserialize, Serialize};
 use unity_version::Version;
 use crate::error::UnityHubError;
@@ -224,11 +231,13 @@ pub trait FromInstallation<T:Sized> {
 impl<I> FromInstallation<I> for UnityInstallation
 where
     I: Installation,
+    I: Debug,
     I: Sized, // Ensures this does not apply to trait objects
 {
     fn from_installation(value: I) -> UnityInstallation {
+        trace!("Create UnityInstallation object from Installation object {:?}", value);
         UnityInstallation {
-            path: value.location().to_path_buf(),
+            path: value.path().to_path_buf(),
             version: value.version().clone(),
         }
     }

@@ -21,7 +21,7 @@ impl FetchRelease {
 pub struct FetchReleaseBuilder {
     architecture: UnityReleaseDownloadArchitecture,
     platform: UnityReleaseDownloadPlatform,
-    stream: UnityReleaseStream,
+    stream: Option<UnityReleaseStream>,
     version: Version,
 }
 
@@ -41,6 +41,9 @@ impl FetchReleaseBuilder {
 
     pub fn send(self) -> Result<Release, FetchReleaseError> {
         let version = self.version.clone();
+        let architecture = self.architecture.clone();
+        let stream = self.stream.clone();
+        let platform = self.platform.clone();
         let url = "https://live-platform-api.prd.ld.unity3d.com/graphql";
         let request_body = FetchReleaseRequestBody::new(self.into());
         let client = reqwest::blocking::Client::new();
@@ -53,7 +56,7 @@ impl FetchReleaseBuilder {
             .map_err(|err| FetchReleaseError::JsonError(err))?;
 
         if res.data.get_unity_releases.edges.is_empty() {
-            Err(FetchReleaseError::NotFound(version.to_string()))
+            Err(FetchReleaseError::NotFound(version.to_string(), platform, architecture, stream))
         } else {
             let release_edge = res.data.get_unity_releases.edges.remove(0);
             let release = release_edge.node;
@@ -72,7 +75,7 @@ impl FetchReleaseBuilder {
     }
 
     pub fn stream(mut self, stream: UnityReleaseStream) -> Self {
-        self.stream = stream;
+        self.stream = Some(stream);
         self
     }
 }
@@ -84,7 +87,8 @@ const FETCH_RELEASE_QUERY: &str = include_str!("fetch_release_query.graphql");
 struct FetchReleaseOptions {
     architecture: UnityReleaseDownloadArchitecture,
     platform: UnityReleaseDownloadPlatform,
-    stream: UnityReleaseStream,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stream: Option<UnityReleaseStream>,
     version: String,
 }
 

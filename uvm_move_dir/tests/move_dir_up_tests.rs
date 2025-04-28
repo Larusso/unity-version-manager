@@ -57,9 +57,8 @@ fn fails_move_dir_one_level_down_when_destination_exists() {
 
     setup_directory_structure(&source).unwrap();
     setup_directory_structure(&destination).unwrap();
-    let result = move_dir(&source, &destination);
 
-    assert!(result.is_err());
-    assert!(source.exists());
-    assert!(destination.exists());
+    move_dir(&source, &destination).expect("successful move operation");
+    assert!(!source.exists());
+    assert_moved_structure_at(&destination)
 }

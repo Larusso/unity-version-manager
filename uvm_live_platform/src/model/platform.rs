@@ -1,4 +1,5 @@
 use std::fmt;
+use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -17,6 +18,17 @@ impl Default for UnityReleaseDownloadArchitecture {
         } else {
             panic!("Not supported on current architecture")
         }
+    }
+}
+
+impl Display for UnityReleaseDownloadArchitecture {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use UnityReleaseDownloadArchitecture::*;
+        let s = match self {
+            X86_64 => "x86_64",
+            Arm64 => "arm64",
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -42,6 +54,18 @@ impl Default for UnityReleaseDownloadPlatform {
     }
 }
 
+impl Display for UnityReleaseDownloadPlatform {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use UnityReleaseDownloadPlatform::*;
+        let s = match self {
+            MacOs => "macOS",
+            Linux => "Linux",
+            Windows => "Windows",
+        };
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UnityReleaseStream {
@@ -54,6 +78,19 @@ pub enum UnityReleaseStream {
 impl Default for UnityReleaseStream {
     fn default() -> Self {
         Self::Lts
+    }
+}
+
+impl Display for UnityReleaseStream {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use UnityReleaseStream::*;
+        let s = match self {
+            Lts => "LTS",
+            Beta => "Beta",
+            Alpha => "Alpha",
+            Tech => "Tech Preview",
+        };
+        write!(f, "{}", s)
     }
 }
 

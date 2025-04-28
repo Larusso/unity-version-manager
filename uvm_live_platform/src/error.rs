@@ -1,4 +1,5 @@
 use thiserror::Error;
+use crate::{UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseStream};
 
 #[derive(Error, Debug)]
 #[error(transparent)]
@@ -42,8 +43,8 @@ pub enum FetchReleaseError {
     #[error("Invalid JSON response")]
     JsonError(#[source] reqwest::Error),
 
-    #[error("Release not found for version: {0}")]
-    NotFound(String),
+    #[error("Release not found for version: {0} platform: {1} architecture: {2} stream: {3:?}")]
+    NotFound(String, UnityReleaseDownloadPlatform, UnityReleaseDownloadArchitecture, Option<UnityReleaseStream>),
 
     #[error("Network error: {0}")]
     NetworkError(#[source] reqwest::Error),

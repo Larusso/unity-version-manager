@@ -35,49 +35,81 @@ fn recursive_file_count<P: AsRef<Path>>(dir: P) -> io::Result<u64> {
 pub fn move_dir<S: AsRef<Path>, D: AsRef<Path>>(source: S, destination: D) -> io::Result<()> {
     let destination = destination.as_ref();
     let source = source.as_ref();
+    trace!(
+        "move_dir: {} -> {}",
+        source.display(),
+        destination.display()
+    );
 
     if !source.is_dir() {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "from parameter must be a directory"));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "from parameter must be a directory",
+        ));
     }
 
     if source.starts_with(destination) {
         trace!("attempt to move files some levels up!");
         if let Some(parent) = destination.parent() {
-            let tempdir = tempdir_in(parent)?;
-            let sub = tempdir.path().join("sub");
-            trace!("create temp directory at: {}", tempdir.path().display());
+            let temp_dir = tempdir_in(parent)?;
+            let sub = temp_dir.path().join("sub");
+            trace!("create temp directory at: {}", temp_dir.path().display());
 
             #[cfg(unix)]
             fs::DirBuilder::new().create(&sub)?;
             #[cfg(unix)]
             fs::rename(source, &sub)?;
+            trace!("move {} to {}", source.display(), sub.display());
+            #[cfg(windows)]
+            win_move_file::rename(source, &sub)?;
+            trace!("move {} to {}", source.display(), sub.display());
             #[cfg(windows)]
             win_move_file::rename(source, &sub)?;
 
-            move_dir(&sub, destination).map_err(|err|{
-                match fs::rename(&sub,source) {
-                    Err(err) => err,
-                    _ => err
-                }
+            move_dir(&sub, destination).map_err(|err| match fs::rename(&sub, source) {
+                Err(revert_err) => io::Error::new(
+                    io::ErrorKind::Other,
+                    format!("rename and revert failed {} {}", err, revert_err),
+                ),
+                _ => err,
             })?;
         } else {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "Destination has no parent"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Destination has no parent",
+            ));
         }
     } else {
         trace!("rename dir");
         if destination.exists() {
-            if destination.is_dir() && recursive_file_count(destination)? == 0 {
+            trace!("destination exists");
+            if destination.is_dir() {
+                if recursive_file_count(destination)? != 0 {
+                    warn!(
+                        "destination {} exists and is not empty",
+                        destination.display()
+                    );
+                    visit_dirs(destination, &mut |entry| {
+                        trace!("destination entry: {}", entry.path().display());
+                    })?;
+                }
+                trace!("destination is empty");
                 fs::remove_dir_all(destination)?;
+                trace!("destination removed try again");
                 move_dir(source, destination)?;
-            }
-            else {
-                return Err(io::Error::from(io::ErrorKind::AlreadyExists));
+            } else {
+                error!("destination points to a file");
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!(
+                        "destination {} exists and is not a directory",
+                        destination.display()
+                    ),
+                ));
             }
         } else {
             #[cfg(unix)]
-            fs::DirBuilder::new()
-                .recursive(true)
-                .create(destination)?;
+            fs::DirBuilder::new().recursive(true).create(destination)?;
             #[cfg(windows)]
             fs::DirBuilder::new()
                 .recursive(true)

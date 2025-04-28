@@ -14,7 +14,7 @@ pub enum InstallError {
     #[error("Unable to lock install process")]
     LockProcessFailure(#[from] std::io::Error),
 
-    #[error("Unable to load installtion")]
+    #[error("Unable to load installation")]
     UnityError(#[from] UnityError),
 
     #[error("Module '{0}' not supported for version '{1}'")]
@@ -26,8 +26,8 @@ pub enum InstallError {
     #[error("failed to created installer: {0}")]
     InstallerCreatedFailed(#[source] install::error::InstallerError),
 
-    #[error("Installation failed: {0}")]
-    InstallFailed(#[source] install::error::InstallerError),
+    #[error("Installation failed for module {0}: {1}")]
+    InstallFailed(String, #[source] install::error::InstallerError),
 
     #[error("Some Hub error")]
     HubError(#[from]unity_hub::error::UnityHubError),

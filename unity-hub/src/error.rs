@@ -1,4 +1,5 @@
 use std::io;
+use std::path::PathBuf;
 use thiserror::Error;
 use unity_version::error::VersionError;
 pub use crate::unity::error::*;
@@ -41,4 +42,11 @@ pub enum UnityHubError {
 
     #[error("Unity Hub editor install path not found")]
     InstallPathNotFound,
+
+    #[error("Failed to list installations at path {path}")]
+    FailedToListInstallations {
+        path: PathBuf,
+        source: io::Error
+    }
+
 }

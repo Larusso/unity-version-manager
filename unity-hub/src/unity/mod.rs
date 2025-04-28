@@ -7,7 +7,7 @@ pub use installation::FromInstallation;
 pub use installation::Installation;
 pub use installation::UnityInstallation;
 use itertools::Itertools;
-use log::{debug, warn};
+use log::{debug, trace, warn};
 use std::path::Path;
 use std::{fs, io};
 use unity_version::Version;
@@ -23,7 +23,7 @@ impl Installations {
             "fetch unity installations from {}",
             install_location.display()
         );
-        let read_dir = fs::read_dir(install_location)?;
+        let read_dir = fs::read_dir(install_location).map_err(|err| UnityHubError::FailedToListInstallations {path: install_location.to_path_buf(), source: err})?;
 
         let iter = read_dir
             .filter_map(|dir_entry| dir_entry.ok())
@@ -97,10 +97,19 @@ impl FromIterator<UnityInstallation> for Installations {
 }
 
 pub fn list_all_installations() -> Result<Installations, UnityHubError> {
-    let i1 = list_installations()?;
-    let i2 = hub::list_installations()?;
+    let i1 = list_installations()?.map(|i| {
+        trace!("[list_all_installations] found local installation: {:?}", i);
+        i   
+    });
+    let i2 = hub::list_installations()?.map(|i| {
+        trace!("[list_all_installations] found hub installation: {:?}", i);
+        i
+    });
     let iter = i1.chain(i2);
-    let unique = iter.unique_by(|installation| installation.version().to_owned());
+    let unique = iter.unique_by(|installation| installation.version().to_owned()).map(|i| {
+        trace!("[list_all_installations] found installation: {:?}", i);
+        i
+    });
     Ok(Installations(Box::new(unique)))
 }
 
