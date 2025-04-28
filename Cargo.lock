@@ -4024,7 +4024,7 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 
 [[package]]
 name = "unity-hub"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "dirs-2",
@@ -4266,7 +4266,7 @@ dependencies = [
 
 [[package]]
 name = "uvm-install2"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
  "anyhow",
  "cfg-if 1.0.0",
@@ -4293,7 +4293,7 @@ dependencies = [
  "url 2.5.4",
  "uvm_install_graph",
  "uvm_live_platform",
- "uvm_move_dir 0.1.1",
+ "uvm_move_dir 0.2.0",
  "zip 2.2.3",
 ]
 
@@ -4452,7 +4452,7 @@ dependencies = [
  "reqwest 0.9.24",
  "tempfile",
  "uvm_core",
- "uvm_move_dir 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uvm_move_dir 0.1.1",
  "zip 0.5.13",
 ]
 
@@ -4471,7 +4471,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_live_platform"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "derive-getters",
@@ -4489,6 +4489,8 @@ dependencies = [
 [[package]]
 name = "uvm_move_dir"
 version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1cf0343b1defa301760ce23182acba7012bb05bd6ec4c8af37b95d3c559d9cb"
 dependencies = [
  "log 0.4.26",
  "tempfile",
@@ -4498,9 +4500,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_move_dir"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1cf0343b1defa301760ce23182acba7012bb05bd6ec4c8af37b95d3c559d9cb"
+version = "0.2.0"
 dependencies = [
  "log 0.4.26",
  "tempfile",

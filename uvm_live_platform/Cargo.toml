@@ -1,6 +1,6 @@
 [package]
 name = "uvm_live_platform"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Methods to connect to the unity live platform service."
 repository = "https://github.com/Larusso/unity-version-manager"
