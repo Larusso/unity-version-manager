@@ -52,7 +52,7 @@ impl Download {
 pub struct Module {
     #[serde(rename = "__typename")]
     #[getter(skip)]
-    type_name: String,
+    type_name: Option<String>,
     #[serde(flatten)]
     release_file: UnityReleaseFile,
     id: String,
