@@ -35,7 +35,7 @@ impl RevisionHash {
 
 impl PartialEq for RevisionHash {
     fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
+        self.as_str() == other.0
     }
 }
 
