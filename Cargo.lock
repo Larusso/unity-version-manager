@@ -4145,6 +4145,7 @@ dependencies = [
  "console 0.15.11",
  "flexi_logger 0.29.8",
  "log 0.4.26",
+ "tempfile",
  "unity-version",
 ]
 

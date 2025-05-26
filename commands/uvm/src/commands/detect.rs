@@ -107,3 +107,60 @@ impl DetectCommand {
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Can't parse Unity version"))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    #[test]
+    fn detects_project_version_file() {
+        let temp = tempdir().unwrap();
+        let project_settings = temp.path().join("ProjectSettings");
+        fs::create_dir(&project_settings).unwrap();
+        let version_file = project_settings.join("ProjectVersion.txt");
+
+        let version_content = "m_EditorVersion: 2021.3.2f1";
+        fs::write(&version_file, version_content).unwrap();
+
+        let cmd = DetectCommand {
+            project_path: Some(temp.path().to_path_buf()),
+            recursive: false,
+        };
+
+        let version = cmd.detect_project_version(temp.path(), false).unwrap();
+        assert_eq!(version.to_string(), "2021.3.2f1");
+    }
+
+    #[test]
+    fn detects_nested_project_when_recursive() {
+        let temp = tempdir().unwrap();
+        let nested = temp.path().join("nested/project");
+        let project_settings = nested.join("ProjectSettings");
+        fs::create_dir_all(&project_settings).unwrap();
+        let version_file = project_settings.join("ProjectVersion.txt");
+        fs::write(&version_file, "m_EditorVersion: 2020.1.5f1").unwrap();
+
+        let cmd = DetectCommand {
+            project_path: Some(temp.path().to_path_buf()),
+            recursive: true,
+        };
+
+        let version = cmd.detect_project_version(temp.path(), true).unwrap();
+        assert_eq!(version.to_string(), "2020.1.5f1");
+    }
+
+    #[test]
+    fn fails_on_missing_project_version() {
+        let temp = tempdir().unwrap();
+
+        let cmd = DetectCommand {
+            project_path: Some(temp.path().to_path_buf()),
+            recursive: false,
+        };
+
+        let result = cmd.detect_project_version(temp.path(), false);
+        assert!(result.is_err());
+    }
+}
