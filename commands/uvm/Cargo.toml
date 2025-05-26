@@ -12,3 +12,5 @@ unity-version = { version = "0.1.0", path="../../unity-version"}
 console = "0.15.11"
 flexi_logger = "0.29.8"
 log = "0.4.26"
+[dev-dependencies]
+tempfile = "3.19.1"
