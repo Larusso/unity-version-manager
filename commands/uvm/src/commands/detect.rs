@@ -23,8 +23,8 @@ impl DetectCommand {
             _ => &env::current_dir()?,
         };
         
-        info!("detect the project version at path {}", project_path.display());
-        let version = self.dectect_project_version(project_path, self.recursive)?;
+        info!("Detect the project version at path {}", project_path.display());
+        let version = self.detect_project_version(project_path, self.recursive)?;
         println!("{}", version);
         Ok(0)
     }
@@ -74,7 +74,7 @@ impl DetectCommand {
         error
     }
 
-    fn dectect_project_version(&self, project_path: &Path, recur: bool) -> io::Result<Version> {
+    fn detect_project_version(&self, project_path: &Path, recur: bool) -> io::Result<Version> {
         let project_version = self.detect_unity_project_dir(project_path, recur)
             .and_then(|p| self.get_project_version(p))?;
 

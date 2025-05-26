@@ -12,57 +12,6 @@ use console::Style;
 use flexi_logger::{DeferredNow, Level, LevelFilter, LogSpecification, Logger, Record};
 use log::{debug, Log};
 use std::io;
-// use std::process;
-// use structopt::{
-//   clap::crate_authors, clap::crate_description, clap::crate_version, clap::AppSettings, StructOpt,
-// };
-// use uvm_cli;
-//
-// const COMMANDS: &str = "
-// COMMANDS:
-//   detect            Find which version of api was used to generate a project
-//   launch            Launch the current active version of api
-//   list              List api versions available
-//   install           Install specified api version
-//   install2          Install specified api version
-//   uninstall         Uninstall specified api version
-//   versions          List available Unity versions to install
-//   help              show command help and exit
-// ";
-//
-// #[derive(StructOpt, Debug)]
-// #[structopt(version = crate_version!(),
-//             author = crate_authors!(),
-//             about = crate_description!(),
-//             setting = AppSettings::AllowExternalSubcommands,
-//             after_help = COMMANDS)]
-// struct Opts {
-//   #[structopt(subcommand)]
-//   sub: Subcommand,
-// }
-//
-// #[derive(StructOpt, Debug, PartialEq)]
-// enum Subcommand {
-//   #[structopt(external_subcommand)]
-//   Command(Vec<String>),
-// }
-//
-// impl Subcommand {
-//   fn exec(self) -> Result<i32> {
-//     let mut args = match self {
-//       Self::Command(args) => args,
-//     };
-//     let rest = args.split_off(1);
-//
-//     let command = uvm_cli::sub_command_path(&args[0])?;
-//     uvm_cli::exec_command(command, rest).context("failed to execute subcommand")
-//   }
-// }
-//
-// fn main() -> Result<()> {
-//   let opt = Opts::from_args();
-//   process::exit(opt.sub.exec()?);
-// }
 
 #[derive(Debug, Args)]
 pub struct GlobalOptions {
@@ -128,7 +77,7 @@ fn set_loglevel(
     verbose: i32,
 ) -> Result<(Box<dyn Log>, flexi_logger::LoggerHandle), flexi_logger::FlexiLoggerError>
 {
-    let mut log_sepc_builder = LogSpecification::builder();
+    let mut log_spec_builder = LogSpecification::builder();
     let level = match verbose {
         0 => LevelFilter::Warn,
         1 => LevelFilter::Info,
@@ -136,13 +85,13 @@ fn set_loglevel(
         _ => LevelFilter::max(),
     };
 
-    log_sepc_builder.default(level);
-    let log_spec = log_sepc_builder.build();
+    log_spec_builder.default(level);
+    let log_spec = log_spec_builder.build();
     Logger::with(log_spec).format(format_logs).build()
 }
 
 fn format_logs(
-    write: &mut dyn std::io::Write,
+    write: &mut dyn io::Write,
     _now: &mut DeferredNow,
     record: &Record,
 ) -> Result<(), std::io::Error> {
@@ -159,7 +108,7 @@ fn format_logs(
         .map(|_| ())
 }
 
-fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     debug!("CLI arguments: {:?}", cli);
 
