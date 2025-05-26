@@ -438,9 +438,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.29"
+version = "4.5.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8acebd8ad879283633b343856142139f2da2317c96b05b4dd6181c61e2480184"
+checksum = "ed93b9805f8ba930df42c2590f05453d5ec36cbb85d018868a5b24d31f6ac000"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -448,9 +448,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.29"
+version = "4.5.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6ba32cbda51c7e1dfd49acc1457ba1a7dec5b64fe360e828acb13ca8dc9c2f9"
+checksum = "379026ff283facf611b0ea629334361c4211d1b12ee01024eec1591133b04120"
 dependencies = [
  "anstream",
  "anstyle",
@@ -460,9 +460,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.5.28"
+version = "4.5.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf4ced95c6f4a675af3da73304b9ac4ed991640c36374e4b46795c49e17cf1ed"
+checksum = "09176aae279615badda0765c0c0b3f6ed53f4709118af73cf4655d85d1530cd7"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -560,9 +560,9 @@ dependencies = [
 
 [[package]]
 name = "console"
-version = "0.15.10"
+version = "0.15.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea3c6ecd8059b57859df5c69830340ed3c41d30e3da0c1cbed90a96ac853041b"
+checksum = "054ccb5b10f9f2cbf51eb355ca1d05c2d279ce1804688d0db74b4733a5aeafd8"
 dependencies = [
  "encode_unicode 1.0.0",
  "libc",
@@ -1817,7 +1817,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a29b2fa6f00010c268bface64c18bb0310aaa70d46a195d5382d288c477fb016"
 dependencies = [
- "console 0.15.10",
+ "console 0.9.2",
  "lazy_static 0.2.11",
  "parking_lot 0.12.0",
  "regex 0.2.11",
@@ -1829,7 +1829,7 @@ version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7baab56125e25686df467fe470785512329883aab42696d661247aca2a2896e4"
 dependencies = [
- "console 0.15.10",
+ "console 0.9.2",
  "lazy_static 1.4.0",
  "number_prefix 0.3.0",
  "regex 1.5.6",
@@ -1841,7 +1841,7 @@ version = "0.17.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "183b3088984b400f4cfac3620d5e076c84da5364016b4f49473de574b2586235"
 dependencies = [
- "console 0.15.10",
+ "console 0.15.11",
  "number_prefix 0.4.0",
  "portable-atomic",
  "unicode-width 0.2.0",
@@ -4141,23 +4141,15 @@ name = "uvm"
 version = "2.7.0"
 dependencies = [
  "anyhow",
- "structopt",
- "uvm_cli",
+ "clap 4.5.38",
+ "console 0.15.11",
+ "flexi_logger 0.29.8",
+ "log 0.4.26",
+ "unity-version",
 ]
 
 [[package]]
 name = "uvm-commands"
-version = "2.3.0"
-dependencies = [
- "anyhow",
- "console 0.9.2",
- "structopt",
- "uvm_cli",
- "uvm_core",
-]
-
-[[package]]
-name = "uvm-detect"
 version = "2.3.0"
 dependencies = [
  "anyhow",
@@ -4227,8 +4219,8 @@ name = "uvm-generate-versions-yaml"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "clap 4.5.29",
- "console 0.15.10",
+ "clap 4.5.38",
+ "console 0.15.11",
  "flexi_logger 0.26.0",
  "log 0.4.26",
  "rayon",
@@ -4270,9 +4262,9 @@ version = "0.11.1"
 dependencies = [
  "anyhow",
  "cfg-if 1.0.0",
- "clap 4.5.29",
+ "clap 4.5.38",
  "cluFlock",
- "console 0.15.10",
+ "console 0.15.11",
  "dirs-2",
  "dmg",
  "error-chain",
