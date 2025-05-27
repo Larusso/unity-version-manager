@@ -1,11 +1,18 @@
+use crate::commands::detect::DetectError::{FailedWhileReadingFileSystem, InvalidProjectPath};
+use crate::commands::error::CommandError;
+use crate::commands::Command;
+use err_code::ErrorCode;
 use clap::Args;
 use log::info;
-use std::path::{Path, PathBuf};
-use std::{env, fs, io};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::{env, fs, io};
+use console::style;
+use thiserror::Error;
+use unity_version::error::VersionError;
 use unity_version::Version;
 
 #[derive(Args, Debug)]
@@ -16,20 +23,65 @@ pub struct DetectCommand {
     pub recursive: bool,
 }
 
+#[derive(ErrorCode, Error, Debug)]
+pub enum DetectError {
+    #[error("Path '{0}' is not a Unity project")]
+    #[error_code(1000)]
+    NotAUnityProject(PathBuf),
+
+    #[error("Path '{0}' must point to a directory")]
+    #[error_code(1001)]
+    NotADirectory(PathBuf),
+
+    #[error("Failed to read file system")]
+    #[error_code(1002)]
+    FailedWhileReadingFileSystem(#[source] io::Error),
+
+    #[error("Failed to parse project version file")]
+    #[error_code(1003)]
+    FailedToParseProjectVersion(#[source] io::Error),
+
+    #[error("No EditorVersionWithRevision or EditorVersion defined in {0}")]
+    #[error_code(1004)]
+    NoEditorVersion(PathBuf),
+
+    #[error("Failed to parse unity version string {0}")]
+    #[error_code(1005)]
+    VersionError(String, #[source] VersionError),
+
+    #[error("Invalid project path")]
+    #[error_code(1006)]
+    InvalidProjectPath(#[source] io::Error),
+}
+
+impl Command for DetectCommand {
+    fn execute(&self) -> crate::commands::Result<()> {
+        let version = self.detect_version().map_err(|err|
+            CommandError::new(
+                "Detect unity version in project failed".to_string(),
+                err.error_code(), err.into(),
+            )
+        )?;
+        println!("{}", style(version).green().bold());
+        Ok(())
+    }
+}
+
 impl DetectCommand {
-    pub fn execute(&self) -> io::Result<i32> {
+    fn detect_version(&self) -> Result<Version, DetectError> {
         let project_path = match self.project_path.as_ref() {
             Some(p) => p,
-            _ => &env::current_dir()?,
+            _ => &env::current_dir().map_err(|err| InvalidProjectPath(err))?,
         };
-        
-        info!("Detect the project version at path {}", project_path.display());
-        let version = self.detect_project_version(project_path, self.recursive)?;
-        println!("{}", version);
-        Ok(0)
+
+        info!(
+            "Detect the project version at the path {}",
+            project_path.display()
+        );
+        self.detect_project_version(project_path, self.recursive)
     }
 
-    fn get_project_version<P: AsRef<Path>>(&self, base_dir: P) -> io::Result<PathBuf> {
+    fn get_project_version<P: AsRef<Path>>(&self, base_dir: P) -> Result<PathBuf, DetectError> {
         let project_version = base_dir
             .as_ref()
             .join("ProjectSettings")
@@ -37,31 +89,26 @@ impl DetectCommand {
         if project_version.exists() {
             Ok(project_version)
         } else {
-            Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                format!(
-                    "directory {} is not a Unity project",
-                    base_dir.as_ref().display()
-                ),
+            Err(DetectError::NotAUnityProject(
+                base_dir.as_ref().to_path_buf(),
             ))
         }
     }
 
-    pub fn detect_unity_project_dir(&self, dir: &Path, recur: bool) -> io::Result<PathBuf> {
-        let error = Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            "Unable to find a Unity project",
-        ));
-
+    pub fn detect_unity_project_dir(
+        &self,
+        dir: &Path,
+        recur: bool,
+    ) -> Result<PathBuf, DetectError> {
         if dir.is_dir() {
             if self.get_project_version(dir).is_ok() {
                 return Ok(dir.to_path_buf());
             } else if !recur {
-                return error;
+                return Err(DetectError::NotAUnityProject(dir.to_path_buf()));
             }
 
-            for entry in fs::read_dir(dir)? {
-                let entry = entry?;
+            for entry in fs::read_dir(dir).map_err(|err| FailedWhileReadingFileSystem(err))? {
+                let entry = entry.map_err(|err| FailedWhileReadingFileSystem(err))?;
                 let path = entry.path();
                 if path.is_dir() {
                     let f = self.detect_unity_project_dir(&path, true);
@@ -71,14 +118,20 @@ impl DetectCommand {
                 }
             }
         }
-        error
+        Err(DetectError::NotADirectory(dir.to_path_buf()))
     }
 
-    fn detect_project_version(&self, project_path: &Path, recur: bool) -> io::Result<Version> {
-        let project_version = self.detect_unity_project_dir(project_path, recur)
+    fn detect_project_version(
+        &self,
+        project_path: &Path,
+        recur: bool,
+    ) -> Result<Version, DetectError> {
+        let project_version = self
+            .detect_unity_project_dir(project_path, recur)
             .and_then(|p| self.get_project_version(p))?;
 
-        let file = File::open(project_version)?;
+        let file =
+            File::open(&project_version).map_err(DetectError::FailedToParseProjectVersion)?;
         let lines = BufReader::new(file).lines();
 
         let mut editor_versions: HashMap<&'static str, String> = HashMap::with_capacity(2);
@@ -86,13 +139,16 @@ impl DetectCommand {
         for line in lines {
             if let Ok(line) = line {
                 if line.starts_with("m_EditorVersion: ") {
-                    let value = line.replace("m_EditorVersion: ", "");
-                    editor_versions.insert("EditorVersion", value.to_owned());
+                    let value = line.replace("m_EditorVersion: ", "").trim().to_string();
+                    editor_versions.insert("EditorVersion", value);
                 }
 
                 if line.starts_with("m_EditorVersionWithRevision: ") {
-                    let value = line.replace("m_EditorVersionWithRevision: ", "");
-                    editor_versions.insert("EditorVersionWithRevision", value.to_owned());
+                    let value = line
+                        .replace("m_EditorVersionWithRevision: ", "")
+                        .trim()
+                        .to_string();
+                    editor_versions.insert("EditorVersionWithRevision", value);
                 }
             }
         }
@@ -100,11 +156,8 @@ impl DetectCommand {
         let v = editor_versions
             .get("EditorVersionWithRevision")
             .or_else(|| editor_versions.get("EditorVersion"))
-            .ok_or_else(|| {
-                io::Error::new(io::ErrorKind::InvalidInput, "Can't parse Unity version")
-            })?;
-        Version::from_str(&v)
-            .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Can't parse Unity version"))
+            .ok_or_else(|| DetectError::NoEditorVersion(project_version.to_path_buf()))?;
+        Version::from_str(&v).map_err(|err| DetectError::VersionError(v.to_string(), err))
     }
 }
 

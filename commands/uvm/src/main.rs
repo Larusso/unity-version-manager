@@ -1,7 +1,8 @@
 mod commands;
 
+use std::error::Error;
 use crate::commands::detect::DetectCommand;
-use crate::commands::external::{exec_command, sub_command_path};
+use crate::commands::external::{exec_command, sub_command_path, ExternalCommand};
 use crate::commands::install::InstallArgs;
 use crate::commands::launch::LaunchArgs;
 use crate::commands::list::ListArgs;
@@ -10,8 +11,10 @@ use crate::commands::versions::VersionsArgs;
 use clap::{ArgAction, Args, ColorChoice, Parser, Subcommand};
 use console::Style;
 use flexi_logger::{DeferredNow, Level, LevelFilter, LogSpecification, Logger, Record};
-use log::{debug, Log};
+use log::{debug, error, log_enabled, Log};
 use std::io;
+use log::Level::Info;
+use crate::commands::Command;
 
 #[derive(Debug, Args)]
 pub struct GlobalOptions {
@@ -52,14 +55,10 @@ pub enum Commands {
 }
 
 impl Commands {
-    fn exec(self) -> io::Result<i32> {
+    fn exec(self) -> commands::Result<()> {
         match self {
             Commands::Detect(detect) => detect.execute(),
-            Commands::External(mut args) => {
-                let rest = args.split_off(1);
-                let command = sub_command_path(&args[0])?;
-                exec_command(command, rest)
-            }
+            Commands::External(args) => ExternalCommand::new(args).execute(),
         }
     }
 }
@@ -122,6 +121,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     log::set_boxed_logger(logger)?;
 
     debug!("{:?}", cli);
-    cli.command.exec()?;
+    let r = cli.command.exec();
+    if r.is_err() {
+        let err = r.unwrap_err();
+        error!("{}", err);
+        if log_enabled!(Info) {
+            let mut e: &dyn Error = &err;
+            while let Some(source) = e.source() {
+                error!("> Caused by: {}", source);
+                e = source;
+            }
+        }
+        std::process::exit(err.code() as i32);
+    };
+
     Ok(())
 }

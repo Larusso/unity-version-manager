@@ -928,6 +928,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
+name = "err_code"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4d62789d6c4fffb920d03ef89cb8beac70caa6aa3ed109c3d00560a527fd21d"
+
+[[package]]
 name = "errno"
 version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1051,7 +1057,7 @@ dependencies = [
  "log 0.4.26",
  "nu-ansi-term 0.50.1",
  "regex 1.5.6",
- "thiserror 2.0.11",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -1817,7 +1823,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a29b2fa6f00010c268bface64c18bb0310aaa70d46a195d5382d288c477fb016"
 dependencies = [
- "console 0.9.2",
+ "console 0.15.11",
  "lazy_static 0.2.11",
  "parking_lot 0.12.0",
  "regex 0.2.11",
@@ -1829,7 +1835,7 @@ version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7baab56125e25686df467fe470785512329883aab42696d661247aca2a2896e4"
 dependencies = [
- "console 0.9.2",
+ "console 0.15.11",
  "lazy_static 1.4.0",
  "number_prefix 0.3.0",
  "regex 1.5.6",
@@ -3574,11 +3580,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.11"
+version = "2.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d452f284b73e6d76dd36758a0c8684b1d5be31f92b89d07fd5822175732206fc"
+checksum = "567b8a2dae586314f7be2a752ec7474332959c6460e02bde30d702a66d488708"
 dependencies = [
- "thiserror-impl 2.0.11",
+ "thiserror-impl 2.0.12",
 ]
 
 [[package]]
@@ -3600,9 +3606,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.11"
+version = "2.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26afc1baea8a989337eeb52b6e72a039780ce45c3edfcc9c5b9d112feeb173c2"
+checksum = "7f7cf42b4507d8ea322120659672cf1b9dbb93f8f2d4ecfd6e51350ff5b17a1d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4143,9 +4149,11 @@ dependencies = [
  "anyhow",
  "clap 4.5.38",
  "console 0.15.11",
+ "err_code",
  "flexi_logger 0.29.8",
  "log 0.4.26",
  "tempfile",
+ "thiserror 2.0.12",
  "unity-version",
 ]
 
@@ -4279,7 +4287,7 @@ dependencies = [
  "serde_json",
  "ssri",
  "tempfile",
- "thiserror 2.0.11",
+ "thiserror 2.0.12",
  "thiserror-context",
  "unity-hub",
  "unity-version",
@@ -5137,7 +5145,7 @@ dependencies = [
  "pbkdf2",
  "rand 0.8.5",
  "sha1",
- "thiserror 2.0.11",
+ "thiserror 2.0.12",
  "time 0.3.37",
  "zeroize",
  "zopfli",

@@ -1,10 +1,11 @@
-use std::{env, fs, io};
+use crate::commands::error::CommandError;
+use log::debug;
 use std::ffi::OsStr;
 #[cfg(unix)]
 use std::os::unix::prelude::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use log::{debug};
+use std::{env, fs, io};
 
 fn find_in_path<F>(dir: &Path, predicate: &F) -> io::Result<PathBuf>
 where
@@ -18,7 +19,49 @@ where
                 io::ErrorKind::NotFound,
                 format!("Item not found in directory: {}", dir.display()),
             )
-        }).map(|entry| entry.path())
+        })
+        .map(|entry| entry.path())
+}
+
+pub struct ExternalCommand {
+    command: String,
+    arguments: Vec<String>,
+}
+
+impl crate::commands::Command for ExternalCommand {
+    fn execute(&self) -> crate::commands::Result<()> {
+        self.exec()
+    }
+}
+
+impl ExternalCommand {
+    pub fn new(mut args: Vec<String>) -> Self {
+        let arguments = args.split_off(1);
+        let command = args[0].to_owned();
+        Self { command, arguments }
+    }
+
+    fn exec(&self) -> crate::commands::Result<()> {
+        let command = sub_command_path(&self.command).map_err(|err| {
+            CommandError::new(
+                format!("failed to find subcommand: {}", self.command),
+                1007,
+                err.into(),
+            )
+        })?;
+        exec_command(command, self.arguments.clone())
+            .map_err(|err| {
+                CommandError::new(
+                    format!(
+                        "external command '{}' with arguments {:#?} failed",
+                        self.command, &self.arguments
+                    ),
+                    1008,
+                    err.into(),
+                )
+            })
+            .map(|_| ())
+    }
 }
 
 // #[cfg(unix)]
@@ -32,10 +75,10 @@ where
 //         let p_metadata = process.metadata().unwrap();
 //         let p_uid = p_metadata.uid();
 //         let p_gid = p_metadata.gid();
-// 
+//
 //         let is_user = metadata.uid() == p_uid;
 //         let is_group = metadata.gid() == p_gid;
-// 
+//
 //         let permissions = metadata.permissions();
 //         let mode = permissions.mode();
 //         return Ok((mode & 0o0001) != 0
@@ -44,7 +87,7 @@ where
 //     }
 //     Ok(false)
 // }
-// 
+//
 // #[cfg(windows)]
 // fn check_file(entry: &fs::DirEntry) -> io::Result<bool> {
 //     let metadata = entry.metadata()?;
@@ -92,7 +135,6 @@ pub fn sub_command_path(command_name: &str) -> io::Result<PathBuf> {
         format!("command not found: {}", command_name),
     ))
 }
-
 
 #[cfg(unix)]
 pub fn exec_command<C, I, S>(command: C, args: I) -> io::Result<i32>

@@ -7,10 +7,12 @@ description = "cli utility to install and manage unity versions"
 
 [dependencies]
 anyhow = "1.0.38"
+thiserror = "2.0.12"
 clap = {  version = "4.5.38", features = ["derive", "string", "env", "cargo"] }
 unity-version = { version = "0.1.0", path="../../unity-version"}
 console = "0.15.11"
 flexi_logger = "0.29.8"
 log = "0.4.26"
+err_code = "0.1.0"
 [dev-dependencies]
 tempfile = "3.19.1"
