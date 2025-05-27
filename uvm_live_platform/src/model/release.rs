@@ -55,9 +55,10 @@ pub struct Module {
     type_name: Option<String>,
     #[serde(flatten)]
     release_file: UnityReleaseFile,
+    download_url: Option<String>,
     id: String,
     #[getter(skip)]
-    slug: String,
+    slug: Option<String>,
     #[getter(skip)]
     name: String,
     description: String,
@@ -65,8 +66,11 @@ pub struct Module {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     sub_modules: Vec<Module>,
     #[getter(skip)]
+    #[serde(default)]
     required: bool,
+    #[serde(default)]
     hidden: bool,
+    #[serde(default)]
     pre_selected: bool,
     #[getter(skip)]
     destination: Option<String>,
@@ -109,11 +113,12 @@ pub struct UnityThirdPartyNotice {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UnityReleaseFile {
+    #[serde(default)]
     pub url: String,
-    #[serde(deserialize_with = "deserialize_sri")]
+    #[serde(default, deserialize_with = "deserialize_sri")]
     pub integrity: Option<Integrity>,
     #[serde(rename = "type")]
-    pub file_type: FileType,
+    pub file_type: Option<FileType>,
 }
 
 pub type ReleaseNotes = UnityReleaseFile;

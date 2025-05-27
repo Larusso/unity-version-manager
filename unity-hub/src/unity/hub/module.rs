@@ -20,14 +20,23 @@ impl Module {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModuleBackwardsCompatible {
+    #[serde(default)]
     rename_from: String,
+    #[serde(default)]
     rename_to: String,
+    #[serde(default)]
     sync: String,
+    #[serde(default)]
     parent: String,
+    #[serde(default)]
     visible: bool,
+    #[serde(default)]
     preselected: bool,
+    #[serde(default)]
     eula_url_1: String,
+    #[serde(default)]
     eula_label_1: String,
+    #[serde(default)]
     eula_message: String,
 }
 
