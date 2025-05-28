@@ -64,42 +64,12 @@ impl ExternalCommand {
     }
 }
 
-// #[cfg(unix)]
-// fn check_file(entry: &fs::DirEntry) -> io::Result<bool> {
-//     let metadata = entry.metadata()?;
-//     let file_name = entry.file_name();
-//     let file_name = file_name.to_string_lossy();
-//     if !metadata.is_dir() && file_name.starts_with("uvm-") {
-//         let metadata = entry.path().metadata().unwrap();
-//         let process = env::current_exe().unwrap();
-//         let p_metadata = process.metadata().unwrap();
-//         let p_uid = p_metadata.uid();
-//         let p_gid = p_metadata.gid();
-//
-//         let is_user = metadata.uid() == p_uid;
-//         let is_group = metadata.gid() == p_gid;
-//
-//         let permissions = metadata.permissions();
-//         let mode = permissions.mode();
-//         return Ok((mode & 0o0001) != 0
-//             || ((mode & 0o0010) != 0 && is_group)
-//             || ((mode & 0o0100) != 0 && is_user));
-//     }
-//     Ok(false)
-// }
-//
-// #[cfg(windows)]
-// fn check_file(entry: &fs::DirEntry) -> io::Result<bool> {
-//     let metadata = entry.metadata()?;
-//     let file_name = entry.file_name();
-//     let file_name = file_name.to_string_lossy();
-//     trace!("file_name {}", file_name);
-//     Ok(!metadata.is_dir() && file_name.starts_with("uvm-") && file_name.ends_with(".exe"))
-// }
-
 pub fn sub_command_path(command_name: &str) -> io::Result<PathBuf> {
     let p = env::current_exe()?;
-    let base_search_dir = p.parent().unwrap();
+    let base_search_dir = p.parent().ok_or(io::Error::new(
+        io::ErrorKind::NotFound,
+        "failed to find parent directory of current executable",
+    ))?;
 
     #[cfg(windows)]
     let command_name = format!("uvm-{}.exe", command_name);
@@ -109,7 +79,7 @@ pub fn sub_command_path(command_name: &str) -> io::Result<PathBuf> {
 
     //first check exe directory
     let comparator = |entry: &fs::DirEntry| {
-        !entry.file_type().unwrap().is_dir() && entry.file_name() == command_name[..]
+        !entry.path().is_dir() && entry.file_name() == OsStr::new(&command_name)
     };
 
     let command_path = find_in_path(base_search_dir, &comparator);
@@ -137,7 +107,7 @@ pub fn sub_command_path(command_name: &str) -> io::Result<PathBuf> {
 }
 
 #[cfg(unix)]
-pub fn exec_command<C, I, S>(command: C, args: I) -> io::Result<i32>
+fn exec_command<C, I, S>(command: C, args: I) -> io::Result<i32>
 where
     C: AsRef<OsStr>,
     I: IntoIterator<Item = S>,
@@ -147,7 +117,7 @@ where
 }
 
 #[cfg(windows)]
-pub fn exec_command<C, I, S>(command: C, args: I) -> io::Result<i32>
+fn exec_command<C, I, S>(command: C, args: I) -> io::Result<i32>
 where
     C: AsRef<OsStr>,
     I: IntoIterator<Item = S>,
@@ -162,4 +132,102 @@ where
                 io::Error::new(io::ErrorKind::Interrupted, "Process terminated by signal")
             })
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::commands::Command;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_external_command_creation() {
+        let args = vec!["test".to_string(), "arg1".to_string(), "arg2".to_string()];
+        let command = ExternalCommand::new(args);
+        assert_eq!(command.command, "test");
+        assert_eq!(command.arguments, vec!["arg1", "arg2"]);
+    }
+
+    #[test]
+    fn test_sub_command_path_not_found() {
+        let result = sub_command_path("nonexistent");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_find_in_path() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test-file");
+        fs::write(&file_path, "test content").unwrap();
+
+        let result = find_in_path(temp_dir.path(), &|entry| {
+            entry.file_name() == std::ffi::OsStr::new("test-file")
+        });
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), file_path);
+    }
+
+    #[test]
+    fn test_external_command_execution_invalid() {
+        let command = ExternalCommand::new(vec!["nonexistent".to_string()]);
+        let result = command.execute();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_external_command_with_mock() {
+        let temp_dir = TempDir::new().unwrap();
+        let mock_command = if cfg!(windows) {
+            temp_dir.path().join("uvm-test.exe")
+        } else {
+            temp_dir.path().join("uvm-test")
+        };
+        fs::write(&mock_command, "dummy content").unwrap();
+        #[cfg(unix)] {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&mock_command, fs::Permissions::from_mode(0o755)).unwrap(); 
+        }
+
+        let old_path = env::var("PATH").unwrap_or_default();
+        env::set_var(
+            "PATH",
+            format!("{};{}", temp_dir.path().display(), old_path),
+        );
+
+        let command = ExternalCommand::new(vec!["test".to_string()]);
+        let result = command.exec();
+        assert!(result.is_err()); // Will error because it's not a real executable
+
+        env::set_var("PATH", old_path);
+    }
+
+    #[test]
+    fn test_sub_command_path_in_path() {
+        let temp_dir = TempDir::new().unwrap();
+        let mock_command = if cfg!(windows) {
+            temp_dir.path().join("uvm-test.exe")
+        } else {
+            temp_dir.path().join("uvm-test")
+        };
+        fs::write(&mock_command, "dummy content").unwrap();
+
+        let old_path = env::var("PATH").unwrap_or_default();
+        let path_delimiter = if cfg!(windows) { ";" } else { ":" };
+        env::set_var(
+            "PATH",
+            format!(
+                "{}{}{}",
+                temp_dir.path().display(),
+                path_delimiter,
+                old_path
+            ),
+        );
+
+        let result = sub_command_path("test");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), mock_command);
+
+        env::set_var("PATH", old_path);
+    }
 }

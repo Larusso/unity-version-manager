@@ -35,7 +35,7 @@ impl RevisionHash {
 
 impl PartialEq for RevisionHash {
     fn eq(&self, other: &Self) -> bool {
-        self.as_str() == other.0
+        self.as_str() == other.as_str()
     }
 }
 
@@ -46,3 +46,52 @@ impl FromStr for RevisionHash {
        RevisionHash::new(s) 
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_valid_hash_creation() {
+        let hash = RevisionHash::new("0123456789ab").unwrap();
+        assert_eq!(hash.as_str(), "0123456789ab");
+    }
+
+    #[test]
+    fn test_invalid_length() {
+        assert!(matches!(
+            RevisionHash::new("123456"),
+            Err(RevisionHashError::InvalidLength)
+        ));
+        assert!(matches!(
+            RevisionHash::new("0123456789abcd"),
+            Err(RevisionHashError::InvalidLength)
+        ));
+    }
+
+    #[test]
+    fn test_invalid_characters() {
+        assert!(matches!(
+            RevisionHash::new("0123456789xy"),
+            Err(RevisionHashError::InvalidCharacter)
+        ));
+    }
+
+    #[test]
+    fn test_string_parsing() {
+        let hash: Result<RevisionHash, _> = "0123456789ab".parse();
+        assert!(hash.is_ok());
+        assert_eq!(hash.unwrap().as_str(), "0123456789ab");
+    }
+
+    #[test]
+    fn test_equality() {
+        let hash1 = RevisionHash::new("0123456789ab").unwrap();
+        let hash2 = RevisionHash::new("0123456789ab").unwrap();
+        let hash3 = RevisionHash::new("fedcba987654").unwrap();
+
+        assert_eq!(hash1, hash2);
+        assert_ne!(hash1, hash3);
+    }
+}
+

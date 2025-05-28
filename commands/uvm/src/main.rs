@@ -2,7 +2,7 @@ mod commands;
 
 use std::error::Error;
 use crate::commands::detect::DetectCommand;
-use crate::commands::external::{exec_command, sub_command_path, ExternalCommand};
+use crate::commands::external::ExternalCommand;
 use crate::commands::install::InstallArgs;
 use crate::commands::launch::LaunchArgs;
 use crate::commands::list::ListArgs;
@@ -137,3 +137,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+
