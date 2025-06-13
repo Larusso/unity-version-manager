@@ -13,14 +13,14 @@ struct Cli {
     ///
     /// A support module to install. You can list all available
     /// modules for a given version using `uvm-modules`
-    #[arg(short, long = "module", number_of_values = 1, group = "module")]
+    #[arg(short, long = "module", number_of_values = 1)]
     modules: Option<Vec<String>>,
 
     /// Install also synced modules
     ///
     /// Synced modules are optional dependencies of some Unity modules.
     /// e.g. Android SDK for the android module.
-    #[arg(long = "with-sync", group = "module")]
+    #[arg(long = "with-sync")]
     sync: bool,
 
     /// The api version to install in the form of `2018.1.0f3`
