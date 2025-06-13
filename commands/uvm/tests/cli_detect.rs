@@ -4,6 +4,7 @@ use tempfile::tempdir;
 
 
 #[test]
+#[cfg(unix)]
 fn test_uvm_detect_help() {
     let output = Command::new(env!("CARGO_BIN_EXE_uvm"))
         .arg("detect")

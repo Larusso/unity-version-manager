@@ -44,7 +44,7 @@ pub fn default_editor_config_path() -> Option<PathBuf> {
 }
 
 pub fn cache_dir() -> Option<PathBuf> {
-    dirs_2::cache_dir().map(|path| path.join("com.github.larusso.api-version-manager"))
+    dirs_2::cache_dir().map(|path| path.join("com.github.larusso.unity-version-manager"))
 }
 
 pub fn locks_dir() -> Option<PathBuf> {
