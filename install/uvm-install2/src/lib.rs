@@ -12,6 +12,7 @@ use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
+use std::fs::File;
 use sys::create_installer;
 pub use unity_hub::error::UnityError;
 pub use unity_hub::error::UnityHubError;
