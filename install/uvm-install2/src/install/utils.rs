@@ -7,21 +7,25 @@ use std::io;
 use std::path::Path;
 #[cfg(windows)]
 use std::path::{Component, Prefix, PathBuf};
-use log::{debug, trace};
+use log::{debug, error, trace};
 
 pub fn lock_process_or_wait<'a>(lock_file: &'a File) -> io::Result<FlockLock<&'a File>> {
     match ExclusiveFlock::try_lock(lock_file) {
         Ok(lock) => {
-            trace!("aquired process lock.");
+            debug!("acquired process lock.");
             Ok(lock)
         }
-        Err(_) => {
-            debug!("progress lock already aquired.");
-            debug!("wait for other process to finish.");
+        Err(err) if err.is_already_lock() => {
+            debug!("progress lock already acquired.");
+            debug!("wait for the other process to finish.");
             let lock = lock_file.wait_lock()?;
             Ok(lock)
         }
-        //Err(err) => Err(err),
+        Err(err) => {
+            error!("unable to acquire process lock.");
+            let (data, err) = err.into_all();
+            Err(err)
+        },
     }
 }
 
