@@ -1,5 +1,5 @@
 use crate::error::*;
-use crate::install::error::InstallerResult;
+use crate::install::error::{InstallerError, InstallerResult};
 use crate::install::installer::{Installer, InstallerWithDestination};
 use crate::install::{InstallHandler, UnityModule};
 use crate::*;
@@ -114,6 +114,19 @@ impl InstallHandler for ModuleZipInstaller {
         );
 
         self.deploy_zip_with_rename(installer, destination, rename_handler)
+    }
+
+    fn before_install(&self) -> std::result::Result<(), InstallerError> {
+        if self.destination().exists() {
+            if self.destination().is_dir() {
+                info!("Destination directory {} already exists, removing it", self.destination().display());
+                fs::remove_dir_all(self.destination()).context("failed to remove the existing destination directory")?;
+            } else {
+                info!("Destination file {} already exists, removing it", self.destination().display());
+                fs::remove_file(self.destination()).context("failed to remove the existing destination file")?;
+            }
+        }
+        Ok(())
     }
 
     fn error_handler(&self) {

@@ -2,7 +2,7 @@ use crate::install::error::InstallerErrorInner::{InstallationFailed, InstallerCr
 use crate::install::error::{InstallerError, InstallerResult};
 use crate::install::installer::{BaseInstaller, Installer, InstallerWithDestination, Pkg};
 use crate::install::{InstallHandler, UnityEditor, UnityModule};
-use log::{debug, warn};
+use log::{debug, info, warn};
 use std::fs::DirBuilder;
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -188,6 +188,19 @@ impl InstallHandler for EditorPkgInstaller {
     fn installer(&self) -> &Path {
         self.installer()
     }
+
+    fn before_install(&self) -> InstallerResult<()> {
+        if self.destination().exists() {
+            if self.destination().is_dir() {
+                info!("Destination directory {} already exists, removing it", self.destination().display());
+                fs::remove_dir_all(self.destination()).context("failed to remove the existing destination directory")?;
+            } else {
+                info!("Destination file {} already exists, removing it", self.destination().display());
+                fs::remove_file(self.destination()).context("failed to remove the existing destination file")?;
+            }
+        }
+        Ok(())
+    }
 }
 
 impl InstallHandler for ModulePkgInstaller {
@@ -223,6 +236,19 @@ impl InstallHandler for ModulePkgInstaller {
 
     fn installer(&self) -> &Path {
         self.installer()
+    }
+
+    fn before_install(&self) -> InstallerResult<()> {
+        if self.destination().exists() {
+            if self.destination().is_dir() {
+                info!("Destination directory {} already exists, removing it", self.destination().display());
+                fs::remove_dir_all(self.destination()).context("failed to remove the existing destination directory")?;
+            } else {
+                info!("Destination file {} already exists, removing it", self.destination().display());
+                fs::remove_file(self.destination()).context("failed to remove the existing destination file")?;
+            }
+        }
+        Ok(())
     }
 }
 

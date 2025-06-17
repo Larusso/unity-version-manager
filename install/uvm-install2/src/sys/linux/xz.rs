@@ -1,7 +1,9 @@
+use std::fs;
 use crate::*;
 use std::fs::DirBuilder;
 use std::path::Path;
 use std::process::{Command, Stdio};
+use thiserror_context::Context;
 use crate::install::installer::{Installer, InstallerWithDestination};
 use crate::install::{InstallHandler, UnityEditor, UnityModule};
 use crate::install::error::InstallerErrorInner::{InstallationFailed, InstallerCreateFailed};
@@ -129,5 +131,18 @@ impl InstallHandler for ModuleXzInstaller {
 
     fn error_handler(&self) {
         self.cleanup_directory_failable(&self.destination());
+    }
+
+    fn before_install(&self) -> InstallerResult<()> {
+        if self.destination().exists() {
+            if self.destination().is_dir() {
+                info!("Destination directory {} already exists, removing it", self.destination().display());
+                fs::remove_dir_all(self.destination()).context("failed to remove the existing destination directory")?;
+            } else {
+                info!("Destination file {} already exists, removing it", self.destination().display());
+                fs::remove_file(self.destination()).context("failed to remove the existing destination file")?;
+            }
+        }
+        Ok(())
     }
 }

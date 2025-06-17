@@ -1,11 +1,15 @@
 use crate::error::*;
+use crate::install::error::InstallerResult;
+use crate::install::installer::{
+    Installer, InstallerWithDestinationAndOptionalCommand, InstallerWithOptionalCommand,
+};
+use crate::install::{InstallHandler, UnityEditor, UnityModule};
 use crate::*;
+use std::fs;
 use std::io::Write;
 use std::path::Path;
 use tempfile::Builder;
-use crate::install::installer::{Installer, InstallerWithDestinationAndOptionalCommand, InstallerWithOptionalCommand};
-use crate::install::{InstallHandler, UnityEditor, UnityModule};
-use crate::install::error::InstallerResult;
+use thiserror_context::Context;
 
 pub struct Exe;
 pub type EditorExeInstaller =
@@ -64,6 +68,26 @@ impl<V> InstallHandler for Installer<V, Exe, InstallerWithDestinationAndOptional
     fn after_install(&self) -> InstallerResult<()> {
         if let Some((from, to)) = &self.rename() {
             uvm_move_dir::move_dir(from, to)?;
+        }
+        Ok(())
+    }
+    fn before_install(&self) -> InstallerResult<()> {
+        if self.destination().exists() {
+            if self.destination().is_dir() {
+                info!(
+                    "Destination directory {} already exists, removing it",
+                    self.destination().display()
+                );
+                fs::remove_dir_all(self.destination())
+                    .context("failed to remove the existing destination directory")?;
+            } else {
+                info!(
+                    "Destination file {} already exists, removing it",
+                    self.destination().display()
+                );
+                fs::remove_file(self.destination())
+                    .context("failed to remove the existing destination file")?;
+            }
         }
         Ok(())
     }
