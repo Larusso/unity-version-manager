@@ -9,10 +9,11 @@ use lazy_static::lazy_static;
 use log::{debug, info, trace};
 use ssri::Integrity;
 use std::collections::HashSet;
+use std::env::VarError;
+use std::fs::File;
 use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
-use std::fs::File;
 use sys::create_installer;
 pub use unity_hub::error::UnityError;
 pub use unity_hub::error::UnityHubError;
@@ -20,6 +21,7 @@ pub use unity_hub::unity;
 use unity_hub::unity::hub;
 use unity_hub::unity::hub::editors::EditorInstallation;
 use unity_hub::unity::hub::module::Module;
+use unity_hub::unity::hub::paths;
 use unity_hub::unity::hub::paths::locks_dir;
 use unity_hub::unity::{Installation, UnityInstallation};
 pub use unity_version::error::VersionError;
@@ -61,10 +63,36 @@ fn print_graph<'a>(graph: &'a InstallGraph<'a>) {
         );
     }
 }
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+pub fn ensure_installation_architecture_is_correct<I: Installation>(
+    installation: &I,
+) -> io::Result<bool> {
+    match std::env::var("UVM_ARCHITECTURE_CHECK_ENABLED") {
+        Ok(value)
+        if value == "1"
+            || value == "true"
+            || value == "True"
+            || value == "TRUE"
+            || value == "yes"
+            || value == "Yes"
+            || value == "YES" =>
+            {
+                sys::ensure_installation_architecture_is_correct(installation)
+            }
+        _ => Ok(true),
+    }
+}
+
+#[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+pub fn ensure_installation_architecture_is_correct<I: Installation>(
+    installation: &I,
+) -> io::Result<bool> {
+    Ok(true)
+}
 
 pub fn install<V, P, I>(
     version: V,
-    requested_modules: Option<I>,
+    mut requested_modules: Option<I>,
     install_sync: bool,
     destination: Option<P>,
 ) -> Result<UnityInstallation>
@@ -101,7 +129,7 @@ where
                 io::ErrorKind::InvalidInput,
                 "Requested destination is not a directory.",
             )
-            .into());
+                .into());
         }
 
         editor_installation = Some(EditorInstallation::new(
@@ -120,18 +148,47 @@ where
                     let application_path = dirs_2::executable_dir();
                     application_path
                 }
-                .map(|path| path.join(format!("Unity-{}", version)))
+                    .map(|path| path.join(format!("Unity-{}", version)))
             })
             .expect("default installation directory")
     };
-
+    let mut additional_modules = vec![];
     let installation = UnityInstallation::new(&base_dir);
     if let Ok(ref installation) = installation {
-        let modules = installation.installed_modules()?;
-        let mut module_ids: HashSet<String> =
-            modules.into_iter().map(|m| m.id().to_string()).collect();
-        module_ids.insert("Unity".to_string());
-        graph.mark_installed(&module_ids);
+        info!("Installation found at {}", installation.path().display());
+        if ensure_installation_architecture_is_correct(installation)? {
+            let modules = installation.installed_modules()?;
+            let mut module_ids: HashSet<String> =
+                modules.into_iter().map(|m| m.id().to_string()).collect();
+            module_ids.insert("Unity".to_string());
+            graph.mark_installed(&module_ids);
+        } else {
+            info!("Architecture mismatch, reinstalling");
+            info!("Fetch installed modules:");
+            additional_modules = installation
+                .installed_modules()?
+                .into_iter()
+                .map(|m| m.id().to_string())
+                .collect();
+            // info!("{}", additional_modules.iter().join("\n"));
+            fs::remove_dir_all(installation.path())?;
+            let version_string =
+                format!("{}-{}", unity_release.version, unity_release.short_revision);
+            let installer_dir = paths::cache_dir()
+                .map(|c| c.join(&format!("installer/{}", version_string)))
+                .ok_or_else(|| {
+                    io::Error::new(
+                        io::ErrorKind::Other,
+                        "Unable to fetch cache installer directory",
+                    )
+                })?;
+            if installer_dir.exists() {
+                info!("Delete installer cache: {}", installer_dir.display());
+                fs::remove_dir_all(installer_dir)?;
+            }
+            info!("Cleanup done");
+            graph.mark_all_missing();
+        }
     } else {
         info!("\nFresh install");
         graph.mark_all_missing();
@@ -139,7 +196,7 @@ where
 
     // info!("All available modules for Unity {}", version);
     // print_graph(&graph);
-
+    let additional_modules_iterator = additional_modules.into_iter();
     let base_iterator = ["Unity".to_string()].into_iter();
     let all_components: HashSet<String> = match requested_modules {
         Some(modules) => modules
@@ -189,6 +246,7 @@ where
                 }
             })
             .chain(base_iterator.map(|c| Ok(c)))
+            .chain(additional_modules_iterator.map(|c| Ok(c)))
             .collect::<Result<HashSet<_>>>(),
         None => base_iterator.map(|c| Ok(c)).collect::<Result<HashSet<_>>>(),
     }?;
@@ -213,7 +271,7 @@ where
             .map(|d| {
                 let mut modules = vec![];
                 for module in &d.modules {
-                   fetch_modules_from_release(&mut modules, module);
+                    fetch_modules_from_release(&mut modules, module);
                 }
                 modules
             })
@@ -242,9 +300,7 @@ where
     Ok(installation)
 }
 
-fn fetch_modules_from_release(
-    modules: &mut Vec<Module>, module: &uvm_live_platform::Module,
-) {
+fn fetch_modules_from_release(modules: &mut Vec<Module>, module: &uvm_live_platform::Module) {
     modules.push(module.clone().into());
     for sub_module in module.sub_modules() {
         fetch_modules_from_release(modules, sub_module);
@@ -401,4 +457,153 @@ fn install_module_and_dependencies<'a, P: AsRef<Path>>(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::cmp::Ordering;
+    use std::env;
+    use std::fmt::{Display, Formatter};
+    use test_binary::build_test_binary;
+    use unity_version::ReleaseType;
+
+    #[derive(PartialEq, Eq, Debug, Clone)]
+    pub struct MockInstallation {
+        version: Version,
+        path: PathBuf,
+    }
+
+    impl MockInstallation {
+        pub fn new<V: Into<Version>, P: AsRef<Path>>(version: V, path: P) -> Self {
+            Self {
+                version: version.into(),
+                path: path.as_ref().to_path_buf(),
+            }
+        }
+    }
+
+    impl Default for MockInstallation {
+        fn default() -> Self {
+            Self {
+                version: Version::new(6000, 0, 0, ReleaseType::Final, 1),
+                path: PathBuf::from("/Applications/Unity/6000.0.0f1"),
+            }
+        }
+    }
+
+    impl Installation for MockInstallation {
+        fn path(&self) -> &PathBuf {
+            &self.path
+        }
+
+        fn version(&self) -> &Version {
+            &self.version
+        }
+    }
+
+    impl Ord for MockInstallation {
+        fn cmp(&self, other: &MockInstallation) -> Ordering {
+            self.version.cmp(&other.version)
+        }
+    }
+
+    impl PartialOrd for MockInstallation {
+        fn partial_cmp(&self, other: &MockInstallation) -> Option<Ordering> {
+            Some(self.cmp(other))
+        }
+    }
+
+    enum TestArch {
+        Arch64,
+        X86,
+    }
+
+    impl Display for TestArch {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Self::Arch64 => write!(f, "{}", "aarch64"),
+                Self::X86 => write!(f, "{}", "x86_64"),
+            }
+        }
+    }
+
+    lazy_static! {
+       static ref TEST_UNITY_VERSION_ARM_SUPPORT: Version = Version::new(6000, 0, 0, ReleaseType::Final, 1);
+       static ref TEST_UNITY_VERSION_NO_ARM_SUPPORT: Version = Version::new(2020, 0, 0, ReleaseType::Final, 1);
+    }
+
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[test]
+    fn test_arch_check_enabled_with_arm_binary() {
+        env::set_var("UVM_ARCHITECTURE_CHECK_ENABLED", "true");
+        run_arch_test(TestArch::Arch64, TEST_UNITY_VERSION_ARM_SUPPORT.clone(), true);
+    }
+
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[test]
+    fn test_arch_check_disabled_with_arm_binary() {
+        env::set_var("UVM_ARCHITECTURE_CHECK_ENABLED", "false");
+        run_arch_test(TestArch::Arch64, TEST_UNITY_VERSION_ARM_SUPPORT.clone(), true);
+    }
+
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[test]
+    fn test_arch_check_enabled_with_x86_binary_fails() {
+        env::set_var("UVM_ARCHITECTURE_CHECK_ENABLED", "true");
+        run_arch_test(TestArch::X86, TEST_UNITY_VERSION_ARM_SUPPORT.clone(), false);
+    }
+
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[test]
+    fn test_arch_check_disabled_with_x86_binary_fails() {
+        env::set_var("UVM_ARCHITECTURE_CHECK_ENABLED", "false");
+        run_arch_test(TestArch::X86, TEST_UNITY_VERSION_ARM_SUPPORT.clone(), true);
+    }
+
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[test]
+    fn test_arch_check_enabled_with_non_arm_supported_unity_version() {
+        env::set_var("UVM_ARCHITECTURE_CHECK_ENABLED", "false");
+        run_arch_test(TestArch::X86, TEST_UNITY_VERSION_NO_ARM_SUPPORT.clone(), true);
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    #[test]
+    fn test_arch_check_disabled_with_x86_binary_fails() {
+        assert_eq!(
+            ensure_installation_architecture_is_correct(&installation).unwrap(),
+            true
+        );
+    }
+
+    fn run_arch_test(binary_arch: TestArch, unity_version: Version, expected_result: bool) {
+        let test_bin_path =
+            build_test_binary("fake-bin", "test-bins").expect("error building test binary");
+        let test_bin_path_str = test_bin_path.to_str().unwrap();
+
+        // the test-bins project compiles multiple targets by default
+        let aarch_bin_path = test_bin_path_str.replace(
+            "target/debug",
+            format!("target/{}-apple-darwin/debug", binary_arch).as_str(),
+        );
+
+        println!("{}", aarch_bin_path);
+        let temp_unity_installation = tempfile::tempdir().expect("error creating temporary directory");
+        let unity_exec_path = temp_unity_installation.path().join("Unity.app/Contents/MacOS/Unity");
+        if let Some(parent) = unity_exec_path.parent() {
+            fs::create_dir_all(parent).expect("failed to create parent directories");
+        }
+        fs::copy(aarch_bin_path, &unity_exec_path).expect("failed to copy file");
+        println!("{}", unity_exec_path.display());
+
+        let installation = MockInstallation::new(
+            unity_version,
+            temp_unity_installation.path(),
+        );
+        assert_eq!(
+            ensure_installation_architecture_is_correct(&installation).unwrap(),
+            expected_result
+        );
+    }
 }
