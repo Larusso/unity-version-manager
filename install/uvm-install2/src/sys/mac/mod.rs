@@ -4,10 +4,21 @@ use crate::install::error::{InstallerErrorInner, InstallerResult};
 use crate::install::installer::{ModulePoInstaller, ModuleZipInstaller};
 use crate::install::InstallHandler;
 use crate::InstallManifest;
+use log::{info, warn};
+use mach_object::{get_arch_name_from_types, OFile};
+use std::fs::File;
+use std::io;
+use std::io::{Cursor, Read};
 use std::path::Path;
+use std::str::FromStr;
+use sysctl::Sysctl;
+use unity_hub::unity::UnityInstallation;
+use unity_version::Version;
 
 mod dmg;
 mod pkg;
+mod arch;
+pub use arch::ensure_installation_architecture_is_correct;
 
 pub fn create_installer<P, I, M>(
     base_install_path: P,
