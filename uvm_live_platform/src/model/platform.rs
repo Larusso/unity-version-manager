@@ -73,6 +73,7 @@ pub enum UnityReleaseStream {
     Beta,
     Alpha,
     Tech,
+    Supported,
 }
 
 impl Default for UnityReleaseStream {
@@ -89,6 +90,7 @@ impl Display for UnityReleaseStream {
             Beta => "Beta",
             Alpha => "Alpha",
             Tech => "Tech Preview",
+            Supported => "Supported",
         };
         write!(f, "{}", s)
     }

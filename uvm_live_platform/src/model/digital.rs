@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::ops::Deref;
 use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
@@ -94,11 +95,58 @@ impl fmt::Display for DigitalValue {
     }
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct BytesWrapper(f64);
+
+impl PartialEq for BytesWrapper {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.eq(&other.0)
+    }
+}
+
+impl Eq for BytesWrapper {}
+
+impl PartialOrd for BytesWrapper {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.0.partial_cmp(&other.0)
+    }
+}
+
+impl Ord for BytesWrapper {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.total_cmp(&other.0)
+    }
+}
+
+impl Hash for BytesWrapper {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.to_bits().hash(state);
+    }
+}
+
+impl BytesWrapper {
+    fn new(value: f64) -> Self {
+        BytesWrapper(value)
+    }
+}
+
+impl fmt::Display for BytesWrapper {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Deref for BytesWrapper {
+    type Target = f64;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum Size {
-    Bytes(usize),
+    Bytes(BytesWrapper),
     DigitalValue(DigitalValue),
 }
 
@@ -107,14 +155,14 @@ impl Size {
         match self {
             Size::Bytes(_) => {}
             Size::DigitalValue(d) => {
-                *self = Size::Bytes(d.to_bytes().value as usize)
+                *self = Size::Bytes(BytesWrapper::new(d.to_bytes().value))
             }
         }
     }
 
     pub fn to_bytes(&self) -> f64 {
         match self {
-            Size::Bytes(b) => *b as f64,
+            Size::Bytes(b) => *b.deref(),
             Size::DigitalValue(d) => {
                 d.to_bytes().value
             }
