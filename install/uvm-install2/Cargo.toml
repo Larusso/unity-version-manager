@@ -1,6 +1,6 @@
 [package]
 name = "uvm-install2"
-version = "0.12.0"
+version = "0.13.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Install specified unity version."
 repository = "https://github.com/Larusso/unity-version-manager"
@@ -27,8 +27,8 @@ thiserror = "2.0.11"
 clap = {  version = "4.5.29", features = ["derive", "string", "env", "cargo"] }
 unity-version = { path = "../../unity-version", version = "0.1.0"}
 uvm_live_platform = { path = "../../uvm_live_platform", version = "0.4.0"}
-uvm_install_graph = { path = "../../uvm_install_graph", version = "0.10.0"}
-unity-hub = {path = "../../unity-hub", version = "0.3.0" }
+uvm_install_graph = { path = "../../uvm_install_graph", version = "0.11.0"}
+unity-hub = {path = "../../unity-hub", version = "0.4.0" }
 #uvm_install_core = {path = "../uvm_install_core" }
 anyhow = "1.0.75"
 lazy_static = "1.4.0"
