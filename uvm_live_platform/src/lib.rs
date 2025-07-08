@@ -25,6 +25,10 @@ pub fn all_versions_with_revision() -> Result<impl Iterator<Item = String>> {
 fn _list_all_versions(include_revisions: bool, auto_page: bool) -> Result<ListVersions> {
     Ok(ListVersions::builder()
         .include_revision(include_revisions)
+        .with_u7_alpha()
+        .with_extended_lts()
+        .with_system_architecture()
+        .with_current_platform()
         .autopage(auto_page)
         .list()
         .map_err(ErrorRepr::ListVersionsError)?)
@@ -32,6 +36,10 @@ fn _list_all_versions(include_revisions: bool, auto_page: bool) -> Result<ListVe
 
 pub fn fetch_release<V: Into<Version>>(version: V) -> Result<Release> {
     let r = FetchRelease::builder(version)
+        .with_current_platform()
+        .with_system_architecture()
+        .with_extended_lts()
+        .with_u7_alpha()
         .fetch()
         .map_err(ErrorRepr::FetchReleaseError)?;
     Ok(r)

@@ -1,10 +1,20 @@
-query ListVersionsQuery($architecture: [UnityReleaseDownloadArchitecture!], $platform: [UnityReleaseDownloadPlatform!], $limit: Int = 10, $skip: Int = 0, $stream: [UnityReleaseStream!]) {
+query ListVersionsQuery(
+    $architecture: [UnityReleaseDownloadArchitecture!]
+    $platform: [UnityReleaseDownloadPlatform!]
+    $limit: Int = 10
+    $skip: Int = 0
+    $stream: [UnityReleaseStream!]
+    $entitlements: [UnityReleaseEntitlement!]
+    $version: String
+) {
     getUnityReleases(
         architecture: $architecture
         platform: $platform
         skip: $skip
         limit: $limit
         stream: $stream
+        entitlements: $entitlements
+        version: $version
     ) {
         edges {
             node {

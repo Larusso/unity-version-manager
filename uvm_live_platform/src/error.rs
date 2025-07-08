@@ -43,8 +43,8 @@ pub enum FetchReleaseError {
     #[error("Invalid JSON response")]
     JsonError(#[source] reqwest::Error),
 
-    #[error("Release not found for version: {0} platform: {1} architecture: {2} stream: {3:?}")]
-    NotFound(String, UnityReleaseDownloadPlatform, UnityReleaseDownloadArchitecture, Option<UnityReleaseStream>),
+    #[error("Release not found for version: {0} platform: {1} architecture: {2} stream: {3}")]
+    NotFound(String, String, String, String),
 
     #[error("Network error: {0}")]
     NetworkError(#[source] reqwest::Error),

@@ -19,9 +19,10 @@ impl FetchRelease {
 
 #[derive(Debug, Clone)]
 pub struct FetchReleaseBuilder {
-    architecture: UnityReleaseDownloadArchitecture,
-    platform: UnityReleaseDownloadPlatform,
-    stream: Option<UnityReleaseStream>,
+    architecture: Vec<UnityReleaseDownloadArchitecture>,
+    platform: Vec<UnityReleaseDownloadPlatform>,
+    stream: Vec<UnityReleaseStream>,
+    entitlements: Vec<UnityReleaseEntitlement>,
     version: Version,
 }
 
@@ -32,6 +33,7 @@ impl FetchReleaseBuilder {
             architecture: Default::default(),
             platform: Default::default(),
             stream: Default::default(),
+            entitlements: Default::default(),
         }
     }
 
@@ -56,7 +58,10 @@ impl FetchReleaseBuilder {
             .map_err(|err| FetchReleaseError::JsonError(err))?;
 
         if res.data.get_unity_releases.edges.is_empty() {
-            Err(FetchReleaseError::NotFound(version.to_string(), platform, architecture, stream))
+            let p = platform.iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",");
+            let a = architecture.iter().map(|a| a.to_string()).collect::<Vec<String>>().join(",");
+            let s = stream.iter().map(|s| s.to_string()).collect::<Vec<String>>().join(",");
+            Err(FetchReleaseError::NotFound(version.to_string(), p, a, s))
         } else {
             let release_edge = res.data.get_unity_releases.edges.remove(0);
             let release = release_edge.node;
@@ -64,19 +69,45 @@ impl FetchReleaseBuilder {
         }
     }
 
-    pub fn architecture(mut self, architecture: UnityReleaseDownloadArchitecture) -> Self {
-        self.architecture = architecture;
+    pub fn with_system_architecture(mut self) -> Self {
+        self.with_architecture(Default::default())
+    }
+
+    pub fn with_architecture(mut self, architecture: UnityReleaseDownloadArchitecture) -> Self {
+        self.architecture.push(architecture);
         self
     }
 
-    pub fn platform(mut self, platform: UnityReleaseDownloadPlatform) -> Self {
-        self.platform = platform;
+    pub fn with_current_platform(mut self) -> Self {
+        self.with_platform(Default::default())
+    }
+
+    pub fn with_platform(mut self, platform: UnityReleaseDownloadPlatform) -> Self {
+        self.platform.push(platform);
         self
     }
 
-    pub fn stream(mut self, stream: UnityReleaseStream) -> Self {
-        self.stream = Some(stream);
+    pub fn with_stream(mut self, stream: UnityReleaseStream) -> Self {
+        self.stream.push(stream);
         self
+    }
+
+    pub fn with_extended_lts(mut self) -> Self {
+        self.with_entitlement(UnityReleaseEntitlement::Xlts)
+    }
+
+    pub fn with_u7_alpha(mut self) -> Self {
+        self.with_entitlement(UnityReleaseEntitlement::U7Alpha)
+    }
+
+    pub fn with_entitlement(mut self, entitlement: UnityReleaseEntitlement) -> Self {
+        self.entitlements.push(entitlement);
+        self
+    }
+
+    pub fn for_current_system(mut self) -> Self {
+        self.with_system_architecture()
+            .with_current_platform()
     }
 }
 
@@ -85,10 +116,14 @@ const FETCH_RELEASE_QUERY: &str = include_str!("fetch_release_query.graphql");
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct FetchReleaseOptions {
-    architecture: UnityReleaseDownloadArchitecture,
-    platform: UnityReleaseDownloadPlatform,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    stream: Option<UnityReleaseStream>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    architecture: Vec<UnityReleaseDownloadArchitecture>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    platform: Vec<UnityReleaseDownloadPlatform>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    stream: Vec<UnityReleaseStream>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    entitlements: Vec<UnityReleaseEntitlement>,
     version: String,
 }
 
@@ -168,6 +203,7 @@ impl From<FetchReleaseBuilder> for FetchReleaseOptions {
             platform: value.platform,
             stream: value.stream,
             version: value.version.to_string(),
+            entitlements: value.entitlements,
         }
     }
 }

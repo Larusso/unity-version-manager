@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::ListVersionsError;
 use crate::{UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseStream};
+use crate::api::fetch_release::UnityReleaseEntitlement;
 
 #[derive(Debug)]
 pub struct ListVersions(std::vec::IntoIter<String>);
@@ -20,15 +21,17 @@ impl ListVersions {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct ListVersionsBuilder {
-    architecture: UnityReleaseDownloadArchitecture,
-    platform: UnityReleaseDownloadPlatform,
+    architecture: Vec<UnityReleaseDownloadArchitecture>,
+    platform: Vec<UnityReleaseDownloadPlatform>,
     skip: usize,
     limit: usize,
-    stream: UnityReleaseStream,
+    stream: Vec<UnityReleaseStream>,
+    entitlements: Vec<UnityReleaseEntitlement>,
     include_revision: bool,
     autopage: bool,
+    version: Option<String>,
 }
 
 impl ListVersionsBuilder {
@@ -39,18 +42,20 @@ impl ListVersionsBuilder {
             skip: Default::default(),
             limit: 100,
             stream: Default::default(),
+            entitlements: Default::default(),
             include_revision: false,
             autopage: false,
+            version: None,
         }
     }
 
     pub fn list(self) -> Result<ListVersions, ListVersionsError> {
         let mut result = vec![];
+        let autopage = self.autopage;
         let mut p = self.send()?;
-    
         loop {
             result.append(&mut p.content);
-            if self.autopage && p.has_next_page() {
+            if autopage && p.has_next_page() {
                 p = p.next_page().expect("next page")?;
             } else {
                 break;
@@ -62,6 +67,8 @@ impl ListVersionsBuilder {
 
     fn send(self) -> Result<ListVersionsPageResult, ListVersionsError> {
         let url = "https://live-platform-api.prd.ld.unity3d.com/graphql";
+        let version_builder_next_page = self.clone();
+        let include_revision = self.include_revision;
         let request_body = ListVersionsRequestBody::new(self.into());
         let client = reqwest::blocking::Client::new();
         let res: ListVersionsResultBody = client
@@ -73,7 +80,7 @@ impl ListVersionsBuilder {
             .map_err(ListVersionsError::JsonError)?;
         let page_info = res.data.get_unity_releases.page_info;
         let versions = res.data.get_unity_releases.edges.iter().map(|e| {
-            if self.include_revision {
+            if include_revision {
                 format!("{} ({})", e.node.version, e.node.short_revision)
             } else {
                 e.node.version.to_string()
@@ -81,8 +88,10 @@ impl ListVersionsBuilder {
         });
 
         let next_page_call = if page_info.has_next_page {
-            let mut b = self.clone();
-            b = self.skip(b.skip.checked_add(b.limit).unwrap_or(usize::MAX));
+            let mut b = version_builder_next_page.clone();
+            let skip = b.skip;
+            let limit = b.limit;
+            b = b.skip(skip.checked_add(limit).unwrap_or(usize::MAX));
             Some(b)
         } else {
             None
@@ -90,16 +99,6 @@ impl ListVersionsBuilder {
 
         let r = ListVersionsPageResult::new(versions, next_page_call);
         Ok(r)
-    }
-
-    pub fn architecture(mut self, architecture: UnityReleaseDownloadArchitecture) -> Self {
-        self.architecture = architecture;
-        self
-    }
-
-    pub fn platform(mut self, platform: UnityReleaseDownloadPlatform) -> Self {
-        self.platform = platform;
-        self
     }
 
     pub fn skip(mut self, skip: usize) -> Self {
@@ -112,11 +111,6 @@ impl ListVersionsBuilder {
         self
     }
 
-    pub fn stream(mut self, stream: UnityReleaseStream) -> Self {
-        self.stream = stream;
-        self
-    }
-
     pub fn include_revision(mut self, include_revision: bool) -> Self {
         self.include_revision = include_revision;
         self
@@ -124,6 +118,52 @@ impl ListVersionsBuilder {
 
     pub fn autopage(mut self, autopage: bool) -> Self {
         self.autopage = autopage;
+        self
+    }
+
+    pub fn with_system_architecture(mut self) -> Self {
+        self.with_architecture(Default::default())
+    }
+
+    pub fn with_architecture(mut self, architecture: UnityReleaseDownloadArchitecture) -> Self {
+        self.architecture.push(architecture);
+        self
+    }
+
+    pub fn with_current_platform(mut self) -> Self {
+        self.with_platform(Default::default())
+    }
+
+    pub fn with_platform(mut self, platform: UnityReleaseDownloadPlatform) -> Self {
+        self.platform.push(platform);
+        self
+    }
+
+    pub fn for_current_system(mut self) -> Self {
+        self.with_system_architecture()
+            .with_current_platform()
+    }
+
+    pub fn with_stream(mut self, stream: UnityReleaseStream) -> Self {
+        self.stream.push(stream);
+        self
+    }
+
+    pub fn with_extended_lts(mut self) -> Self {
+        self.with_entitlement(UnityReleaseEntitlement::Xlts)
+    }
+
+    pub fn with_u7_alpha(mut self) -> Self {
+        self.with_entitlement(UnityReleaseEntitlement::U7Alpha)
+    }
+
+    pub fn with_entitlement(mut self, entitlement: UnityReleaseEntitlement) -> Self {
+        self.entitlements.push(entitlement);
+        self
+    }
+
+    pub fn with_version<S:Into<String>>(mut self, version: S) -> Self {
+        self.version = Some(version.into());
         self
     }
 }
@@ -135,11 +175,14 @@ const LIST_VERSIONS_QUERY: &str = include_str!("list_versions_query.graphql");
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ListVersionsOptions {
-    architecture: UnityReleaseDownloadArchitecture,
-    platform: UnityReleaseDownloadPlatform,
+    architecture: Vec<UnityReleaseDownloadArchitecture>,
+    platform: Vec<UnityReleaseDownloadPlatform>,
     skip: usize,
     limit: usize,
-    stream: UnityReleaseStream,
+    stream: Vec<UnityReleaseStream>,
+    entitlements: Vec<UnityReleaseEntitlement>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    version: Option<String>,
 }
 
 impl Default for ListVersionsOptions {
@@ -150,6 +193,8 @@ impl Default for ListVersionsOptions {
             skip: Default::default(),
             limit: 100,
             stream: Default::default(),
+            entitlements: Default::default(),
+            version: None,
         }
     }
 }
@@ -262,6 +307,8 @@ impl From<ListVersionsBuilder> for ListVersionsOptions {
             skip: value.skip,
             limit: value.limit,
             stream: value.stream,
+            entitlements: value.entitlements,
+            version: value.version,
         }
     }
 }
