@@ -20,16 +20,19 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         UnityReleaseStream::Beta,
         UnityReleaseStream::Lts,
         UnityReleaseStream::Tech,
+        UnityReleaseStream::Supported
     ];
 
     let versions = streams
         .par_iter()
         .map(|stream| {
             ListVersions::builder()
-                .architecture(UnityReleaseDownloadArchitecture::X86_64)
+                .with_architecture(UnityReleaseDownloadArchitecture::X86_64)
                 .autopage(true)
+                .with_extended_lts()
+                .with_u7_alpha()
                 .include_revision(true)
-                .stream(stream.to_owned())
+                .with_stream(stream.to_owned())
                 .list()
         })
         .filter_map(|v| v.ok())

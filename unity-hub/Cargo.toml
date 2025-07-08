@@ -12,7 +12,7 @@ license = "Apache-2.0"
 [dependencies]
 unity-version = {path = "../unity-version", version = "0.1.0" }
 unity-types = {path = "../unity-types", version = "0.1.0"}
-uvm_live_platform = { path = "../uvm_live_platform",  version = "0.3.0" }
+uvm_live_platform = { path = "../uvm_live_platform",  version = "0.4.0" }
 log = "0.4.26"
 serde_json = "1.0.139"
 serde = { version = "1.0.217", features = ["derive"] }

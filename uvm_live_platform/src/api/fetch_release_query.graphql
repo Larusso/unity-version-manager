@@ -3,6 +3,7 @@ query FetchReleaseQuery(
   $platform: [UnityReleaseDownloadPlatform!]
   $stream: [UnityReleaseStream!]
   $version: String
+  $entitlements: [UnityReleaseEntitlement!]
 ) {
   getUnityReleases(
     architecture: $architecture
@@ -11,6 +12,7 @@ query FetchReleaseQuery(
     limit: 1
     stream: $stream
     version: $version
+    entitlements: $entitlements
   ) {
     edges {
       node {
