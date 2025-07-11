@@ -27,8 +27,14 @@ pub struct ListVersionsBuilder {
     platform: Vec<UnityReleaseDownloadPlatform>,
     skip: usize,
     limit: usize,
+<<<<<<< Updated upstream
     stream: Vec<UnityReleaseStream>,
     entitlements: Vec<UnityReleaseEntitlement>,
+||||||| Stash base
+    stream: UnityReleaseStream,
+=======
+    stream: Option<UnityReleaseStream>,
+>>>>>>> Stashed changes
     include_revision: bool,
     autopage: bool,
     version: Option<String>,
@@ -41,8 +47,14 @@ impl ListVersionsBuilder {
             platform: Default::default(),
             skip: Default::default(),
             limit: 100,
+<<<<<<< Updated upstream
             stream: Default::default(),
             entitlements: Default::default(),
+||||||| Stash base
+            stream: Default::default(),
+=======
+            stream: None,
+>>>>>>> Stashed changes
             include_revision: false,
             autopage: false,
             version: None,
@@ -111,6 +123,20 @@ impl ListVersionsBuilder {
         self
     }
 
+<<<<<<< Updated upstream
+||||||| Stash base
+    pub fn stream(mut self, stream: UnityReleaseStream) -> Self {
+        self.stream = stream;
+        self
+    }
+
+=======
+    pub fn stream(mut self, stream: UnityReleaseStream) -> Self {
+        self.stream = Some(stream);
+        self
+    }
+
+>>>>>>> Stashed changes
     pub fn include_revision(mut self, include_revision: bool) -> Self {
         self.include_revision = include_revision;
         self
@@ -179,10 +205,16 @@ struct ListVersionsOptions {
     platform: Vec<UnityReleaseDownloadPlatform>,
     skip: usize,
     limit: usize,
+<<<<<<< Updated upstream
     stream: Vec<UnityReleaseStream>,
     entitlements: Vec<UnityReleaseEntitlement>,
     #[serde(skip_serializing_if = "Option::is_none")]
     version: Option<String>,
+||||||| Stash base
+    stream: UnityReleaseStream,
+=======
+    stream: Option<UnityReleaseStream>,
+>>>>>>> Stashed changes
 }
 
 impl Default for ListVersionsOptions {

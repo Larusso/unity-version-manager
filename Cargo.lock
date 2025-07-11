@@ -3384,12 +3384,18 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.22"
+version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+<<<<<<< Updated upstream
 checksum = "92d43fe69e652f3df9bdc2b85b2854a0825b86e4fb76bc44d945137d053639ca"
 dependencies = [
  "serde",
 ]
+||||||| Stash base
+checksum = "92d43fe69e652f3df9bdc2b85b2854a0825b86e4fb76bc44d945137d053639ca"
+=======
+checksum = "56e6fa9c48d24d85fb3de5ad847117517440f6beceb7798af16b4a87d616b8d0"
+>>>>>>> Stashed changes
 
 [[package]]
 name = "semver-parser"
@@ -4321,6 +4327,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "cfg-if 1.0.0",
+ "clap 4.5.38",
  "derive_more",
  "libc",
  "log 0.4.26",
@@ -4328,8 +4335,16 @@ dependencies = [
  "plist 1.7.0",
  "proptest",
  "quickcheck",
+<<<<<<< Updated upstream
  "regex 1.11.1",
  "semver 1.0.22",
+||||||| Stash base
+ "regex 1.5.6",
+ "semver 1.0.22",
+=======
+ "regex 1.5.6",
+ "semver 1.0.26",
+>>>>>>> Stashed changes
  "serde",
  "thiserror 1.0.57",
  "widestring",
@@ -4418,8 +4433,10 @@ dependencies = [
  "console 0.15.11",
  "flexi_logger 0.29.8",
  "log 0.4.26",
+ "semver 1.0.26",
  "tempfile",
  "unity-version",
+ "uvm_live_platform",
 ]
 
 [[package]]
@@ -4634,7 +4651,7 @@ dependencies = [
  "console 0.6.2",
  "indicatif 0.9.0",
  "log 0.4.26",
- "semver 1.0.22",
+ "semver 1.0.26",
  "structopt",
  "uvm_cli",
  "uvm_core",
@@ -4693,7 +4710,7 @@ dependencies = [
  "plist 0.3.0",
  "regex 1.11.1",
  "reqwest 0.9.24",
- "semver 1.0.22",
+ "semver 1.0.26",
  "serde",
  "serde_derive",
  "serde_ini",
@@ -4745,6 +4762,7 @@ name = "uvm_live_platform"
 version = "0.4.0"
 dependencies = [
  "anyhow",
+ "clap 4.5.38",
  "derive-getters",
  "indoc",
  "ordered-float",

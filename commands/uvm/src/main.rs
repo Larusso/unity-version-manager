@@ -6,7 +6,7 @@ use crate::commands::install::InstallArgs;
 use crate::commands::launch::LaunchArgs;
 use crate::commands::list::ListArgs;
 use crate::commands::uninstall::UninstallArgs;
-use crate::commands::versions::VersionsArgs;
+use crate::commands::version::VersionCommand;
 use clap::{ArgAction, Args, ColorChoice, Parser, Subcommand};
 use console::Style;
 use flexi_logger::{DeferredNow, Level, LevelFilter, LogSpecification, Logger, Record};
@@ -46,7 +46,7 @@ pub enum Commands {
     // List(ListArgs),
     // Install(InstallArgs),
     // Uninstall(UninstallArgs),
-    // Versions(VersionsArgs),
+    Version(VersionCommand),
     #[command(external_subcommand)]
     External(Vec<String>),
 }
@@ -55,6 +55,7 @@ impl Commands {
     fn exec(self) -> io::Result<i32> {
         match self {
             Commands::Detect(detect) => detect.execute(),
+            Commands::Version(version) => version.execute(),
             Commands::External(mut args) => {
                 let rest = args.split_off(1);
                 let command = sub_command_path(&args[0])?;
