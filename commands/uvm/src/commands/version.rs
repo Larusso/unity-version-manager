@@ -1,11 +1,12 @@
-use clap::{Args, Subcommand, ValueEnum};
+use clap::Subcommand;
+use clap::Args;
 use log::{debug, info};
 use semver::VersionReq;
 use std::io;
 use std::str::FromStr;
 use console::style;
 use unity_version::{ReleaseType, Version};
-use uvm_live_platform::UnityReleaseStream;
+use uvm_live_platform::{UnityReleaseEntitlement, UnityReleaseStream};
 
 #[derive(Args, Debug)]
 pub struct VersionCommand {
@@ -29,8 +30,12 @@ enum Command {
         #[arg(value_enum, default_value = "final")]
         release_type: ReleaseType,
 
-        #[arg(short, long, value_enum)]
-        stream: Option<UnityReleaseStream>,
+        #[arg(short, long="stream", value_enum)]
+        streams: Vec<UnityReleaseStream>,
+
+        #[arg(short, long="entitlement", value_enum)]
+        entitlements: Vec<UnityReleaseEntitlement>,
+
     },
     Latest {
         #[arg(value_enum, default_value = "final")]
@@ -41,38 +46,42 @@ enum Command {
 
 impl VersionCommand {
     pub fn execute(self) -> io::Result<i32> {
-        let (version_req, version_type, release_stream) = match self.command {
+        let command = self.command;
+        let (version_req, version_type, release_streams, release_entitlements) = match command {
             Command::Latest { release_type } => (
                 VersionReq::parse("*").expect("valid VersionReq"),
                 release_type,
-                None,
+                vec![],
+                vec![]
             ),
             Command::Matching {
-                ref version_req,
+                version_req,
                 release_type,
-                stream,
-            } => (version_req.clone(), release_type, stream),
+                streams,
+                entitlements,
+            } => (version_req, release_type, streams, entitlements),
         };
 
-        let mut versions_builder = uvm_live_platform::ListVersions::builder().autopage(true);
-        if release_stream.is_some() {
-            versions_builder = versions_builder.stream(release_stream.unwrap())
-        }
+        let mut versions_builder = uvm_live_platform::ListVersions::builder()
+            .for_current_system()
+            .autopage(true)
+            .with_streams(release_streams)
+            .with_entitlements(release_entitlements);
+
         let versions = versions_builder
             .list()
             .map_err(|err| io::Error::new(io::ErrorKind::Other, format!("{}", err)))?;
 
         let versions = versions.into_iter().filter_map(|v| Version::from_str(&v).ok());
 
-        let version = self.fetch_matching_version(versions, version_req, version_type)?;
+        let version = Self::fetch_matching_version(versions, version_req, version_type)?;
         info!("highest matching version:");
         eprintln!("{}", style(version).green().bold());
 
         Ok(0)
     }
 
-    pub fn fetch_matching_version<I: Iterator<Item = Version>>(
-        &self,
+    fn fetch_matching_version<I: Iterator<Item = Version>>(
         versions: I,
         version_req: VersionReq,
         release_type: ReleaseType,

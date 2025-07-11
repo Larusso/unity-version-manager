@@ -1,7 +1,5 @@
 use crate::error::FetchReleaseError;
-use crate::{
-    Release, UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseStream,
-};
+use crate::{Release, UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseEntitlement, UnityReleaseStream};
 use serde::{Deserialize, Serialize};
 use unity_version::Version;
 
@@ -167,13 +165,6 @@ impl Default for UnityReleaseOrder {
     fn default() -> Self {
         Self::ReleaseDateDescending
     }
-}
-
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum UnityReleaseEntitlement {
-    Xlts,
-    U7Alpha,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

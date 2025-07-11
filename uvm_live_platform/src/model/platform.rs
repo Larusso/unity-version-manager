@@ -102,6 +102,25 @@ impl Display for UnityReleaseStream {
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum UnityReleaseEntitlement {
+    Xlts,
+    U7Alpha,
+}
+
+impl Display for UnityReleaseEntitlement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use UnityReleaseEntitlement::*;
+        let s = match self {
+            Xlts => "XLTS",
+            U7Alpha => "U7 Alpha",
+        };
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UnityReleaseCategory {
     Documentation,
     Platform,

@@ -13,6 +13,6 @@ console = "0.15.11"
 flexi_logger = "0.29.8"
 log = "0.4.26"
 semver = "1.0.26"
-uvm_live_platform = { version = "0.3.2", path = "../../uvm_live_platform", features = ["clap"] }
+uvm_live_platform = { version = "0.4.0", path = "../../uvm_live_platform", features = ["clap"] }
 [dev-dependencies]
 tempfile = "3.19.1"

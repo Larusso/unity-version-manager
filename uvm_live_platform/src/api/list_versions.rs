@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::error::ListVersionsError;
-use crate::{UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseStream};
-use crate::api::fetch_release::UnityReleaseEntitlement;
+use crate::{UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseEntitlement, UnityReleaseStream};
 
 #[derive(Debug)]
 pub struct ListVersions(std::vec::IntoIter<String>);
@@ -27,14 +26,8 @@ pub struct ListVersionsBuilder {
     platform: Vec<UnityReleaseDownloadPlatform>,
     skip: usize,
     limit: usize,
-<<<<<<< Updated upstream
     stream: Vec<UnityReleaseStream>,
     entitlements: Vec<UnityReleaseEntitlement>,
-||||||| Stash base
-    stream: UnityReleaseStream,
-=======
-    stream: Option<UnityReleaseStream>,
->>>>>>> Stashed changes
     include_revision: bool,
     autopage: bool,
     version: Option<String>,
@@ -47,14 +40,8 @@ impl ListVersionsBuilder {
             platform: Default::default(),
             skip: Default::default(),
             limit: 100,
-<<<<<<< Updated upstream
             stream: Default::default(),
             entitlements: Default::default(),
-||||||| Stash base
-            stream: Default::default(),
-=======
-            stream: None,
->>>>>>> Stashed changes
             include_revision: false,
             autopage: false,
             version: None,
@@ -123,20 +110,6 @@ impl ListVersionsBuilder {
         self
     }
 
-<<<<<<< Updated upstream
-||||||| Stash base
-    pub fn stream(mut self, stream: UnityReleaseStream) -> Self {
-        self.stream = stream;
-        self
-    }
-
-=======
-    pub fn stream(mut self, stream: UnityReleaseStream) -> Self {
-        self.stream = Some(stream);
-        self
-    }
-
->>>>>>> Stashed changes
     pub fn include_revision(mut self, include_revision: bool) -> Self {
         self.include_revision = include_revision;
         self
@@ -156,12 +129,22 @@ impl ListVersionsBuilder {
         self
     }
 
+    pub fn with_architectures<I: IntoIterator<Item = UnityReleaseDownloadArchitecture> >(mut self, architectures: I) -> Self {
+        self.architecture.extend(architectures);
+        self
+    }
+
     pub fn with_current_platform(mut self) -> Self {
         self.with_platform(Default::default())
     }
 
     pub fn with_platform(mut self, platform: UnityReleaseDownloadPlatform) -> Self {
         self.platform.push(platform);
+        self
+    }
+
+    pub fn with_platforms<I: IntoIterator<Item = UnityReleaseDownloadPlatform> >(mut self, platforms: I) -> Self {
+        self.platform.extend(platforms);
         self
     }
 
@@ -175,6 +158,11 @@ impl ListVersionsBuilder {
         self
     }
 
+    pub fn with_streams<I: IntoIterator<Item = UnityReleaseStream> >(mut self, streams: I) -> Self {
+        self.stream.extend(streams);
+        self
+    }
+
     pub fn with_extended_lts(mut self) -> Self {
         self.with_entitlement(UnityReleaseEntitlement::Xlts)
     }
@@ -185,6 +173,11 @@ impl ListVersionsBuilder {
 
     pub fn with_entitlement(mut self, entitlement: UnityReleaseEntitlement) -> Self {
         self.entitlements.push(entitlement);
+        self
+    }
+
+    pub fn with_entitlements<I: IntoIterator<Item = UnityReleaseEntitlement> >(mut self, entitlements: I) -> Self {
+        self.entitlements.extend(entitlements);
         self
     }
 
@@ -205,16 +198,10 @@ struct ListVersionsOptions {
     platform: Vec<UnityReleaseDownloadPlatform>,
     skip: usize,
     limit: usize,
-<<<<<<< Updated upstream
     stream: Vec<UnityReleaseStream>,
     entitlements: Vec<UnityReleaseEntitlement>,
     #[serde(skip_serializing_if = "Option::is_none")]
     version: Option<String>,
-||||||| Stash base
-    stream: UnityReleaseStream,
-=======
-    stream: Option<UnityReleaseStream>,
->>>>>>> Stashed changes
 }
 
 impl Default for ListVersionsOptions {
