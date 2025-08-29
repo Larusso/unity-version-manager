@@ -3,6 +3,7 @@ use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UnityReleaseDownloadArchitecture {
     X86_64,
@@ -33,6 +34,7 @@ impl Display for UnityReleaseDownloadArchitecture {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UnityReleaseDownloadPlatform {
     MacOs,
@@ -67,6 +69,7 @@ impl Display for UnityReleaseDownloadPlatform {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UnityReleaseStream {
     Lts,
@@ -97,6 +100,26 @@ impl Display for UnityReleaseStream {
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum UnityReleaseEntitlement {
+    Xlts,
+    U7Alpha,
+}
+
+impl Display for UnityReleaseEntitlement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use UnityReleaseEntitlement::*;
+        let s = match self {
+            Xlts => "XLTS",
+            U7Alpha => "U7 Alpha",
+        };
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UnityReleaseCategory {
     Documentation,

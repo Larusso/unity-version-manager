@@ -1,7 +1,5 @@
 use crate::error::FetchReleaseError;
-use crate::{
-    Release, UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseStream,
-};
+use crate::{Release, UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseEntitlement, UnityReleaseStream};
 use serde::{Deserialize, Serialize};
 use unity_version::Version;
 
@@ -69,7 +67,7 @@ impl FetchReleaseBuilder {
         }
     }
 
-    pub fn with_system_architecture(mut self) -> Self {
+    pub fn with_system_architecture(self) -> Self {
         self.with_architecture(Default::default())
     }
 
@@ -78,7 +76,7 @@ impl FetchReleaseBuilder {
         self
     }
 
-    pub fn with_current_platform(mut self) -> Self {
+    pub fn with_current_platform(self) -> Self {
         self.with_platform(Default::default())
     }
 
@@ -92,11 +90,11 @@ impl FetchReleaseBuilder {
         self
     }
 
-    pub fn with_extended_lts(mut self) -> Self {
+    pub fn with_extended_lts(self) -> Self {
         self.with_entitlement(UnityReleaseEntitlement::Xlts)
     }
 
-    pub fn with_u7_alpha(mut self) -> Self {
+    pub fn with_u7_alpha(self) -> Self {
         self.with_entitlement(UnityReleaseEntitlement::U7Alpha)
     }
 
@@ -105,7 +103,7 @@ impl FetchReleaseBuilder {
         self
     }
 
-    pub fn for_current_system(mut self) -> Self {
+    pub fn for_current_system(self) -> Self {
         self.with_system_architecture()
             .with_current_platform()
     }
@@ -167,13 +165,6 @@ impl Default for UnityReleaseOrder {
     fn default() -> Self {
         Self::ReleaseDateDescending
     }
-}
-
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum UnityReleaseEntitlement {
-    Xlts,
-    U7Alpha,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
