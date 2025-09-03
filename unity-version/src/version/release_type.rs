@@ -3,6 +3,7 @@ use std::{cmp::Ordering, fmt, str::FromStr};
 use thiserror::Error;
 
 #[derive(PartialEq, Eq, Ord, Hash, Debug, Clone, Copy, Serialize, Deserialize)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum ReleaseType {
     Alpha,
     Beta,

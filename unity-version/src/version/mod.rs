@@ -178,6 +178,10 @@ impl Version {
             }
             Err(VersionError::ParsingFailed(format!("Could not find a valid Unity version in string: {}", s)))
     }
+
+    pub fn base(&self) -> &semver::Version {
+        &self.base
+    }
 }
 
 #[derive(Eq, Debug, Clone, Hash, Display)]

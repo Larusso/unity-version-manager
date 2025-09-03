@@ -2,16 +2,13 @@ mod commands;
 
 use crate::commands::detect::DetectCommand;
 use crate::commands::external::{exec_command, sub_command_path};
-use crate::commands::install::InstallArgs;
-use crate::commands::launch::LaunchArgs;
-use crate::commands::list::ListArgs;
-use crate::commands::uninstall::UninstallArgs;
-use crate::commands::versions::VersionsArgs;
+use crate::commands::version::VersionCommand;
 use clap::{ArgAction, Args, ColorChoice, Parser, Subcommand};
-use console::Style;
+use console::{style, Style};
 use flexi_logger::{DeferredNow, Level, LevelFilter, LogSpecification, Logger, Record};
 use log::{debug, Log};
 use std::io;
+use std::process;
 
 #[derive(Debug, Args)]
 pub struct GlobalOptions {
@@ -46,7 +43,7 @@ pub enum Commands {
     // List(ListArgs),
     // Install(InstallArgs),
     // Uninstall(UninstallArgs),
-    // Versions(VersionsArgs),
+    Version(VersionCommand),
     #[command(external_subcommand)]
     External(Vec<String>),
 }
@@ -55,6 +52,7 @@ impl Commands {
     fn exec(self) -> io::Result<i32> {
         match self {
             Commands::Detect(detect) => detect.execute(),
+            Commands::Version(version) => version.execute(),
             Commands::External(mut args) => {
                 let rest = args.split_off(1);
                 let command = sub_command_path(&args[0])?;
@@ -75,8 +73,7 @@ fn set_colors_enabled(color: &ColorChoice) {
 
 fn set_loglevel(
     verbose: i32,
-) -> Result<(Box<dyn Log>, flexi_logger::LoggerHandle), flexi_logger::FlexiLoggerError>
-{
+) -> Result<(Box<dyn Log>, flexi_logger::LoggerHandle), flexi_logger::FlexiLoggerError> {
     let mut log_spec_builder = LogSpecification::builder();
     let level = match verbose {
         0 => LevelFilter::Warn,
@@ -116,12 +113,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (logger, _log_handle) = set_loglevel(
         cli.global
             .debug
-            .then(|| 2 )
+            .then(|| 2)
             .unwrap_or(i32::from(cli.global.verbose)),
     )?;
     log::set_boxed_logger(logger)?;
 
     debug!("{:?}", cli);
-    cli.command.exec()?;
-    Ok(())
+    let code = cli.command.exec().unwrap_or_else(|err| {
+        eprintln!("{:?}", style(err.to_string()).red());
+        1
+    });
+    process::exit(code)
 }

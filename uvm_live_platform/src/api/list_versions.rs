@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::error::ListVersionsError;
-use crate::{UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseStream};
-use crate::api::fetch_release::UnityReleaseEntitlement;
+use crate::{UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseEntitlement, UnityReleaseStream};
 
 #[derive(Debug)]
 pub struct ListVersions(std::vec::IntoIter<String>);
@@ -121,7 +120,7 @@ impl ListVersionsBuilder {
         self
     }
 
-    pub fn with_system_architecture(mut self) -> Self {
+    pub fn with_system_architecture(self) -> Self {
         self.with_architecture(Default::default())
     }
 
@@ -130,7 +129,12 @@ impl ListVersionsBuilder {
         self
     }
 
-    pub fn with_current_platform(mut self) -> Self {
+    pub fn with_architectures<I: IntoIterator<Item = UnityReleaseDownloadArchitecture> >(mut self, architectures: I) -> Self {
+        self.architecture.extend(architectures);
+        self
+    }
+
+    pub fn with_current_platform(self) -> Self {
         self.with_platform(Default::default())
     }
 
@@ -139,7 +143,12 @@ impl ListVersionsBuilder {
         self
     }
 
-    pub fn for_current_system(mut self) -> Self {
+    pub fn with_platforms<I: IntoIterator<Item = UnityReleaseDownloadPlatform> >(mut self, platforms: I) -> Self {
+        self.platform.extend(platforms);
+        self
+    }
+
+    pub fn for_current_system(self) -> Self {
         self.with_system_architecture()
             .with_current_platform()
     }
@@ -149,16 +158,26 @@ impl ListVersionsBuilder {
         self
     }
 
-    pub fn with_extended_lts(mut self) -> Self {
+    pub fn with_streams<I: IntoIterator<Item = UnityReleaseStream> >(mut self, streams: I) -> Self {
+        self.stream.extend(streams);
+        self
+    }
+
+    pub fn with_extended_lts(self) -> Self {
         self.with_entitlement(UnityReleaseEntitlement::Xlts)
     }
 
-    pub fn with_u7_alpha(mut self) -> Self {
+    pub fn with_u7_alpha(self) -> Self {
         self.with_entitlement(UnityReleaseEntitlement::U7Alpha)
     }
 
     pub fn with_entitlement(mut self, entitlement: UnityReleaseEntitlement) -> Self {
         self.entitlements.push(entitlement);
+        self
+    }
+
+    pub fn with_entitlements<I: IntoIterator<Item = UnityReleaseEntitlement> >(mut self, entitlements: I) -> Self {
+        self.entitlements.extend(entitlements);
         self
     }
 
