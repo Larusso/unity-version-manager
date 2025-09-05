@@ -4330,6 +4330,7 @@ dependencies = [
  "log",
  "semver 1.0.26",
  "tempfile",
+ "unity-hub",
  "unity-version",
  "uvm_live_platform",
 ]
@@ -4487,20 +4488,6 @@ dependencies = [
  "anyhow",
  "console 0.9.2",
  "log",
- "structopt",
- "uvm_cli",
- "uvm_core",
-]
-
-[[package]]
-name = "uvm-list"
-version = "2.5.0"
-dependencies = [
- "anyhow",
- "console 0.9.2",
- "log",
- "serde",
- "serde_derive",
  "structopt",
  "uvm_cli",
  "uvm_core",

@@ -2,6 +2,7 @@ mod commands;
 
 use crate::commands::detect::DetectCommand;
 use crate::commands::external::{exec_command, sub_command_path};
+use crate::commands::list::ListCommand;
 use crate::commands::version::VersionCommand;
 use clap::{ArgAction, Args, ColorChoice, Parser, Subcommand};
 use console::{style, Style};
@@ -39,8 +40,7 @@ pub struct Cli {
 #[derive(Subcommand, Debug)]
 pub enum Commands {
     Detect(DetectCommand),
-    // Launch(LaunchArgs),
-    // List(ListArgs),
+    List(ListCommand),
     // Install(InstallArgs),
     // Uninstall(UninstallArgs),
     Version(VersionCommand),
@@ -52,6 +52,7 @@ impl Commands {
     fn exec(self) -> io::Result<i32> {
         match self {
             Commands::Detect(detect) => detect.execute(),
+            Commands::List(list) => list.execute(),
             Commands::Version(version) => version.execute(),
             Commands::External(mut args) => {
                 let rest = args.split_off(1);
