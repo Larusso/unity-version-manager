@@ -4482,18 +4482,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "uvm-launch"
-version = "2.4.0"
-dependencies = [
- "anyhow",
- "console 0.9.2",
- "log",
- "structopt",
- "uvm_cli",
- "uvm_core",
-]
-
-[[package]]
 name = "uvm-modules"
 version = "0.1.0"
 dependencies = [
