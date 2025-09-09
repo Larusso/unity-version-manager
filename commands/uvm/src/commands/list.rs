@@ -3,7 +3,7 @@ use clap::Args;
 use log::info;
 use std::io;
 use unity_hub::unity::{
-    list_all_installations, list_hub_installations, list_installations, Installation,
+    list_all_installations, list_hub_installations, list_installations,
 };
 
 #[derive(Args, Debug)]
