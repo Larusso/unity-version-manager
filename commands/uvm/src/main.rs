@@ -4,6 +4,7 @@ use crate::commands::detect::DetectCommand;
 use crate::commands::external::{exec_command, sub_command_path};
 use crate::commands::list::ListCommand;
 use crate::commands::version::VersionCommand;
+use crate::commands::launch::LaunchCommand;
 use clap::{ArgAction, Args, ColorChoice, Parser, Subcommand};
 use console::{style, Style};
 use flexi_logger::{DeferredNow, Level, LevelFilter, LogSpecification, Logger, Record};
@@ -41,6 +42,7 @@ pub struct Cli {
 pub enum Commands {
     Detect(DetectCommand),
     List(ListCommand),
+    Launch(LaunchCommand),
     // Install(InstallArgs),
     // Uninstall(UninstallArgs),
     Version(VersionCommand),
@@ -53,6 +55,7 @@ impl Commands {
         match self {
             Commands::Detect(detect) => detect.execute(),
             Commands::List(list) => list.execute(),
+            Commands::Launch(launch) => launch.execute(),
             Commands::Version(version) => version.execute(),
             Commands::External(mut args) => {
                 let rest = args.split_off(1);

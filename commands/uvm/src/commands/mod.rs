@@ -5,3 +5,4 @@ pub mod uninstall;
 pub mod version;
 pub mod external;
 pub mod presentation;
+pub mod launch;
