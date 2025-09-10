@@ -6,3 +6,4 @@ pub mod version;
 pub mod external;
 pub mod presentation;
 pub mod launch;
+pub mod modules;
