@@ -11,12 +11,13 @@ pub struct ModuleView {
 
 impl View for ModuleView {
     fn render(&self, w: &mut dyn Write, opts: &RenderOptions) -> io::Result<()> {
-        let out_style = Style::new().cyan();
-
         if opts.verbose {
-            writeln!(w, "  * {} - {}", out_style.apply_to(&self.id), out_style.apply_to(&self.description))?;
+            writeln!(w, "  * {} - {}", 
+                maybe_style(&self.id, Style::new().cyan(), opts.no_color),
+                maybe_style(&self.description, Style::new().cyan(), opts.no_color)
+            )?;
         } else {
-            writeln!(w, "  * {}", out_style.apply_to(&self.id))?;
+            writeln!(w, "  * {}", maybe_style(&self.id, Style::new().cyan(), opts.no_color))?;
         }
         Ok(())
     }
@@ -35,13 +36,13 @@ impl View for InstallationView {
         let path_style = Style::new().italic().green();
 
         if !opts.path_only {
-            write!(w, "{}", out_style.apply_to(&self.version))?;
+            write!(w, "{}", maybe_style(&self.version, out_style, opts.no_color))?;
         }
         if opts.verbose {
             write!(w, " - ")?;
         }
         if opts.verbose || opts.path_only {
-            write!(w, "{}", path_style.apply_to(&self.path))?;
+            write!(w, "{}", maybe_style(&self.path, path_style, opts.no_color))?;
         }
         writeln!(w)?;
 
@@ -50,6 +51,29 @@ impl View for InstallationView {
                 m.render(w, opts)?;
             }
         }
+        Ok(())
+    }
+}
+
+// Using ModuleView from presentation.rs module
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CategoryView {
+    pub category: String,
+    pub modules: Vec<ModuleView>,
+}
+
+impl View for CategoryView {
+    fn render(&self, w: &mut dyn io::Write, opts: &RenderOptions) -> io::Result<()> {
+        use console::Style;
+        let category_style = Style::new().white().bold();
+        
+        writeln!(w, "{}:", maybe_style(&self.category, category_style, opts.no_color))?;
+        
+        for module in &self.modules {
+            module.render(w, opts)?;
+        }
+        
         Ok(())
     }
 }
@@ -64,6 +88,15 @@ impl View for InstallationView {
 //         Ok(())
 //     }
 // }
+
+// Helper function to conditionally apply style based on no_color option
+fn maybe_style<T: std::fmt::Display>(value: T, style: Style, no_color: bool) -> String {
+    if no_color {
+        value.to_string()
+    } else {
+        style.apply_to(value).to_string()
+    }
+}
 
 pub trait View {
     fn render(&self, w: &mut dyn Write, opts: &RenderOptions) -> io::Result<()>;
@@ -103,6 +136,7 @@ pub struct RenderOptions {
     pub path_only: bool,
     pub verbose: bool,
     pub list_modules: bool,
+    pub no_color: bool,
 }
 
 pub struct TextRenderer {
@@ -129,11 +163,13 @@ impl TextRenderer {
 // Zero-allocation View impls for domain types
 impl View for HubModule {
     fn render(&self, w: &mut dyn Write, opts: &RenderOptions) -> io::Result<()> {
-        let out_style = Style::new().cyan();
         if opts.verbose {
-            writeln!(w, "  * {} - {}", out_style.apply_to(self.id()), out_style.apply_to(self.base.description()))
+            writeln!(w, "  * {} - {}", 
+                maybe_style(self.id(), Style::new().cyan(), opts.no_color),
+                maybe_style(self.base.description(), Style::new().cyan(), opts.no_color)
+            )
         } else {
-            writeln!(w, "  * {}", out_style.apply_to(self.id()))
+            writeln!(w, "  * {}", maybe_style(self.id(), Style::new().cyan(), opts.no_color))
         }
     }
 }
@@ -144,13 +180,13 @@ impl View for UnityInstallation {
         let path_style = Style::new().italic().green();
 
         if !opts.path_only {
-            write!(w, "{}", out_style.apply_to(self.version().to_string()))?;
+            write!(w, "{}", maybe_style(self.version().to_string(), out_style, opts.no_color))?;
         }
         if opts.verbose {
             write!(w, " - ")?;
         }
         if opts.verbose || opts.path_only {
-            write!(w, "{}", path_style.apply_to(self.path().display()))?;
+            write!(w, "{}", maybe_style(self.path().display(), path_style, opts.no_color))?;
         }
         writeln!(w)?;
 
@@ -176,7 +212,7 @@ mod tests {
     #[test]
     fn render_default_shows_version_only() {
         let items = vec![item("2021.3.1f1", "/path/Editor"), item("6000.1.8f1", "/p2")];
-        let s = TextRenderer::new(RenderOptions::default()).render_to_string(items);
+        let s = TextRenderer::new(RenderOptions { no_color: true, ..Default::default() }).render_to_string(items);
         assert!(s.contains("2021.3.1f1"));
         assert!(s.contains("6000.1.8f1"));
         assert!(!s.contains("/path/Editor"));
@@ -185,7 +221,7 @@ mod tests {
     #[test]
     fn render_path_only_shows_paths() {
         let items = vec![item("2021.3.1f1", "/path/Editor")];
-        let s = TextRenderer::new(RenderOptions { path_only: true, ..Default::default() }).render_to_string(items);
+        let s = TextRenderer::new(RenderOptions { path_only: true, no_color: true, ..Default::default() }).render_to_string(items);
         assert!(s.contains("/path/Editor"));
         assert!(!s.contains("2021.3.1f1"));
     }
@@ -193,7 +229,7 @@ mod tests {
     #[test]
     fn render_verbose_shows_version_and_path() {
         let items = vec![item("2021.3.1f1", "/path/Editor")];
-        let s = TextRenderer::new(RenderOptions { verbose: true, ..Default::default() }).render_to_string(items);
+        let s = TextRenderer::new(RenderOptions { verbose: true, no_color: true, ..Default::default() }).render_to_string(items);
         assert!(s.contains("2021.3.1f1"));
         assert!(s.contains("/path/Editor"));
         assert!(s.contains(" - "));
@@ -203,7 +239,7 @@ mod tests {
     fn render_modules_compact() {
         let mut it = item("2021.3.1f1", "/path");
         it.modules = vec![ModuleView { id: "android".into(), description: "Android Build Support".into() }];
-        let s = TextRenderer::new(RenderOptions { list_modules: true, ..Default::default() }).render_to_string(vec![it]);
+        let s = TextRenderer::new(RenderOptions { list_modules: true, no_color: true, ..Default::default() }).render_to_string(vec![it]);
         assert!(s.contains("2021.3.1f1"));
         assert!(s.contains("  * android"));
         assert!(!s.contains("Android Build Support"));
@@ -213,7 +249,7 @@ mod tests {
     fn render_modules_verbose_includes_description() {
         let mut it = item("2021.3.1f1", "/path");
         it.modules = vec![ModuleView { id: "ios".into(), description: "iOS Build Support".into() }];
-        let s = TextRenderer::new(RenderOptions { list_modules: true, verbose: true, ..Default::default() }).render_to_string(vec![it]);
+        let s = TextRenderer::new(RenderOptions { list_modules: true, verbose: true, no_color: true, ..Default::default() }).render_to_string(vec![it]);
         assert!(s.contains("  * ios - iOS Build Support"));
     }
 }

@@ -52,7 +52,7 @@ impl ListCommand {
             Ok(installations) => {
                 eprintln!("Installed Unity versions:");
                 let items: Vec<_> = installations.collect();
-                let renderer = TextRenderer::new(RenderOptions { path_only: self.path_only, verbose: self.verbose > 0, list_modules: self.list_modules });
+                let renderer = TextRenderer::new(RenderOptions {no_color: false, path_only: self.path_only, verbose: self.verbose > 0, list_modules: self.list_modules });
                 let rendered = renderer.render_view(&as_view_iter(items));
                 eprintln!("{}", rendered);
             }
