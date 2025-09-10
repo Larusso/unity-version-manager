@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 use super::*;
-use crate::unity;
 use crate::unity::hub::paths;
 use crate::unity::installation::{UnityInstallation, Installation, FromInstallation};
 use serde_json;

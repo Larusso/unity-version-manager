@@ -9,6 +9,9 @@ keywords = ["unity","version-manager"]
 categories = ["development-tools"]
 license = "Apache-2.0"
 
+[features]
+mutate = []
+
 [dependencies]
 unity-version = {path = "../unity-version", version = "0.1.0" }
 unity-types = {path = "../unity-types", version = "0.1.0"}

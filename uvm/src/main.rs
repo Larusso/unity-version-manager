@@ -3,6 +3,7 @@ mod commands;
 use crate::commands::detect::DetectCommand;
 use crate::commands::external::{exec_command, sub_command_path};
 use crate::commands::list::ListCommand;
+use crate::commands::uninstall::UninstallArgs;
 use crate::commands::version::VersionCommand;
 use crate::commands::launch::LaunchCommand;
 use crate::commands::modules::ModulesCommand;
@@ -46,7 +47,7 @@ pub enum Commands {
     Launch(LaunchCommand),
     Modules(ModulesCommand),
     // Install(InstallArgs),
-    // Uninstall(UninstallArgs),
+    Uninstall(UninstallArgs),
     Version(VersionCommand),
     #[command(external_subcommand)]
     External(Vec<String>),
@@ -59,6 +60,7 @@ impl Commands {
             Commands::List(list) => list.execute(),
             Commands::Launch(launch) => launch.execute(),
             Commands::Modules(modules) => modules.execute(),
+            Commands::Uninstall(uninstall) => uninstall.execute(),
             Commands::Version(version) => version.execute(),
             Commands::External(mut args) => {
                 let rest = args.split_off(1);
