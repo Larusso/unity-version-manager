@@ -15,6 +15,7 @@ log = "0.4.26"
 semver = "1.0.26"
 uvm_live_platform = { version = "0.4.0", path = "../uvm_live_platform", features = ["clap"] }
 unity-hub = { version = "0.4.0", path = "../unity-hub", features = ["mutate"] }
+uvm_install = { version = "0.13.0", path = "../uvm_install" }
 itertools = "0.14.0"
 
 [dev-dependencies]

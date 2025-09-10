@@ -1,12 +1,12 @@
 [workspace]
 resolver = "1"
 members = [
+  "uvm",
   "uvm_cli",
   "uvm_install_graph",
   "uvm_live_platform",
   "uvm_move_dir",
-  "uvm",
-  "install/*",
+  "uvm_install",
   "unity-version",
   "unity-hub",
   "unity-types"]

@@ -1,5 +1,5 @@
 [package]
-name = "uvm-install2"
+name = "uvm_install"
 version = "0.13.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Install specified unity version."
@@ -9,9 +9,12 @@ categories = ["development-tools"]
 license = "Apache-2.0"
 edition = "2021"
 
+[lib]
+name = "uvm_install"
+
 [dependencies]
 ssri = "9.2.0"
-uvm_move_dir = {path = "../../uvm_move_dir", version = "0.2.0" }
+uvm_move_dir = {path = "../uvm_move_dir", version = "0.2.0" }
 console = "0.15.10"
 flexi_logger = "0.29.8"
 error-chain = "0.12.4"
@@ -25,11 +28,10 @@ serde = "1.0"
 serde_derive = "1.0"
 thiserror = "2.0.11"
 clap = {  version = "4.5.29", features = ["derive", "string", "env", "cargo"] }
-unity-version = { path = "../../unity-version", version = "0.1.0"}
-uvm_live_platform = { path = "../../uvm_live_platform", version = "0.4.0"}
-uvm_install_graph = { path = "../../uvm_install_graph", version = "0.11.0"}
-unity-hub = {path = "../../unity-hub", version = "0.4.0", features = ["mutate"] }
-#uvm_install_core = {path = "../uvm_install_core" }
+unity-version = { path = "../unity-version", version = "0.1.0"}
+uvm_live_platform = { path = "../uvm_live_platform", version = "0.4.0"}
+uvm_install_graph = { path = "../uvm_install_graph", version = "0.11.0"}
+unity-hub = {path = "../unity-hub", version = "0.4.0", features = ["mutate"] }
 anyhow = "1.0.75"
 lazy_static = "1.4.0"
 cfg-if = "1.0.0"
