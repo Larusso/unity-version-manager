@@ -54,6 +54,20 @@ pub trait Installation: Eq + Ord {
         let modules: Vec<Module> = serde_json::from_str(&file_content)?;
         Ok(modules) 
     }
+    
+    #[cfg(feature = "mutate")]
+    fn write_modules(&self, modules: Vec<Module>) -> Result<(), UnityError> {
+        use log::info;
+        
+        let modules_json_path = self.path().join("modules.json");
+        info!("Writing modules.json to {}", modules_json_path.display());
+        
+        let json_content = serde_json::to_string_pretty(&modules)?;
+        
+        std::fs::write(&modules_json_path, json_content)?;
+        
+        Ok(())
+    }
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -211,7 +225,7 @@ impl UnityInstallation {
 
 use std::{fmt, fs};
 use std::fmt::Debug;
-use log::{debug, error, trace};
+use log::{error, trace};
 use serde::{Deserialize, Serialize};
 use unity_version::Version;
 use crate::error::UnityHubError;

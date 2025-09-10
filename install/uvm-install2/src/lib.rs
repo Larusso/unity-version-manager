@@ -286,7 +286,7 @@ where
         }
     }
 
-    write_modules_json(&installation, modules)?;
+    installation.write_modules(modules)?;
 
     //write new api hub editor installation
     if let Some(installation) = editor_installation {
@@ -307,34 +307,6 @@ fn fetch_modules_from_release(modules: &mut Vec<Module>, module: &uvm_live_platf
     }
 }
 
-fn write_modules_json(
-    installation: &UnityInstallation,
-    modules: Vec<unity_hub::unity::hub::module::Module>,
-) -> io::Result<()> {
-    use console::style;
-    use std::fs::OpenOptions;
-    use std::io::Write;
-
-    let output_path = installation
-        .location()
-        .parent()
-        .unwrap()
-        .join("modules.json");
-    info!(
-        "{}",
-        style(format!("write {}", output_path.display())).green()
-    );
-    let mut f = OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .create(true)
-        .open(output_path)?;
-
-    let j = serde_json::to_string_pretty(&modules)?;
-    write!(f, "{}", j)?;
-    trace!("{}", j);
-    Ok(())
-}
 
 struct UnityComponent2<'a>(UnityComponent<'a>);
 

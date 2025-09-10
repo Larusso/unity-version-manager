@@ -2,11 +2,9 @@ pub mod editors;
 pub mod paths;
 pub mod module;
 
-use std::io;
 use log::debug;
-use crate::unity;
-use thiserror::Error;
 use crate::error::UnityHubError;
+use crate::unity;
 use crate::unity::Installations;
 //
 
