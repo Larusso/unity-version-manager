@@ -9,8 +9,6 @@ use lazy_static::lazy_static;
 use log::{debug, info, trace};
 use ssri::Integrity;
 use std::collections::HashSet;
-use std::env::VarError;
-use std::fs::File;
 use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
@@ -29,7 +27,6 @@ pub use unity_version::Version;
 use uvm_install_graph::{InstallGraph, InstallStatus, UnityComponent, Walker};
 pub use uvm_live_platform::error::LivePlatformError;
 pub use uvm_live_platform::fetch_release;
-use uvm_live_platform::Release;
 
 lazy_static! {
     static ref UNITY_BASE_PATTERN: &'static Path = Path::new("{UNITY_PATH}");
@@ -85,14 +82,14 @@ pub fn ensure_installation_architecture_is_correct<I: Installation>(
 
 #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
 pub fn ensure_installation_architecture_is_correct<I: Installation>(
-    installation: &I,
+    _installation: &I,
 ) -> io::Result<bool> {
     Ok(true)
 }
 
 pub fn install<V, P, I>(
     version: V,
-    mut requested_modules: Option<I>,
+    requested_modules: Option<I>,
     install_sync: bool,
     destination: Option<P>,
 ) -> Result<UnityInstallation>
@@ -436,17 +433,18 @@ mod tests {
     use super::*;
     use rstest::rstest;
     use std::cmp::Ordering;
-    use std::env;
     use std::fmt::{Display, Formatter};
     use test_binary::build_test_binary;
     use unity_version::ReleaseType;
 
     #[derive(PartialEq, Eq, Debug, Clone)]
+    #[allow(dead_code)]
     pub struct MockInstallation {
         version: Version,
         path: PathBuf,
     }
 
+    #[allow(dead_code)]
     impl MockInstallation {
         pub fn new<V: Into<Version>, P: AsRef<Path>>(version: V, path: P) -> Self {
             Self {
@@ -525,13 +523,18 @@ mod tests {
         expected: bool,
     ) {
         std::env::set_var("UVM_ARCHITECTURE_CHECK_ENABLED", env_val);
-        let expected = if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+        let _expected = if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
             expected
         } else {
             true
         };
+        
+        // Suppress unused variable warnings
+        let _ = test_arch;
+        let _ = test_version;
     }
 
+    #[allow(dead_code)]
     fn run_arch_test(binary_arch: TestArch, unity_version: Version, expected_result: bool) {
         #[cfg(target_os = "macos")]
         const OS_SUFFIX: &str = "apple-darwin";

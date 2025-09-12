@@ -2,7 +2,6 @@ use std::fs::DirBuilder;
 use self::pkg::ModulePkgInstaller;
 use self::xz::{EditorXzInstaller, ModuleXzInstaller};
 use self::zip::EditorZipInstaller;
-use crate::error::*;
 use crate::*;
 use std::path::Path;
 use crate::install::error::{InstallerErrorInner, InstallerResult};

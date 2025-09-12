@@ -1,5 +1,5 @@
 use crate::install::error::InstallerErrorInner::CopyFailed;
-use crate::install::error::{InstallerError, InstallerErrorInner, InstallerResult};
+use crate::install::error::{InstallerErrorInner, InstallerResult};
 use crate::install::installer::{BaseInstaller, Installer, InstallerWithDestination};
 use crate::install::{InstallHandler, UnityModule};
 use log::{debug, info};

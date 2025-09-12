@@ -2,14 +2,13 @@ use crate::*;
 use std::ffi::OsStr;
 use std::fs;
 use std::fs::{DirBuilder, File};
-use std::io::Read;
-use std::io::{self, BufRead, BufReader, Write};
+use std::io::{self, BufReader};
 use std::path::Path;
 use thiserror_context::Context;
 use std::process::{Command, Stdio};
 use crate::install::installer::{Installer, InstallerWithDestination, Pkg};
 use crate::install::{InstallHandler, UnityModule};
-use crate::install::error::InstallerErrorInner::{InstallationFailed, Other};
+use crate::install::error::InstallerErrorInner::Other;
 use crate::install::error::InstallerResult;
 
 pub type ModulePkgInstaller = Installer<UnityModule, Pkg, InstallerWithDestination>;
@@ -68,7 +67,7 @@ impl ModulePkgInstaller {
                 .spawn()?;
             {
                 let stdin = cpio.stdin.as_mut().ok_or(Other("Failed to open cpio stdin".to_string()))?;
-                let mut file = File::open(payload)?;
+                let file = File::open(payload)?;
                 let mut reader = BufReader::new(file);
                 io::copy(&mut reader, stdin)?;
             }

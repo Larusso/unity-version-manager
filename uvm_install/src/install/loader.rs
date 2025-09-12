@@ -1,4 +1,3 @@
-use crate::error::Result;
 use crate::utils::UrlUtils;
 use log::*;
 use reqwest::header::{RANGE, USER_AGENT};
@@ -27,6 +26,7 @@ pub trait ProgressHandler {
     fn finish(&self);
     fn inc(&self, delta: u64);
     fn set_length(&self, len: u64);
+    #[allow(dead_code)]
     fn set_position(&self, pos: u64);
 }
 
@@ -85,10 +85,12 @@ where
         }
     }
 
+    #[allow(dead_code)]
     pub fn verify_installer(&mut self, verify: bool) {
         self.verify = verify;
     }
 
+    #[allow(dead_code)]
     pub fn set_progress_handle<P: 'a + ProgressHandler>(&mut self, progress_handle: &'a P) {
         self.progress_handle = Some(Box::new(progress_handle));
     }

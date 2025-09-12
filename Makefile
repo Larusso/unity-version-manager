@@ -11,19 +11,6 @@ install: install-uvm
 
 install-uvm: target/release/uvm
 	mkdir -p "$(DESTDIR)$(PREFIX)/bin/"
-	install -m755 -- target/release/uvm-generate-modules-json "$(DESTDIR)$(PREFIX)/bin/"
-	install -m755 -- target/release/uvm-fix-modules-json "$(DESTDIR)$(PREFIX)/bin/"
-	install -m755 -- target/release/uvm-detect "$(DESTDIR)$(PREFIX)/bin/"
-	install -m755 -- target/release/uvm-help "$(DESTDIR)$(PREFIX)/bin/"
-	install -m755 -- target/release/uvm-launch "$(DESTDIR)$(PREFIX)/bin/"
-	install -m755 -- target/release/uvm-list "$(DESTDIR)$(PREFIX)/bin/"
-	install -m755 -- target/release/uvm-install "$(DESTDIR)$(PREFIX)/bin/"
-	install -m755 -- target/release/uvm-install2 "$(DESTDIR)$(PREFIX)/bin/"
-	install -m755 -- target/release/uvm-modules "$(DESTDIR)$(PREFIX)/bin/"
-	install -m755 -- target/release/uvm-uninstall "$(DESTDIR)$(PREFIX)/bin/"
-	install -m755 -- target/release/uvm-versions "$(DESTDIR)$(PREFIX)/bin/"
-	install -m755 -- target/release/uvm-version "$(DESTDIR)$(PREFIX)/bin/"
-	install -m755 -- target/release/uvm-commands "$(DESTDIR)$(PREFIX)/bin/"
 	install -m755 -- target/release/uvm "$(DESTDIR)$(PREFIX)/bin/"
 
 test: target/release/uvm
@@ -33,6 +20,7 @@ check: test
 
 uninstall:
 	-rm -f -- "$(DESTDIR)$(PREFIX)/bin/uvm-*"
+	-rm -f -- "$(DESTDIR)$(PREFIX)/bin/uvm"
 
 clean:
 	cargo clean

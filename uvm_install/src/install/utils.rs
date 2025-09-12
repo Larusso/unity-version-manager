@@ -9,7 +9,7 @@ use std::path::Path;
 use std::path::{Component, Prefix, PathBuf};
 use log::{debug, error, trace};
 
-pub fn lock_process_or_wait<'a>(lock_file: &'a File) -> io::Result<FlockLock<&'a File>> {
+pub fn lock_process_or_wait(lock_file: &File) -> io::Result<FlockLock<&File>> {
     match ExclusiveFlock::try_lock(lock_file) {
         Ok(lock) => {
             debug!("acquired process lock.");
@@ -23,7 +23,7 @@ pub fn lock_process_or_wait<'a>(lock_file: &'a File) -> io::Result<FlockLock<&'a
         }
         Err(err) => {
             error!("unable to acquire process lock.");
-            let (data, err) = err.into_all();
+            let (_data, err) = err.into_all();
             Err(err)
         },
     }
@@ -48,6 +48,7 @@ fn get_path_prefix(path: &Path) -> Prefix {
 }
 
 #[cfg(windows)]
+#[allow(dead_code)]
 pub fn prepend_long_path_support<P:AsRef<Path>>(path:P) -> PathBuf {
     use std::ffi::OsString;
 

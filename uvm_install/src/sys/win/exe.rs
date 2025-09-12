@@ -1,4 +1,3 @@
-use crate::error::*;
 use crate::install::error::InstallerResult;
 use crate::install::installer::{
     Installer, InstallerWithDestinationAndOptionalCommand, InstallerWithOptionalCommand,

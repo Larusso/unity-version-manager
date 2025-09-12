@@ -3,8 +3,7 @@ pub mod installer;
 mod loader;
 pub mod utils;
 
-pub use self::loader::{InstallManifest, Loader, ProgressHandler};
-pub use crate::sys::*;
+pub use self::loader::{InstallManifest, Loader};
 use error::InstallerError;
 use log::error;
 use std::path::Path;

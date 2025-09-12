@@ -1,7 +1,6 @@
 //! **uvm_install_graph** is a helper library to visualize and traverse a api installation manifest.
 use petgraph::visit::NodeIndexable;
 pub use daggy::petgraph;
-use daggy::petgraph::graph::DefaultIx;
 use daggy::petgraph::visit::Topo;
 use daggy::Dag;
 use daggy::NodeIndex;
@@ -10,7 +9,6 @@ use std::collections::HashSet;
 use std::fmt;
 use std::fmt::Display;
 use uvm_live_platform::{Download, Release, Module};
-use unity_version::Version;
 
 /// `InstallStatus` is a marker enum to mark nodes in the `InstallGraph` based on the known
 /// installation status. The default is **Unknown**.
@@ -178,7 +176,7 @@ impl<'a> InstallGraph<'a> {
     }
 
     /// Returns the component for the given node index.
-    pub fn component(&self, node: NodeIndex) -> Option<UnityComponent> {
+    pub fn component(&self, node: NodeIndex) -> Option<UnityComponent<'_>> {
         self.dag.node_weight(node).map(|(component, _)| *component)
     }
 
@@ -205,7 +203,7 @@ impl<'a> InstallGraph<'a> {
     }
 
     /// Returns a **Vec** with all depended modules for the given node.
-    pub fn get_dependend_modules(&self, node: NodeIndex) -> Vec<(DagNode, NodeIndex)> {
+    pub fn get_dependend_modules(&self, node: NodeIndex) -> Vec<(DagNode<'_>, NodeIndex)> {
         self.dag
             .recursive_walk(node, |g, n| g.parents(n).walk_next(g))
             .iter(&self.dag)
@@ -214,7 +212,7 @@ impl<'a> InstallGraph<'a> {
     }
 
     /// Returns a **Vec** with all submodules for the given node.
-    pub fn get_sub_modules(&self, node: NodeIndex) -> Vec<(&DagNode, NodeIndex)> {
+    pub fn get_sub_modules(&self, node: NodeIndex) -> Vec<(&DagNode<'_>, NodeIndex)> {
         let mut modules = Vec::new();
         for (_, n) in self.dag.children(node).iter(&self.dag) {
             modules.push((self.dag.node_weight(n).unwrap(), n));
@@ -223,7 +221,7 @@ impl<'a> InstallGraph<'a> {
         modules
     }
 
-    pub fn context(&'a self) -> &ModulesDag {
+    pub fn context(&self) -> &ModulesDag<'a> {
         &self.dag
     }
 }

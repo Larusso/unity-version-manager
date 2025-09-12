@@ -288,12 +288,12 @@ mod tests {
         }
 
         #[test]
-        #[cfg(targed_os="macos")]
+        #[cfg(target_os="macos")]
         fn parses_all_valid_versions(ref s in r"[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}[fpb][0-9]{1,4}") {
             let test_dir = prepare_unity_installations![
                 s
             ];
-            let mut subject = Installations::new(test_dir.path()).unwrap();
+            let subject = Installations::new(test_dir.path()).unwrap();
             assert_eq!(subject.count(), 1);
         }
     }

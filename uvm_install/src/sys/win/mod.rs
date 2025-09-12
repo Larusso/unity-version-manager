@@ -1,5 +1,4 @@
 use std::process::{Command, Stdio};
-use crate::error::*;
 use crate::*;
 use crate::install::error::{InstallerErrorInner, InstallerResult};
 use crate::install::error::InstallerErrorInner::Other;

@@ -1,22 +1,29 @@
 [package]
-name = "uvm"
-version = "2.7.0"
+name = "unity-version-manager"
+version = "3.0.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 edition = "2018"
 description = "cli utility to install and manage unity versions"
+repository = "https://github.com/Larusso/unity-version-manager"
+keywords = ["unity","version-manager"]
+categories = ["development-tools"]
+license = "Apache-2.0"
+
+[[bin]]
+name = "uvm"
+path = "src/main.rs"
 
 [dependencies]
-anyhow = "1.0.38"
+anyhow = { workspace = true }
 clap = {  version = "4.5.38", features = ["derive", "string", "env", "cargo"] }
-unity-version = { version = "0.1.0", path="../unity-version", features = ["clap"]}
-console = "0.15.11"
-flexi_logger = "0.29.8"
-log = "0.4.26"
-semver = "1.0.26"
+unity-version = { version = "0.2.0", path="../unity-version", features = ["clap"]}
+console = { workspace = true }
+flexi_logger = "0.31.2"
+log = { workspace = true }
+semver = { workspace = true }
 uvm_live_platform = { version = "0.4.0", path = "../uvm_live_platform", features = ["clap"] }
 unity-hub = { version = "0.4.0", path = "../unity-hub", features = ["mutate"] }
 uvm_install = { version = "0.13.0", path = "../uvm_install" }
-itertools = "0.14.0"
-
+itertools = { workspace = true }
 [dev-dependencies]
 tempfile = "3.19.1"

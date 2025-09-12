@@ -1,10 +1,8 @@
-use std::fs;
 use std::path::Path;
 use crate::*;
 use crate::install::installer::{Installer, InstallerWithDestination, Zip};
 use crate::install::{InstallHandler, UnityEditor};
 use crate::install::error::InstallerResult;
-use thiserror_context::Context;
 
 pub type EditorZipInstaller = Installer<UnityEditor, Zip, InstallerWithDestination>;
 

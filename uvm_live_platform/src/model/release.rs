@@ -1,15 +1,12 @@
-use crate::model::digital::DigitalValue;
 use crate::model::file::{ExtractedPathRename, FileType};
 use crate::model::platform::{
-    UnityReleaseCategory, UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform,
+    UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform,
     UnityReleaseSkuFamily, UnityReleaseStream,
 };
 use crate::Size;
 use derive_getters::Getters;
 use serde::{Deserialize, Deserializer, Serialize};
 use ssri::Integrity;
-use std::fmt::format;
-use std::fs::File;
 use std::str::FromStr;
 
 #[derive(Debug, Deserialize, Serialize)]

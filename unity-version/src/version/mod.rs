@@ -4,9 +4,8 @@ use nom::{
     branch::alt,
     character::complete::{char, digit1},
     combinator::map_res,
-    error::{context, convert_error, VerboseError},
-    sequence::tuple,
-    IResult,
+    error::context,
+    IResult, Parser,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::path::{Path, PathBuf};
@@ -20,7 +19,7 @@ pub use release_type::ReleaseType;
 pub use revision_hash::RevisionHash;
 
 #[derive(Eq, Debug, Clone, Hash, PartialOrd, Display)]
-#[display(fmt = "{}{}{}", base, release_type, revision)]
+#[display("{}{}{}", base, release_type, revision)]
 pub struct Version {
     base: semver::Version,
     release_type: ReleaseType,
@@ -83,13 +82,13 @@ impl FromStr for Version {
         match parse_version(s) {
             Ok((_, version)) => Ok(version),
             Err(err) => {
-                let verbose_error = match err {
-                    nom::Err::Error(e) | nom::Err::Failure(e) => e,
-                    _ => VerboseError {
-                        errors: vec![(s, nom::error::VerboseErrorKind::Context("unknown error"))],
+                let error_msg = match err {
+                    nom::Err::Error(e) | nom::Err::Failure(e) => {
+                        format!("Parse error at: {}", e.input)
                     },
+                    _ => "Unknown parsing error".to_string(),
                 };
-                Err(VersionError::ParsingFailed(convert_error(s, verbose_error)))
+                Err(VersionError::ParsingFailed(error_msg))
             }
         }
     }
@@ -185,7 +184,8 @@ impl Version {
 }
 
 #[derive(Eq, Debug, Clone, Hash, Display)]
-#[display(fmt = "{} ({})", version, revision)]
+#[display("{} ({})", version, revision)]
+#[allow(dead_code)]
 pub struct CompleteVersion {
     version: Version,
     revision: RevisionHash,
@@ -203,41 +203,37 @@ impl PartialOrd for CompleteVersion {
     }
 }
 
-fn parse_release_type(input: &str) -> IResult<&str, ReleaseType, VerboseError<&str>> {
+fn parse_release_type(input: &str) -> IResult<&str, ReleaseType> {
     context(
         "release type",
         map_res(alt((char('f'), char('b'), char('a'), char('p'))), |c| {
             ReleaseType::try_from(c)
         }),
-    )(input)
+    ).parse(input)
 }
 
-fn parse_version(input: &str) -> IResult<&str, Version, VerboseError<&str>> {
+fn parse_version(input: &str) -> IResult<&str, Version> {
     context(
         "version",
-        tuple((
+        (
             context("major version", map_res(digit1, |s: &str| s.parse::<u64>())),
             char('.'),
             context("minor version", map_res(digit1, |s: &str| s.parse::<u64>())),
             char('.'),
             context("patch version", map_res(digit1, |s: &str| s.parse::<u64>())),
-            context("release type", parse_release_type),
+            parse_release_type,
             context("revision", map_res(digit1, |s: &str| s.parse::<u64>())),
-        )),
-    )(input)
-    .map(
-        |(next_input, (major, _, minor, _, patch, release_type, revision))| {
-            let base = semver::Version::new(major, minor, patch);
-            (
-                next_input,
-                Version {
-                    base,
-                    release_type,
-                    revision,
-                },
-            )
-        },
+        )
     )
+    .map(|(major, _, minor, _, patch, release_type, revision)| {
+        let base = semver::Version::new(major, minor, patch);
+        Version {
+            base,
+            release_type,
+            revision,
+        }
+    })
+    .parse(input)
 }
 
 #[cfg(test)]
