@@ -1,0 +1,248 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+
+env:
+  CARGO_TERM_COLOR: always
+  CRATE_NAME: uvm
+
+jobs:
+  prepare-release:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
+      is-prerelease: ${{ steps.extract-version.outputs.is-prerelease }}
+      changelog: ${{ steps.generate-changelog.outputs.changelog }}
+      upload-url: ${{ steps.create-release.outputs.upload_url }}
+      release-id: ${{ steps.create-release.outputs.id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version and prerelease info
+        id: extract-version
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          VERSION=${TAG_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          if [[ "$TAG_NAME" =~ v[0-9]+\.[0-9]+\.[0-9]+-.+ ]]; then
+            echo "is-prerelease=true" >> $GITHUB_OUTPUT
+            echo "Detected prerelease version: $VERSION"
+          else
+            echo "is-prerelease=false" >> $GITHUB_OUTPUT
+            echo "Detected stable version: $VERSION"
+          fi
+
+      - name: Get previous release tag
+        id: previous-tag
+        run: |
+          # Get the latest release tag that starts with 'v' and doesn't contain path prefixes
+          PREVIOUS_TAG=$(git tag -l "v*" --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | grep -v '/' | head -2 | tail -1)
+          if [ -z "$PREVIOUS_TAG" ]; then
+            # If no previous tag found, use the first commit
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          echo "previous-tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+          echo "Previous release tag: $PREVIOUS_TAG"
+
+      - name: Generate changelog
+        id: generate-changelog
+        run: |
+          PREVIOUS_TAG="${{ steps.previous-tag.outputs.previous-tag }}"
+          CURRENT_TAG="${{ github.ref_name }}"
+          
+          echo "Generating changelog from $PREVIOUS_TAG to $CURRENT_TAG"
+          
+          # Generate changelog excluding lib crate release commits
+          CHANGELOG=$(git log --pretty=format:"- %s" $PREVIOUS_TAG..$CURRENT_TAG | grep -v "chore(release):" | grep -v "Bump.*version" | head -50)
+          
+          # If no meaningful commits found, add a default message
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="- Various improvements and bug fixes"
+          fi
+          
+          # Escape newlines for GitHub output
+          CHANGELOG="${CHANGELOG//'%'/'%25'}"
+          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+          CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
+          
+          echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+
+      - name: Create draft release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: ${{ steps.extract-version.outputs.version }}
+          body: |
+            ## Changes
+
+            ${{ steps.generate-changelog.outputs.changelog }}
+
+            ## Installation
+
+            Download the appropriate binary for your platform from the assets below and make it executable.
+
+            ### macOS
+            ```bash
+            # Intel Macs
+            curl -L -o uvm https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/uvm-x86_64-apple-darwin
+            chmod +x uvm
+            
+            # Apple Silicon Macs  
+            curl -L -o uvm https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/uvm-aarch64-apple-darwin
+            chmod +x uvm
+            ```
+
+            ### Linux
+            ```bash
+            # GNU (most distributions)
+            curl -L -o uvm https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/uvm-x86_64-unknown-linux-gnu
+            chmod +x uvm
+            
+            # Musl (Alpine, static binary)
+            curl -L -o uvm https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/uvm-x86_64-unknown-linux-musl
+            chmod +x uvm
+            ```
+
+            ### Windows
+            ```powershell
+            # Download binary directly
+            Invoke-WebRequest -Uri "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/uvm-x86_64-pc-windows-msvc.exe" -OutFile "uvm.exe"
+            ```
+          draft: true
+          prerelease: ${{ steps.extract-version.outputs.is-prerelease == 'true' }}
+
+  build:
+    name: Build for ${{ matrix.target }}
+    needs: prepare-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS targets
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            use-zigbuild: false
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            use-zigbuild: false
+          
+          # Windows targets  
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            use-zigbuild: false
+            
+          # Linux GNU target (native)
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            use-zigbuild: false
+            
+          # Linux musl target (cross-compile with zigbuild)
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            use-zigbuild: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Zig
+        if: matrix.use-zigbuild
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.11.0
+
+      - name: Install zigbuild
+        if: matrix.use-zigbuild
+        run: cargo install cargo-zigbuild
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.target }}-
+            ${{ runner.os }}-cargo-
+
+      - name: Build binary
+        shell: bash
+        run: |
+          if [ "${{ matrix.use-zigbuild }}" = "true" ]; then
+            cargo zigbuild --release --target ${{ matrix.target }} --bin uvm
+          else
+            cargo build --release --target ${{ matrix.target }} --bin uvm
+          fi
+
+      - name: Prepare binary for upload
+        id: package
+        shell: bash
+        run: |
+          TARGET="${{ matrix.target }}"
+          
+          # Set binary name and extension
+          if [[ "$TARGET" == *"windows"* ]]; then
+            BINARY_NAME="uvm.exe"
+            ASSET_NAME="uvm-$TARGET.exe"
+          else
+            BINARY_NAME="uvm"
+            ASSET_NAME="uvm-$TARGET"
+          fi
+          
+          # Copy binary to final name
+          cp "target/$TARGET/release/$BINARY_NAME" "$ASSET_NAME"
+          
+          echo "asset-path=$ASSET_NAME" >> $GITHUB_OUTPUT
+          echo "asset-name=$ASSET_NAME" >> $GITHUB_OUTPUT
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.prepare-release.outputs.upload-url }}
+          asset_path: ${{ steps.package.outputs.asset-path }}
+          asset_name: ${{ steps.package.outputs.asset-name }}
+          asset_content_type: application/octet-stream
+
+  finalize-release:
+    name: Finalize Release
+    needs: [prepare-release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Finalize release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const releaseId = ${{ needs.prepare-release.outputs.release-id }};
+            
+            await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id: releaseId,
+              draft: false
+            });
+            
+            console.log(`Release ${releaseId} has been published!`);
