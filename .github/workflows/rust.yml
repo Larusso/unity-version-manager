@@ -12,16 +12,76 @@ env:
 
 jobs:
   build:
+    name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        include:
+          # Native builds
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            use-zigbuild: false
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            use-zigbuild: false
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            use-zigbuild: false
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            use-zigbuild: false
+          # Cross-compile with zigbuild
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            use-zigbuild: true
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+
+    - name: Install Zig
+      if: matrix.use-zigbuild
+      uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.11.0
+
+    - name: Install zigbuild
+      if: matrix.use-zigbuild
+      run: cargo install cargo-zigbuild
+
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-${{ matrix.target }}-
+          ${{ runner.os }}-cargo-
+
     - name: Build
-      run: cargo build --verbose --release
+      run: |
+        if [ "${{ matrix.use-zigbuild }}" = "true" ]; then
+          cargo zigbuild --target ${{ matrix.target }} --verbose --release
+        else
+          cargo build --target ${{ matrix.target }} --verbose --release
+        fi
+      shell: bash
+
     - name: Run tests
-      run: cargo test --verbose --release
+      # Skip tests for cross-compiled targets
+      if: matrix.use-zigbuild == false
+      run: cargo test --target ${{ matrix.target }} --verbose --release
+
     - name: Run UVM help
-      run: cargo run --bin uvm --release -- --help
+      # Skip help test for cross-compiled targets  
+      if: matrix.use-zigbuild == false
+      run: cargo run --target ${{ matrix.target }} --bin uvm --release -- --help
