@@ -10,6 +10,7 @@ pub type Cmd = String;
 #[cfg(windows)]
 pub type OptionalCmd = Option<String>;
 
+#[cfg(target_os = "macos")]
 pub type BaseInstaller = (InstallerPath, (), (), Rename);
 pub type InstallerWithDestination = (InstallerPath, InstallDestination, (), Rename);
 
@@ -21,10 +22,12 @@ pub type InstallerWithCommand = (InstallerPath, (), Cmd, Rename);
 #[cfg(windows)]
 pub type InstallerWithOptionalCommand = (InstallerPath, (), OptionalCmd, Rename);
 
+#[cfg(unix)]
 mod pkg;
 mod po;
 mod zip;
 
+#[cfg(unix)]
 pub use self::pkg::*;
 pub use self::po::*;
 pub use self::zip::*;
@@ -151,6 +154,7 @@ impl<V, T> Installer<V, T, InstallerWithOptionalCommand> {
     }
 }
 
+#[cfg(target_os = "macos")]
 impl<V, T> Installer<V, T, BaseInstaller> {
     pub fn new<P, R>(installer: P, rename: Option<(R, R)>) -> Self
     where

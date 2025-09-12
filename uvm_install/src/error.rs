@@ -1,5 +1,4 @@
 use thiserror::Error;
-use thiserror_context::impl_context;
 use unity_hub::unity::error::UnityError;
 use uvm_live_platform::error::LivePlatformError;
 use crate::install;

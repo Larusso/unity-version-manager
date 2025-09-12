@@ -2,7 +2,6 @@
 resolver = "1"
 members = [
   "uvm",
-  "uvm_cli",
   "uvm_install_graph",
   "uvm_live_platform",
   "uvm_move_dir",
@@ -10,3 +9,22 @@ members = [
   "unity-version",
   "unity-hub",
   "unity-types"]
+[workspace.dependencies]
+reqwest = { version = "0.12.23", default-features = false, features = ["rustls-tls-native-roots", "http2", "charset", "blocking", "json"] }
+serde = { version = "1.0.218", features = ["derive"] }
+itertools = "0.14.0"
+cfg-if = "1.0.0"
+console = "0.16.1"
+dirs-2 = "3.0.1"
+ssri = "9.2.0"
+log = "0.4.26"
+thiserror = "2.0.16"
+anyhow = "1.0.96"
+semver = "1.0.26"
+serde_json = "1.0.139"
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"

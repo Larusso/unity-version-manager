@@ -1,7 +1,5 @@
-use anyhow::Context;
-use crate::error::*;
 use crate::*;
-use crate::install::error::{InstallerError, InstallerErrorInner, InstallerResult};
+use crate::install::error::{InstallerErrorInner, InstallerResult};
 use crate::install::installer::Installer;
 
 pub struct Pkg;

@@ -24,6 +24,7 @@ impl View for ModuleView {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(dead_code)]
 pub struct InstallationView {
     pub version: String,
     pub path: String,
@@ -154,6 +155,7 @@ impl TextRenderer {
         String::from_utf8(buf).unwrap_or_default()
     }
 
+    #[allow(dead_code)]
     pub fn render_to_string(&self, items: impl IntoIterator<Item = InstallationView>) -> String {
         let items: Vec<_> = items.into_iter().collect();
         self.render_view(&as_view_iter(items))

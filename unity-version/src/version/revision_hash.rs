@@ -3,6 +3,7 @@ use derive_more::{Deref, Display};
 use std::str::FromStr;
 
 #[derive(Debug, Error)]
+#[allow(dead_code)]
 pub enum RevisionHashError {
     #[error("Input must be exactly 12 characters long")]
     InvalidLength,
@@ -12,9 +13,11 @@ pub enum RevisionHashError {
 }
 
 #[derive(Eq, Debug, Clone, Hash, Display, Deref)]
-#[display(fmd = "{}", 0)]
+#[display("{}", 0)]
+#[allow(dead_code)]
 pub struct RevisionHash(String);
 
+#[allow(dead_code)]
 impl RevisionHash {
     pub fn new(input: &str) -> Result<Self, RevisionHashError> {
         if input.len() != 12 {

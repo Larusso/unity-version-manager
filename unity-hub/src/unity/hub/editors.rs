@@ -125,6 +125,7 @@ pub struct EditorInstallation {
     manual: bool,
 }
 
+#[allow(dead_code)]
 trait EditorInstallationMarker {}
 
 impl EditorInstallationMarker for EditorInstallation {}

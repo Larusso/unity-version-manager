@@ -6,7 +6,7 @@ use std::process::{Command, Stdio};
 use thiserror_context::Context;
 use crate::install::installer::{Installer, InstallerWithDestination};
 use crate::install::{InstallHandler, UnityEditor, UnityModule};
-use crate::install::error::InstallerErrorInner::{InstallationFailed, InstallerCreateFailed};
+use crate::install::error::InstallerErrorInner::InstallationFailed;
 use crate::install::error::InstallerResult;
 
 pub struct Xz;

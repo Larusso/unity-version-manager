@@ -1,6 +1,6 @@
 [package]
 name = "uvm_live_platform"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Methods to connect to the unity live platform service."
 repository = "https://github.com/Larusso/unity-version-manager"
@@ -17,14 +17,14 @@ clap = ["dep:clap"]
 
 [dependencies]
 clap = { version = "4.5.38", features = ["derive"], optional = true }
-anyhow = "1.0.75"
+anyhow = { workspace = true }
 indoc = "2.0.3"
-reqwest = { version = "0.11.18", features = ["serde_json", "blocking", "json"] }
-serde = { version = "1.0.183", features = ["derive"] }
-serde_json = "1.0.105"
-thiserror = "1.0.47"
-typed-builder = "0.15.2"
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+typed-builder = "0.21.2"
 ordered-float = "5.0.0"
-unity-version = { path = "../unity-version", version = "0.1.0"}
-ssri = "9.2.0"
+unity-version = { path = "../unity-version", version = "0.2.0"}
+ssri = { workspace = true }
 derive-getters = { version = "0.5.0", features = ["auto_copy_getters"] }

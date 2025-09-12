@@ -1,6 +1,6 @@
 [package]
 name = "uvm_install"
-version = "0.13.0"
+version = "0.13.1"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Install specified unity version."
 repository = "https://github.com/Larusso/unity-version-manager"
@@ -13,28 +13,20 @@ edition = "2021"
 name = "uvm_install"
 
 [dependencies]
-ssri = "9.2.0"
+ssri = { workspace = true }
 uvm_move_dir = {path = "../uvm_move_dir", version = "0.2.0" }
-console = "0.15.10"
-flexi_logger = "0.29.8"
-error-chain = "0.12.4"
-dirs-2 = "3.0.1"
-indicatif = "0.17.11"
-log = "0.4.11"
-zip = "2.2.3"
-reqwest = { version = "0.12.12", features = ["blocking"] }
-serde_json = "1.0.140"
-serde = "1.0"
-serde_derive = "1.0"
-thiserror = "2.0.11"
-clap = {  version = "4.5.29", features = ["derive", "string", "env", "cargo"] }
-unity-version = { path = "../unity-version", version = "0.1.0"}
+console = { workspace = true }
+dirs-2 = { workspace = true }
+log = { workspace = true }
+zip = "5.1.1"
+reqwest = { workspace = true }
+thiserror = { workspace = true }
+unity-version = { path = "../unity-version", version = "0.2.0"}
 uvm_live_platform = { path = "../uvm_live_platform", version = "0.4.0"}
 uvm_install_graph = { path = "../uvm_install_graph", version = "0.11.0"}
 unity-hub = {path = "../unity-hub", version = "0.4.0", features = ["mutate"] }
-anyhow = "1.0.75"
 lazy_static = "1.4.0"
-cfg-if = "1.0.0"
+cfg-if = { workspace = true }
 url = "2.5.4"
 thiserror-context = "0.1.2"
 cluFlock = "1.2.5"
@@ -47,5 +39,5 @@ tempfile = "3.19.1"
 [dev-dependencies]
 test-binary = "3.0.2"
 tempfile = "3.19.1"
-rstest = "0.25.0"
+rstest = "0.26.1"
 serial_test = "3.2.0"

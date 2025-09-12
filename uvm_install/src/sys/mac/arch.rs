@@ -1,12 +1,12 @@
 use std::fs::File;
 use std::io;
-use std::io::{Cursor, Error, Read};
+use std::io::{Cursor, Read};
 use std::path::Path;
 use std::str::FromStr;
 use log::{info, warn};
 use mach_object::{get_arch_name_from_types, OFile};
 use sysctl::Sysctl;
-use unity_hub::unity::{Installation, UnityInstallation};
+use unity_hub::unity::Installation;
 use unity_version::Version;
 use thiserror::Error;
 
@@ -41,7 +41,7 @@ fn fetch_architectures_from_binary<P: AsRef<Path>>(path: P) -> Result<Vec<String
     match o_file {
         OFile::MachFile {
             ref header,
-            ref commands,
+            commands: _,
         } => {
             let arch = get_arch_name_from_types(header.cputype, header.cpusubtype).ok_or(
                 ArchError::UnknownArchitecture

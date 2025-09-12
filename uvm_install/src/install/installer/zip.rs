@@ -1,4 +1,3 @@
-use crate::error::*;
 use crate::install::error::{InstallerError, InstallerResult};
 use crate::install::installer::{Installer, InstallerWithDestination};
 use crate::install::{InstallHandler, UnityModule};
@@ -11,6 +10,7 @@ pub struct Zip;
 pub type ModuleZipInstaller = Installer<UnityModule, Zip, InstallerWithDestination>;
 
 impl<V, I> Installer<V, Zip, I> {
+    #[allow(dead_code)]
     pub fn deploy_zip(&self, installer: &Path, destination: &Path) -> InstallerResult<()> {
         self.deploy_zip_with_rename(installer, destination, |p| p.to_path_buf())
     }

@@ -4,78 +4,172 @@ unity-version-manager
 A command-line application to manage unity versions.
 This tool allows to install and manage multiple unity versions on a system from the command-line. This tool is compatible with Unity-Hub and will use the installation destination configured there by default.
 
-[![Build Status](https://img.shields.io/travis/Larusso/unity-version-manager/master.svg?logo=travis)](https://travis-ci.org/Larusso/unity-version-manager)
-[![Build status](https://ci.appveyor.com/api/projects/status/ev6ms6wgo8jmeym0/branch/master?svg=true)](https://ci.appveyor.com/project/Larusso/unity-version-manager/branch/master)
-[![License](https://img.shields.io/github/license/Larusso/unity-version-manager.svg)](https://github.com/Larusso/unity-version-manager/blob/master/LICENSE)
-![](https://img.shields.io/github/issues/Larusso/unity-version-manager.svg)
-[![Latest Release](https://img.shields.io/github/release/Larusso/unity-version-manager.svg)](https://github.com/Larusso/unity-version-manager/releases/latest)
-![macOS-supported](https://img.shields.io/badge/macOS-supported-brightgreen.svg)
-![windows-experimental](https://img.shields.io/badge/windows-experimental-blue.svg)
-![linux-experimental](https://img.shields.io/badge/linux-experimental-blue.svg)
 
 
 Installation
 ------------
 
-_install with brew_
+_install with cargo_
 
 ```bash
-brew tap wooga/tools
-brew install wooga/api-version-manager
+cargo install unity-version-manager
 ```
-
-To build from source a recent version of rust is needed `> 1.30`. You should use [rustup].
 
 _install from source with cmake_
 
 ```bash
-git clone git@github.com:Larusso/api-version-manager.git
-cd api-version-manager
+git clone git@github.com:Larusso/unity-version-manager.git
+cd unity-version-manager
 make install
 ```
 
 _install from source with cargo_
 
 ```bash
-git clone git@github.com:Larusso/api-version-manager.git
-cd api-version-manager
-cargo build --release
-#symlink or move binaries in target/release
+git clone git@github.com:Larusso/unity-version-manager.git
+cd unity-version-manager
+cargo install --path ./uvm
 ```
 
 Usage
 -----
 
-The _uvm_ (unity-version-manager) is a collection of small command-line tools. Each command can be invoked through the main tool `uvm`.
+The _uvm_ (unity-version-manager) is a command-line tool for managing Unity installations and projects.
 
-### Version handling
+```bash
+uvm [OPTIONS] <COMMAND>
+```
 
-The main purpose of uvm was the management of multiple unity installations on macOS. The idea was to have a similar interface as [rvm] to activate and deactivate different unity installations. This is done by creating a symlink at the default unity installation location (`/Applications/Unity` on macOS).
+### Core Commands
 
-| command        | description |
-| -------------- | ----------- |
-| use            | Use specific version of unity. |
-| clear          | Remove the link so you can install a new version without overwriting. |
-| current        | Prints current activated version of unity. |
-| list           | List installed unity versions |
+| Command | Description |
+| ------- | ----------- |
+| **install** | Install specified Unity version with optional modules |
+| **uninstall** | Uninstall Unity version or specific modules |
+| **list** | List installed Unity versions (from Hub, system, or all) |
+| **launch** | Launch Unity with a project, optionally with specific build platform |
 
-### Version installation
+### Project & Version Management
 
-These commands allow the installation and deinstallation of Unity versions with additional components.
+| Command | Description |
+| ------- | ----------- |
+| **detect** | Find which Unity version was used to create a project |
+| **modules** | List available modules for a specific Unity version |
+| **version** | Unity version utilities (latest, matching version requirements) |
 
-| command        | description |
-| -------------- | ----------- |
-| install        | Install specified unity version. |
-| uninstall      | Uninstall specified unity version |
-| versions       | List available Unity versions to install. |
+### Detailed Command Usage
 
-### Miscellaneous commands
+#### Install Unity
+```bash
+# Install specific Unity version
+uvm install 2023.1.4f1
 
-| command        | description |
-| -------------- | ----------- |
-| detect         | Find which version of unity was used to generate a project |
-| launch         | Launch the current active version of unity. |
-| help           | Prints help page for command. |
+# Install with additional modules
+uvm install 2023.1.4f1 --module android --module ios
+
+# Install to custom location
+uvm install 2023.1.4f1 /path/to/install
+
+# Install with sync modules (dependencies)
+uvm install 2023.1.4f1 --module android --with-sync
+```
+
+#### List Unity Installations
+```bash
+# List Unity Hub installations (default)
+uvm list
+
+# List all Unity installations
+uvm list --all
+
+# List system installations only
+uvm list --system
+
+# Show path only
+uvm list --path
+```
+
+#### Launch Unity Projects
+```bash
+# Launch Unity with current directory as project
+uvm launch
+
+# Launch specific project
+uvm launch /path/to/project
+
+# Launch with specific platform
+uvm launch /path/to/project --platform android
+
+# Auto-detect project and use its Unity version
+uvm launch --force-project-version
+```
+
+#### Version Management
+```bash
+# Get latest LTS version
+uvm version latest --stream lts
+
+# Find versions matching requirement
+uvm version matching ">=2023.1"
+
+# List modules for specific version
+uvm modules 2023.1.4f1
+
+# List modules by category
+uvm modules 2023.1.4f1 --category platforms
+```
+
+### Global Options
+
+| Option | Description |
+| ------ | ----------- |
+| `-d, --debug` | Print debug output |
+| `-v, --verbose` | Print more output (can be repeated) |
+| `-c, --color` | Control color output: auto, always, never |
+| `-h, --help` | Print help information |
+| `-V, --version` | Print version information |
+
+Development
+===========
+
+### Workspace Structure
+
+This project uses a Cargo workspace with multiple crates:
+
+| Crate | Description |
+| ----- | ----------- |
+| `uvm` | Main CLI application (produces `uvm` binary) |
+| `unity-version` | Unity version parsing and management |
+| `unity-hub` | Unity Hub integration |
+| `unity-types` | Base Unity data types |
+| `uvm_install` | Unity installation logic |
+| `uvm_live_platform` | Unity release platform API |
+| `uvm_install_graph` | Installation dependency graph |
+| `uvm_move_dir` | Cross-platform directory operations |
+
+### Building from Source
+
+```bash
+git clone git@github.com:Larusso/unity-version-manager.git
+cd unity-version-manager
+cargo build --workspace
+```
+
+### Running Tests
+
+```bash
+cargo test --workspace
+```
+
+### Running Development Version
+
+```bash
+# Run the uvm binary directly
+cargo run --bin uvm -- --help
+
+# Install locally for testing
+cargo install --path ./uvm
+```
 
 License
 =======

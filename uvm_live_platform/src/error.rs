@@ -1,5 +1,4 @@
 use thiserror::Error;
-use crate::{UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseStream};
 
 #[derive(Error, Debug)]
 #[error(transparent)]
