@@ -22,7 +22,7 @@ indicatif = "0.18.0"
 flexi_logger = "0.31.2"
 log = { workspace = true }
 semver = { workspace = true }
-uvm_live_platform = { version = "0.4.0", path = "../uvm_live_platform", features = ["clap"] }
+uvm_live_platform = { version = "0.4.2", path = "../uvm_live_platform", features = ["clap"] }
 unity-hub = { version = "0.4.0", path = "../unity-hub", features = ["mutate"] }
 uvm_install = { version = "0.13.0", path = "../uvm_install" }
 itertools = { workspace = true }
