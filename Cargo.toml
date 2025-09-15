@@ -11,7 +11,7 @@ members = [
   "unity-types"]
 [workspace.dependencies]
 reqwest = { version = "0.12.23", default-features = false, features = ["rustls-tls-native-roots", "http2", "charset", "blocking", "json"] }
-serde = { version = "1.0.218", features = ["derive"] }
+serde = { version = "1.0.223", features = ["derive"] }
 itertools = "0.14.0"
 cfg-if = "1.0.0"
 console = "0.16.1"
