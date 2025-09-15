@@ -14,7 +14,7 @@ name = "uvm_install"
 
 [dependencies]
 ssri = { workspace = true }
-uvm_move_dir = {path = "../uvm_move_dir", version = "0.2.0" }
+uvm_move_dir = {path = "../uvm_move_dir", version = "0.2.2" }
 console = { workspace = true }
 dirs-2 = { workspace = true }
 log = { workspace = true }

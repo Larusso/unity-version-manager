@@ -1,6 +1,6 @@
 [package]
 name = "uvm_move_dir"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Opinionated directory move operation"
 repository = "https://github.com/Larusso/unity-version-manager"
