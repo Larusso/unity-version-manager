@@ -17,7 +17,7 @@ path = "src/main.rs"
 anyhow = { workspace = true }
 clap = {  version = "4.5.38", features = ["derive", "string", "env", "cargo"] }
 unity-version = { version = "0.2.0", path="../unity-version", features = ["clap"]}
-uvm_detect = { version = "0.1.0", path = "../uvm_detect" }
+uvm_detect = { version = "1.0.0", path = "../uvm_detect" }
 console = { workspace = true }
 indicatif = "0.18.0"
 flexi_logger = "0.31.2"
