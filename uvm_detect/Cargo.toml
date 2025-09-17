@@ -1,0 +1,16 @@
+[package]
+name = "uvm_detect"
+version = "0.1.0"
+edition = "2024"
+description = "Unity project detection and version extraction library"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/larusso/unity-version-manager"
+keywords = ["unity", "gamedev", "project-detection", "version"]
+categories = ["game-development", "filesystem"]
+
+[dependencies]
+unity-version = { version = "0.2.0", path = "../unity-version" }
+
+[dev-dependencies]
+tempfile = "3.0"

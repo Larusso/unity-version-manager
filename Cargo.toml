@@ -8,7 +8,9 @@ members = [
   "uvm_install",
   "unity-version",
   "unity-hub",
-  "unity-types"]
+  "unity-types",
+  "uvm_detect"
+]
 [workspace.dependencies]
 reqwest = { version = "0.12.23", default-features = false, features = ["rustls-tls-native-roots", "http2", "charset", "blocking", "json"] }
 serde = { version = "1.0.218", features = ["derive"] }
