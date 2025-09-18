@@ -1,6 +1,6 @@
 [package]
 name = "unity-hub"
-version = "0.4.2"
+version = "0.4.3"
 edition = "2021"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Wrapper library around Unity hub to fetch and manipulate Unity Hub configs"
