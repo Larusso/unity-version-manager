@@ -1,5 +1,5 @@
 use thiserror::Error;
-use derive_more::{Deref, Display};
+use derive_more::Deref;
 use std::str::FromStr;
 
 #[derive(Debug, Error)]
@@ -12,10 +12,15 @@ pub enum RevisionHashError {
     InvalidCharacter,
 }
 
-#[derive(Eq, Debug, Clone, Hash, Display, Deref)]
-#[display("{}", 0)]
+#[derive(Eq, Debug, Clone, Hash, Deref)]
 #[allow(dead_code)]
 pub struct RevisionHash(String);
+
+impl std::fmt::Display for RevisionHash {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 #[allow(dead_code)]
 impl RevisionHash {
