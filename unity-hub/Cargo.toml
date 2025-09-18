@@ -1,6 +1,6 @@
 [package]
 name = "unity-hub"
-version = "0.4.3"
+version = "0.4.4"
 edition = "2021"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Wrapper library around Unity hub to fetch and manipulate Unity Hub configs"
@@ -15,7 +15,7 @@ mutate = []
 [dependencies]
 unity-version = {path = "../unity-version", version = "0.3.0" }
 unity-types = {path = "../unity-types", version = "0.1.2" }
-uvm_live_platform = { path = "../uvm_live_platform",  version = "0.4.2" }
+uvm_live_platform = { path = "../uvm_live_platform",  version = "0.4.3" }
 log = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
