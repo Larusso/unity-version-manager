@@ -2841,6 +2841,7 @@ dependencies = [
 name = "uvm_detect"
 version = "1.0.0"
 dependencies = [
+ "regex",
  "tempfile",
  "unity-version",
 ]

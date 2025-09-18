@@ -5,8 +5,9 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
-
+use unity_version::RevisionHash;
 use unity_version::Version;
+use unity_version::CompleteVersion;
 
 
 /// Configuration options for Unity project detection.
@@ -36,6 +37,17 @@ use unity_version::Version;
 ///     .recursive(true)
 ///     .max_depth(5)
 ///     .detect_project_version(Path::new("."))?;
+///
+/// // Get complete version with revision hash
+/// let complete_version = DetectOptions::new()
+///     .detect_project_complete_version(Path::new("."))?;
+/// println!("Version: {}, Revision: {}", 
+///          complete_version.version(), complete_version.revision());
+///
+/// // Get just the revision hash
+/// let revision_hash = DetectOptions::new()
+///     .detect_project_version_revision_hash(Path::new("."))?;
+/// println!("Revision hash: {}", revision_hash);
 /// # Ok::<(), std::io::Error>(())
 /// ```
 #[derive(Default)]
@@ -122,7 +134,6 @@ impl DetectOptions {
         self
     }
 
-
     /// Sets whether to use case-sensitive path matching.
     ///
     /// This affects how file and directory names are compared during search.
@@ -180,6 +191,12 @@ impl DetectOptions {
     /// # Ok::<(), std::io::Error>(())
     /// ```
     pub fn detect_project_version(&self, dir: &Path) -> io::Result<Version> {
+        let v = self.detect_project_version_str(dir)?;
+        Version::from_str(&v)
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Can't parse Unity version"))
+    }
+
+    pub fn detect_project_version_str(&self, dir: &Path) -> io::Result<String> {
         let project_version = self.detect_unity_project_dir(dir).and_then(|p| {
             self.try_get_project_version(p).ok_or_else(|| {
                 io::Error::new(io::ErrorKind::NotFound, "ProjectVersion.txt not found")
@@ -210,9 +227,100 @@ impl DetectOptions {
             .or_else(|| editor_versions.get("EditorVersion"))
             .ok_or_else(|| {
                 io::Error::new(io::ErrorKind::InvalidInput, "Can't parse Unity version")
-            })?;
-        Version::from_str(&v)
-            .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Can't parse Unity version"))
+            })?; 
+        Ok(v.to_owned())
+    }
+
+    /// Detects and extracts the revision hash from a Unity project version.
+    ///
+    /// This function locates a Unity project directory and reads the ProjectVersion.txt file
+    /// to extract the revision hash from the Unity editor version information. It requires
+    /// the version to include a revision hash (e.g., "2021.3.55f1 (f87d5274e360)").
+    ///
+    /// # Arguments
+    ///
+    /// * `dir` - The directory path to start searching from
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(RevisionHash)` - If a valid revision hash is found
+    /// * `Err(io::Error)` - If the project is not found, version file cannot be read,
+    ///   the version string is invalid, or no revision hash is present
+    ///
+    /// # Error Types
+    ///
+    /// - `NotFound` - Unity project or version file not found
+    /// - `InvalidInput` - Version format is invalid or no revision hash present
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::path::Path;
+    /// use uvm_detect::DetectOptions;
+    ///
+    /// // Version with revision hash: "2021.3.55f1 (f87d5274e360)"
+    /// match DetectOptions::new()
+    ///     .detect_project_version_revision_hash(Path::new("./project")) {
+    ///     Ok(hash) => println!("Found revision hash: {}", hash),
+    ///     Err(e) => println!("Error: {}", e),
+    /// }
+    ///
+    /// // If you want Optional behavior, use .ok():
+    /// let hash_opt = DetectOptions::new()
+    ///     .detect_project_version_revision_hash(Path::new("./project"))
+    ///     .ok();
+    /// # Ok::<(), std::io::Error>(())
+    /// ```
+    pub fn detect_project_version_revision_hash(&self, dir: &Path) -> io::Result<RevisionHash> {
+        // Delegate to the complete version function and extract just the revision hash
+        let complete_version = self.detect_project_complete_version(dir)?;
+        Ok(complete_version.revision().clone())
+    }
+
+    /// Detects and parses the complete Unity version (version + revision hash) from a Unity project.
+    ///
+    /// This function locates a Unity project directory and reads the ProjectVersion.txt file
+    /// to extract both the Unity version and revision hash. It requires the version to include 
+    /// a revision hash (e.g., "2021.3.55f1 (f87d5274e360)").
+    ///
+    /// # Arguments
+    ///
+    /// * `dir` - The directory path to start searching from
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(CompleteVersion)` - If a valid version with revision hash is found
+    /// * `Err(io::Error)` - If the project is not found, version file cannot be read,
+    ///   the version string is invalid, or no revision hash is present
+    ///
+    /// # Error Types
+    ///
+    /// - `NotFound` - Unity project or version file not found
+    /// - `InvalidInput` - Version format is invalid or no revision hash present
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::path::Path;
+    /// use uvm_detect::DetectOptions;
+    ///
+    /// // Version with revision hash: "2021.3.55f1 (f87d5274e360)"
+    /// match DetectOptions::new()
+    ///     .detect_project_complete_version(Path::new("./project")) {
+    ///     Ok(complete_version) => {
+    ///         println!("Version: {}", complete_version.version());
+    ///         println!("Revision: {}", complete_version.revision());
+    ///         println!("Complete: {}", complete_version); // "2021.3.55f1 (f87d5274e360)"
+    ///     },
+    ///     Err(e) => println!("Error: {}", e),
+    /// }
+    /// # Ok::<(), std::io::Error>(())
+    /// ```
+    pub fn detect_project_complete_version(&self, dir: &Path) -> io::Result<CompleteVersion> {
+        let version_str = self.detect_project_version_str(dir)?;
+        
+        CompleteVersion::from_str(&version_str)
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e.to_string()))
     }
 
     /// Detects a Unity project directory by searching for Unity project markers.
@@ -408,6 +516,73 @@ pub fn detect_unity_project_dir(dir: &Path) -> io::Result<PathBuf> {
 /// ```
 pub fn detect_project_version(project_path: &Path) -> io::Result<Version> {
     DetectOptions::new().detect_project_version(project_path)
+}
+
+/// Detects and extracts the revision hash from a Unity project version.
+/// 
+/// Convenience function using default detection options.
+/// 
+/// # Arguments
+/// 
+/// * `project_path` - The path to start searching for a Unity project
+/// 
+/// # Returns
+/// 
+/// * `Ok(RevisionHash)` - If a valid revision hash is found
+/// * `Err(io::Error)` - If the project is not found, version file cannot be read,
+///   the version string is invalid, or no revision hash is present
+/// 
+/// # Examples
+/// 
+/// ```no_run
+/// use std::path::Path;
+/// use uvm_detect::detect_project_version_revision_hash;
+/// 
+/// match detect_project_version_revision_hash(Path::new("./my-unity-project")) {
+///     Ok(hash) => println!("Found revision hash: {}", hash),
+///     Err(e) => println!("Error: {}", e),
+/// }
+/// 
+/// // If you want Optional behavior, use .ok():
+/// let hash_opt = detect_project_version_revision_hash(Path::new("./my-unity-project")).ok();
+/// # Ok::<(), std::io::Error>(())
+/// ```
+pub fn detect_project_version_revision_hash(project_path: &Path) -> io::Result<RevisionHash> {
+    DetectOptions::new().detect_project_version_revision_hash(project_path)
+}
+
+/// Detects and parses the complete Unity version (version + revision hash) from a Unity project.
+/// 
+/// Convenience function using default detection options.
+/// 
+/// # Arguments
+/// 
+/// * `project_path` - The path to start searching for a Unity project
+/// 
+/// # Returns
+/// 
+/// * `Ok(CompleteVersion)` - If a valid version with revision hash is found
+/// * `Err(io::Error)` - If the project is not found, version file cannot be read,
+///   the version string is invalid, or no revision hash is present
+/// 
+/// # Examples
+/// 
+/// ```no_run
+/// use std::path::Path;
+/// use uvm_detect::detect_project_complete_version;
+/// 
+/// match detect_project_complete_version(Path::new("./my-unity-project")) {
+///     Ok(complete_version) => {
+///         println!("Version: {}", complete_version.version());
+///         println!("Revision: {}", complete_version.revision());
+///         println!("Complete: {}", complete_version); // "2021.3.55f1 (f87d5274e360)"
+///     },
+///     Err(e) => println!("Error: {}", e),
+/// }
+/// # Ok::<(), std::io::Error>(())
+/// ```
+pub fn detect_project_complete_version(project_path: &Path) -> io::Result<CompleteVersion> {
+    DetectOptions::new().detect_project_complete_version(project_path)
 }
 
 /// Attempts to get the path to the Unity ProjectVersion.txt file if it exists.
@@ -734,5 +909,270 @@ mod tests {
         
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), project_path);
+    }
+
+    #[test]
+    fn test_detect_project_version_revision_hash_with_revision() {
+        let temp_dir = TempDir::new().unwrap();
+        let version_content = "m_EditorVersion: 2021.3.55f1\nm_EditorVersionWithRevision: 2021.3.55f1 (f87d5274e360)";
+        create_unity_project(temp_dir.path(), version_content).unwrap();
+
+        let result = DetectOptions::new().detect_project_version_revision_hash(temp_dir.path());
+        assert!(result.is_ok());
+        
+        let revision_hash = result.unwrap();
+        assert_eq!(revision_hash.as_str(), "f87d5274e360");
+    }
+
+    #[test]
+    fn test_detect_project_version_revision_hash_without_revision() {
+        let temp_dir = TempDir::new().unwrap();
+        let version_content = "m_EditorVersion: 2021.3.55f1";
+        create_unity_project(temp_dir.path(), version_content).unwrap();
+
+        let result = DetectOptions::new().detect_project_version_revision_hash(temp_dir.path());
+        assert!(result.is_err());
+        
+        let error = result.unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+        assert!(error.to_string().contains("Failed to parse unity version string"));
+    }
+
+    #[test]
+    fn test_detect_project_version_revision_hash_convenience_function_with_revision() {
+        let temp_dir = TempDir::new().unwrap();
+        let version_content = "m_EditorVersionWithRevision: 2022.1.5f1 (abc123def456)";
+        create_unity_project(temp_dir.path(), version_content).unwrap();
+
+        let result = detect_project_version_revision_hash(temp_dir.path());
+        assert!(result.is_ok());
+        
+        let revision_hash = result.unwrap();
+        assert_eq!(revision_hash.as_str(), "abc123def456");
+    }
+
+    #[test]
+    fn test_detect_project_version_revision_hash_convenience_function_without_revision() {
+        let temp_dir = TempDir::new().unwrap();
+        let version_content = "m_EditorVersion: 2022.1.5f1";
+        create_unity_project(temp_dir.path(), version_content).unwrap();
+
+        let result = detect_project_version_revision_hash(temp_dir.path());
+        assert!(result.is_err());
+        
+        let error = result.unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+        assert!(error.to_string().contains("Failed to parse unity version string"));
+    }
+
+    #[test]
+    fn test_detect_project_version_revision_hash_different_unity_versions() {
+        // Test different Unity version formats
+        let test_cases = vec![
+            ("2019.4.31f1 (be6d8d9ca5f4)", Some("be6d8d9ca5f4")),
+            ("2020.3.48f1 (b805b124c6b2)", Some("b805b124c6b2")),
+            ("2021.3.16f1 (4016570cf34f)", Some("4016570cf34f")),
+            ("2022.3.5f1 (9674261d40ee)", Some("9674261d40ee")),
+            ("2023.1.0a1 (123456789abc)", Some("123456789abc")),
+            ("2023.2.0b5 (fedcba098765)", Some("fedcba098765")),
+            ("2024.1.0p1 (111222333444)", Some("111222333444")),
+            ("2019.4.31f1", None),
+            ("2020.3.48f1", None),
+            ("2021.3.16f1", None),
+            ("2022.3.5f1", None),
+        ];
+
+        for (version_with_revision, expected_hash) in test_cases {
+            let temp_dir = TempDir::new().unwrap();
+            let version_content = format!("m_EditorVersionWithRevision: {}", version_with_revision);
+            create_unity_project(temp_dir.path(), &version_content).unwrap();
+
+            let result = DetectOptions::new().detect_project_version_revision_hash(temp_dir.path());
+            
+            match expected_hash {
+                Some(expected) => {
+                    assert!(result.is_ok(), "Expected success for version with revision: {}", version_with_revision);
+                    let revision_hash = result.unwrap();
+                    assert_eq!(revision_hash.as_str(), expected, "Hash mismatch for: {}", version_with_revision);
+                }
+                None => {
+                    assert!(result.is_err(), "Expected error for version without revision: {}", version_with_revision);
+                    let error = result.unwrap_err();
+                    assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+                    assert!(error.to_string().contains("Failed to parse unity version string"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_detect_project_version_revision_hash_invalid_hash_length() {
+        let temp_dir = TempDir::new().unwrap();
+        // Invalid revision hash - too short
+        let version_content = "m_EditorVersionWithRevision: 2021.3.55f1 (f87d527)";
+        create_unity_project(temp_dir.path(), version_content).unwrap();
+
+        let result = DetectOptions::new().detect_project_version_revision_hash(temp_dir.path());
+        assert!(result.is_err());
+        
+        let error = result.unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+        assert!(error.to_string().contains("Failed to parse unity version string"));
+        assert!(error.to_string().contains("f87d527"));
+    }
+
+    #[test]
+    fn test_detect_project_version_revision_hash_invalid_hash_characters() {
+        let temp_dir = TempDir::new().unwrap();
+        // Invalid revision hash - contains non-hex characters
+        let version_content = "m_EditorVersionWithRevision: 2021.3.55f1 (f87d5274e36z)";
+        create_unity_project(temp_dir.path(), version_content).unwrap();
+
+        let result = DetectOptions::new().detect_project_version_revision_hash(temp_dir.path());
+        assert!(result.is_err());
+        
+        let error = result.unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+        assert!(error.to_string().contains("Failed to parse unity version string"));
+        assert!(error.to_string().contains("f87d5274e36z"));
+    }
+
+    #[test]
+    fn test_detect_project_version_revision_hash_malformed_version() {
+        let temp_dir = TempDir::new().unwrap();
+        // Completely invalid version format
+        let version_content = "m_EditorVersionWithRevision: not_a_valid_version (f87d5274e360)";
+        create_unity_project(temp_dir.path(), version_content).unwrap();
+
+        let result = DetectOptions::new().detect_project_version_revision_hash(temp_dir.path());
+        assert!(result.is_err());
+        
+        let error = result.unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+        assert!(error.to_string().contains("Failed to parse unity version string"));
+        assert!(error.to_string().contains("not_a_valid_version"));
+    }
+
+    #[test]
+    fn test_detect_project_version_revision_hash_no_project() {
+        let temp_dir = TempDir::new().unwrap();
+        // Empty directory with no Unity project
+
+        let result = DetectOptions::new().detect_project_version_revision_hash(temp_dir.path());
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::NotFound);
+    }
+
+    #[test]
+    fn test_detect_project_version_revision_hash_recursive_search() {
+        let temp_dir = TempDir::new().unwrap();
+        let subdir = temp_dir.path().join("my_project");
+        fs::create_dir(&subdir).unwrap();
+        let version_content = "m_EditorVersionWithRevision: 2023.1.10f1 (deadbeefcafe)";
+        create_unity_project(&subdir, version_content).unwrap();
+
+        let result = DetectOptions::new()
+            .recursive(true)
+            .detect_project_version_revision_hash(temp_dir.path());
+        assert!(result.is_ok());
+        
+        let revision_hash = result.unwrap();
+        assert_eq!(revision_hash.as_str(), "deadbeefcafe");
+    }
+
+    #[test]
+    fn test_detect_project_version_revision_hash_prefers_with_revision() {
+        let temp_dir = TempDir::new().unwrap();
+        // Test that when both m_EditorVersion and m_EditorVersionWithRevision are present,
+        // it uses the one with revision for hash extraction
+        let version_content = "m_EditorVersion: 2021.3.55f1\nm_EditorVersionWithRevision: 2021.3.55f1 (f87d5274e360)";
+        create_unity_project(temp_dir.path(), version_content).unwrap();
+
+        let result = DetectOptions::new().detect_project_version_revision_hash(temp_dir.path());
+        assert!(result.is_ok());
+        
+        let revision_hash = result.unwrap();
+        assert_eq!(revision_hash.as_str(), "f87d5274e360");
+    }
+
+    #[test]
+    fn test_detect_project_complete_version_with_revision() {
+        let temp_dir = TempDir::new().unwrap();
+        let version_content = "m_EditorVersion: 2021.3.55f1\nm_EditorVersionWithRevision: 2021.3.55f1 (f87d5274e360)";
+        create_unity_project(temp_dir.path(), version_content).unwrap();
+
+        let result = DetectOptions::new().detect_project_complete_version(temp_dir.path());
+        assert!(result.is_ok());
+        
+        let complete_version = result.unwrap();
+        assert_eq!(complete_version.version().to_string(), "2021.3.55f1");
+        assert_eq!(complete_version.revision().as_str(), "f87d5274e360");
+        assert_eq!(complete_version.to_string(), "2021.3.55f1 (f87d5274e360)");
+    }
+
+    #[test]
+    fn test_detect_project_complete_version_without_revision() {
+        let temp_dir = TempDir::new().unwrap();
+        let version_content = "m_EditorVersion: 2021.3.55f1";
+        create_unity_project(temp_dir.path(), version_content).unwrap();
+
+        let result = DetectOptions::new().detect_project_complete_version(temp_dir.path());
+        assert!(result.is_err());
+        
+        let error = result.unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+        assert!(error.to_string().contains("Failed to parse unity version string"));
+    }
+
+    #[test]
+    fn test_detect_project_complete_version_convenience_function() {
+        let temp_dir = TempDir::new().unwrap();
+        let version_content = "m_EditorVersionWithRevision: 2022.3.10f1 (abc123def456)";
+        create_unity_project(temp_dir.path(), version_content).unwrap();
+
+        let result = detect_project_complete_version(temp_dir.path());
+        assert!(result.is_ok());
+        
+        let complete_version = result.unwrap();
+        assert_eq!(complete_version.version().to_string(), "2022.3.10f1");
+        assert_eq!(complete_version.revision().as_str(), "abc123def456");
+        assert_eq!(complete_version.to_string(), "2022.3.10f1 (abc123def456)");
+    }
+
+    #[test]
+    fn test_detect_project_complete_version_invalid_hash() {
+        let temp_dir = TempDir::new().unwrap();
+        let version_content = "m_EditorVersionWithRevision: 2021.3.55f1 (invalid)";
+        create_unity_project(temp_dir.path(), version_content).unwrap();
+
+        let result = DetectOptions::new().detect_project_complete_version(temp_dir.path());
+        assert!(result.is_err());
+        
+        let error = result.unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+        assert!(error.to_string().contains("Failed to parse unity version string"));
+    }
+
+    #[test]
+    fn test_detect_project_complete_version_backwards_compatibility() {
+        let temp_dir = TempDir::new().unwrap();
+        let version_content = "m_EditorVersionWithRevision: 2021.3.55f1 (f87d5274e360)";
+        create_unity_project(temp_dir.path(), version_content).unwrap();
+
+        // Test that existing functions still work
+        let version_result = DetectOptions::new().detect_project_version(temp_dir.path());
+        assert!(version_result.is_ok());
+        assert_eq!(version_result.unwrap().to_string(), "2021.3.55f1");
+
+        let hash_result = DetectOptions::new().detect_project_version_revision_hash(temp_dir.path());
+        assert!(hash_result.is_ok());
+        assert_eq!(hash_result.unwrap().as_str(), "f87d5274e360");
+
+        // Test new complete version function
+        let complete_result = DetectOptions::new().detect_project_complete_version(temp_dir.path());
+        assert!(complete_result.is_ok());
+        let complete_version = complete_result.unwrap();
+        assert_eq!(complete_version.version().to_string(), "2021.3.55f1");
+        assert_eq!(complete_version.revision().as_str(), "f87d5274e360");
     }
 }

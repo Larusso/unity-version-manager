@@ -11,6 +11,6 @@ categories = ["game-development", "filesystem"]
 
 [dependencies]
 unity-version = { version = "0.2.0", path = "../unity-version" }
-
+regex = "1.11.0"
 [dev-dependencies]
 tempfile = "3.0"
