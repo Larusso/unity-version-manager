@@ -13,7 +13,7 @@ license = "Apache-2.0"
 mutate = []
 
 [dependencies]
-unity-version = {path = "../unity-version", version = "0.2.0" }
+unity-version = {path = "../unity-version", version = "0.3.0" }
 unity-types = {path = "../unity-types", version = "0.1.2" }
 uvm_live_platform = { path = "../uvm_live_platform",  version = "0.4.2" }
 log = { workspace = true }

@@ -21,7 +21,7 @@ log = { workspace = true }
 zip = "5.1.1"
 reqwest = { workspace = true }
 thiserror = { workspace = true }
-unity-version = { path = "../unity-version", version = "0.2.0"}
+unity-version = { path = "../unity-version", version = "0.3.0" }
 uvm_live_platform = { path = "../uvm_live_platform", version = "0.4.2" }
 uvm_install_graph = { path = "../uvm_install_graph", version = "0.12.0" }
 unity-hub = {path = "../unity-hub", version = "0.4.2", features = ["mutate"] }
