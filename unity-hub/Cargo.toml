@@ -21,7 +21,7 @@ serde_json = { workspace = true }
 serde = { workspace = true }
 proptest = "1.4.0"
 tempfile = "3.17.1"
-plist = "1.7.0"
+plist = "1.8.0"
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 dirs-2 = "3.0.1"
