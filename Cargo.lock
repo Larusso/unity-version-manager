@@ -2779,7 +2779,7 @@ dependencies = [
 
 [[package]]
 name = "unity-version-manager"
-version = "3.2.0"
+version = "3.2.1"
 dependencies = [
  "anyhow",
  "clap",
