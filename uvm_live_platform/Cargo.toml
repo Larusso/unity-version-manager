@@ -16,7 +16,7 @@ default = []
 clap = ["dep:clap"]
 
 [dependencies]
-clap = { version = "4.5.38", features = ["derive"], optional = true }
+clap = { version = "4.5.48", features = ["derive"], optional = true }
 anyhow = { workspace = true }
 indoc = "2.0.3"
 reqwest = { workspace = true }
