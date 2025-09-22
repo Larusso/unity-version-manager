@@ -7,7 +7,8 @@ pub use installation::FromInstallation;
 pub use installation::Installation;
 pub use installation::UnityInstallation;
 use itertools::Itertools;
-use log::{debug, trace, warn};
+use log::warn;
+use log::{debug, trace};
 use std::path::Path;
 use std::{fs, io};
 use unity_version::Version;
@@ -23,6 +24,13 @@ impl Installations {
             "fetch unity installations from {}",
             install_location.display()
         );
+        
+        // Check if directory exists first - if not, return empty list
+        if !install_location.exists() {
+            warn!("Installation directory doesn't exist, returning empty list: {}", install_location.display());
+            return Ok(Installations::empty());
+        }
+        
         let read_dir = fs::read_dir(install_location).map_err(|err| UnityHubError::FailedToListInstallations {path: install_location.to_path_buf(), source: err})?;
 
         let iter = read_dir
@@ -122,24 +130,11 @@ pub fn list_installations() -> Result<Installations, UnityHubError> {
 
     application_path
         .ok_or_else(|| {
-            io::Error::new(io::ErrorKind::NotFound, "unable to locate application_dir").into()
+            let io_err = io::Error::new(io::ErrorKind::NotFound, "unable to locate application_dir");
+            UnityHubError::ApplicationDirectoryNotFound { source: io_err }
         })
         .and_then(|application_dir| {
-            list_installations_in_dir(&application_dir).or_else(|err| {
-                match err {
-                    UnityHubError::IoError(ref io_error) => {
-                        io_error.raw_os_error().and_then(|os_error| match os_error {
-                            2 => {
-                                warn!("{}", io_error);
-                                Some(Installations::empty())
-                            }
-                            _ => None,
-                        })
-                    }
-                    _ => None,
-                }
-                .ok_or_else(|| err)
-            })
+            list_installations_in_dir(&application_dir)
         })
 }
 
@@ -156,11 +151,14 @@ pub fn find_installation(version: &Version) -> Result<UnityInstallation, UnityHu
         installations
             .find(|installation| installation.version() == version)
             .ok_or_else(|| {
-                io::Error::new(
+                let io_err = io::Error::new(
                     io::ErrorKind::NotFound,
                     format!("unable to locate installation with version {}", version),
-                )
-                .into()
+                );
+                UnityHubError::InstallationNotFound { 
+                    version: version.to_string(),
+                    source: io_err 
+                }
             })
     })
 }
@@ -248,10 +246,10 @@ mod tests {
         assert!(Installations::new(test_dir.path()).is_ok());
     }
 
-    // #[test]
-    // fn list_installations_returns_empty_iterator_when_dir_does_not_exist() {
-    //     assert_eq!(list_installations().unwrap().count(), 0);
-    // }
+    #[test]
+    fn list_installations_returns_empty_iterator_when_dir_does_not_exist() {
+        assert_eq!(list_installations().unwrap().count(), 0);
+    }
 
     #[test]
     fn installations_can_be_converted_to_versions() {

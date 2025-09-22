@@ -15,7 +15,7 @@ enum ArchError {
     #[error("Unknown architecture")]
     UnknownArchitecture,
 
-    #[error("IO error")]
+    #[error("IO error: {0}")]
     IoError(#[from] io::Error),
 
     #[error("Mach file type not supported")]
