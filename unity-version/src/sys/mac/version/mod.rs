@@ -23,12 +23,21 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version, Versio
     if path.is_dir() {
         //check for the `Unity.app` package
         let info_plist_path = path.join("Unity.app/Contents/Info.plist");
-        let info: AppInfo = plist::from_file(&info_plist_path).map_err(|source| VersionError::Other {
-            msg: "Failed to parse version from Info.plist".to_string(),
-            source: source.into(),
-        })?;
-        let version = Version::from_str(&info.c_f_bundle_version)?;
-        return Ok(version);
+        
+        // Try to read from Info.plist first (preferred method on macOS)
+        if let Ok(info) = plist::from_file::<_, AppInfo>(&info_plist_path) {
+            if let Ok(version) = Version::from_str(&info.c_f_bundle_version) {
+                return Ok(version);
+            }
+        }
+        
+        // Fallback: try to find Unity executable and use strings command
+        let unity_executable = path.join("Unity.app/Contents/MacOS/Unity");
+        if unity_executable.exists() {
+            if let Ok(version) = Version::find_version_in_file(&unity_executable) {
+                return Ok(version);
+            }
+        }
     }
 
     Err(VersionError::PathContainsNoVersion(

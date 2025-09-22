@@ -36,7 +36,7 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version, Versio
                     }
                 })
                 .and_then(|path| Version::from_str(path))
-                .or_else(|_| find_version_in_file(executable_path));
+                .or_else(|_| Version::find_version_in_file(executable_path));
         }
     }
 
@@ -45,35 +45,3 @@ pub fn read_version_from_path<P: AsRef<Path>>(path: P) -> Result<Version, Versio
     ))
 }
 
-pub fn find_version_in_file<P: AsRef<Path>>(path: P) -> Result<Version, VersionError> {
-    use std::process::{Command, Stdio};
-
-    let path = path.as_ref();
-    debug!("find api version in Unity executable {}", path.display());
-
-    let child = Command::new("strings")
-        .arg("--")
-        .arg(path)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| VersionError::Other {
-            source: e.into(),
-            msg: "failed to spawn strings".to_string(),
-        })?;
-
-    let output = child.wait_with_output().map_err(|e| VersionError::Other {
-        source: e.into(),
-        msg: "failed to spawn strings".to_string(),
-    })?;
-
-    if !output.status.success() {
-        return Err(VersionError::ExecutableContainsNoVersion(
-            path.to_path_buf(),
-        ));
-    }
-
-    let version = Version::from_str(&String::from_utf8_lossy(&output.stdout))?;
-    debug!("found version {}", &version);
-    Ok(version)
-}
