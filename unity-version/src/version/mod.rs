@@ -10,7 +10,7 @@ use nom::{
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::path::{Path, PathBuf};
-use std::{cmp::Ordering, str::FromStr, sync::OnceLock};
+use std::{cmp::Ordering, str::FromStr};
 use regex::Regex;
 
 mod release_type;
@@ -168,23 +168,127 @@ impl Version {
     }
 
     pub fn from_string_containing<S: AsRef<str>>(s: S) -> Result<Self, VersionError> {
+        let s = s.as_ref();
+        Self::extract_version_from_text(s)
+            .ok_or_else(|| VersionError::ParsingFailed(format!("Could not find a valid Unity version in string: {}", s)))
+    }
+
+    /// Extract Unity version from text using prioritized approach.
+    /// Prioritizes versions with hashes (more reliable) over standalone versions.
+    fn extract_version_from_text(text: &str) -> Option<Version> {
+        use std::sync::OnceLock;
+        
+        // Enhanced regex to capture versions with optional hash suffixes
         static VERSION_REGEX: OnceLock<Regex> = OnceLock::new();
         let regex = VERSION_REGEX.get_or_init(|| {
-            Regex::new(r"\b\d+\.\d+\.\d+[fabp]\d+\b").unwrap()
+            Regex::new(r"([0-9]{1,4})\.([0-9]{1,4})\.([0-9]{1,4})(f|p|b|a)([0-9]{1,4})(_([a-z0-9]{12})| \(([a-z0-9]{12})\)|/([a-z0-9]{12}))?").unwrap()
         });
         
-        let s = s.as_ref();
-        
-        for mat in regex.find_iter(s) {
-            if let Ok(version) = Version::from_str(mat.as_str()) {
-                return Ok(version);
+        // Priority 1: Look for versions with parentheses hash format (most authoritative)
+        for captures in regex.captures_iter(text) {
+            if captures.get(8).is_some() {
+                // This version has a hash in parentheses format: "version (hash)"
+                let version_string = format!(
+                    "{}.{}.{}{}{}",
+                    &captures[1], &captures[2], &captures[3], &captures[4], &captures[5]
+                );
+                
+                if let Ok(version) = Version::from_str(&version_string) {
+                    return Some(version);
+                }
             }
         }
-            Err(VersionError::ParsingFailed(format!("Could not find a valid Unity version in string: {}", s)))
+        
+        // Priority 2: Look for versions with underscore hash format
+        for captures in regex.captures_iter(text) {
+            if captures.get(7).is_some() {
+                // This version has a hash in underscore format
+                let version_string = format!(
+                    "{}.{}.{}{}{}",
+                    &captures[1], &captures[2], &captures[3], &captures[4], &captures[5]
+                );
+                
+                if let Ok(version) = Version::from_str(&version_string) {
+                    return Some(version);
+                }
+            }
+        }
+        
+        // Priority 3: Look for versions with slash hash format
+        for captures in regex.captures_iter(text) {
+            if captures.get(9).is_some() {
+                // This version has a hash in slash format
+                let version_string = format!(
+                    "{}.{}.{}{}{}",
+                    &captures[1], &captures[2], &captures[3], &captures[4], &captures[5]
+                );
+                
+                if let Ok(version) = Version::from_str(&version_string) {
+                    return Some(version);
+                }
+            }
+        }
+        
+        // Priority 4: Fallback to any version string found (without hash requirement)
+        for captures in regex.captures_iter(text) {
+            let version_string = format!(
+                "{}.{}.{}{}{}",
+                &captures[1], &captures[2], &captures[3], &captures[4], &captures[5]
+            );
+            
+            if let Ok(version) = Version::from_str(&version_string) {
+                return Some(version);
+            }
+        }
+        
+        None
     }
 
     pub fn base(&self) -> &semver::Version {
         &self.base
+    }
+
+    /// Find Unity version by running `strings` on an executable and parsing the output.
+    /// This works on Unix-like systems (Linux, macOS) where the `strings` command is available.
+    #[cfg(unix)]
+    pub fn find_version_in_file<P: AsRef<std::path::Path>>(path: P) -> Result<Self, VersionError> {
+        use std::process::{Command, Stdio};
+        use log::debug;
+
+        let path = path.as_ref();
+        debug!("find api version in Unity executable {}", path.display());
+
+        let child = Command::new("strings")
+            .arg("--")
+            .arg(path)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| VersionError::Other {
+                source: e.into(),
+                msg: "failed to spawn strings".to_string(),
+            })?;
+
+        let output = child.wait_with_output().map_err(|e| VersionError::Other {
+            source: e.into(),
+            msg: "failed to spawn strings".to_string(),
+        })?;
+
+        if !output.status.success() {
+            return Err(VersionError::ExecutableContainsNoVersion(
+                path.to_path_buf(),
+            ));
+        }
+
+        let strings_output = String::from_utf8_lossy(&output.stdout);
+        
+        // Use the shared version extraction logic
+        Self::extract_version_from_text(&strings_output)
+            .map(|version| {
+                debug!("found version {} in executable", &version);
+                version
+            })
+            .ok_or_else(|| VersionError::ExecutableContainsNoVersion(path.to_path_buf()))
     }
 }
 
@@ -430,6 +534,278 @@ mod tests {
         assert_eq!(version.base.patch, 4);
         assert_eq!(version.release_type, ReleaseType::Final);
         assert_eq!(version.revision, 5);
+    }
+    /// Generate test data with bogus content and Unity versions in various positions
+    fn generate_test_data_with_versions(
+        parentheses_version: Option<&str>,
+        underscore_version: Option<&str>, 
+        slash_version: Option<&str>,
+        standalone_versions: &[&str],
+        bogus_data_size: usize
+    ) -> String {
+        let mut content = String::new();
+        
+        // Add initial bogus data
+        for i in 0..bogus_data_size / 4 {
+            content.push_str(&format!("__libc_start_main_{}\n", i));
+            content.push_str("malloc\nfree\nstrlen\n");
+            content.push_str("/lib64/ld-linux-x86-64.so.2\n");
+            content.push_str("Some random binary string data\n");
+        }
+        
+        // Add standalone versions scattered throughout
+        for (idx, version) in standalone_versions.iter().enumerate() {
+            if idx % 2 == 0 {
+                content.push_str(&format!("Random text {}\n", idx));
+            }
+            content.push_str(&format!("{}\n", version));
+            content.push_str("More random data\n");
+        }
+        
+        // Add more bogus data
+        for i in 0..bogus_data_size / 4 {
+            content.push_str(&format!("function_name_{}\n", i));
+            content.push_str("symbol_table_entry\n");
+            content.push_str("debug_info_string\n");
+        }
+        
+        // Add slash version if provided
+        if let Some(version) = slash_version {
+            content.push_str("path/to/unity/\n");
+            content.push_str(&format!("{}\n", version));
+            content.push_str("more/path/data\n");
+        }
+        
+        // Add more bogus data
+        for i in 0..bogus_data_size / 4 {
+            content.push_str(&format!("error_message_{}\n", i));
+            content.push_str("log_entry_data\n");
+        }
+        
+        // Add underscore version if provided  
+        if let Some(version) = underscore_version {
+            content.push_str("version_info_block\n");
+            content.push_str(&format!("{}\n", version));
+            content.push_str("build_metadata\n");
+        }
+        
+        // Add final bogus data
+        for i in 0..bogus_data_size / 4 {
+            content.push_str(&format!("final_symbol_{}\n", i));
+            content.push_str("cleanup_data\n");
+        }
+        
+        // Add parentheses version at the end if provided (should still be prioritized)
+        if let Some(version) = parentheses_version {
+            content.push_str("unity_build_info\n");
+            content.push_str(&format!("{}\n", version));
+            content.push_str("end_of_data\n");
+        }
+        
+        content
+    }
+
+    #[test]
+    fn prioritizes_parentheses_hash_over_other_formats_in_large_dataset() {
+        let test_data = generate_test_data_with_versions(
+            Some("2023.1.5f1 (abc123def456)"),
+            Some("2022.3.2f1_xyz789uvw012"), 
+            Some("2021.2.1f1/def456ghi789"),
+            &["2020.1.0f1", "2019.4.2f1", "2024.1.0a1", "2018.3.5f1"],
+            1000  // Large amount of bogus data
+        );
+        
+        let result = Version::from_string_containing(&test_data);
+        assert!(result.is_ok(), "Should extract version from large dataset");
+        
+        let version = result.unwrap();
+        // Should prioritize the parentheses version even though it appears last
+        assert_eq!(version.base.major, 2023);
+        assert_eq!(version.base.minor, 1);
+        assert_eq!(version.base.patch, 5);
+        assert_eq!(version.release_type, ReleaseType::Final);
+        assert_eq!(version.revision, 1);
+    }
+
+    #[test]
+    fn prioritizes_underscore_hash_when_no_parentheses_version() {
+        let test_data = generate_test_data_with_versions(
+            None, // No parentheses version
+            Some("2022.3.2f1_xyz789uvw012"), 
+            Some("2021.2.1f1/def456ghi789"),
+            &["2020.1.0f1", "2019.4.2f1", "2024.1.0a1"],
+            800
+        );
+        
+        let result = Version::from_string_containing(&test_data);
+        assert!(result.is_ok(), "Should extract underscore hash version");
+        
+        let version = result.unwrap();
+        // Should prioritize the underscore version over slash and standalone versions
+        assert_eq!(version.base.major, 2022);
+        assert_eq!(version.base.minor, 3);
+        assert_eq!(version.base.patch, 2);
+        assert_eq!(version.release_type, ReleaseType::Final);
+        assert_eq!(version.revision, 1);
+    }
+
+    #[test]
+    fn prioritizes_slash_hash_when_no_other_hash_formats() {
+        let test_data = generate_test_data_with_versions(
+            None, // No parentheses version
+            None, // No underscore version
+            Some("2021.2.1f1/def456ghi789"),
+            &["2020.1.0f1", "2019.4.2f1", "2024.1.0a1", "2025.1.0b1"],
+            600
+        );
+        
+        let result = Version::from_string_containing(&test_data);
+        assert!(result.is_ok(), "Should extract slash hash version");
+        
+        let version = result.unwrap();
+        // Should prioritize the slash version over standalone versions
+        assert_eq!(version.base.major, 2021);
+        assert_eq!(version.base.minor, 2);
+        assert_eq!(version.base.patch, 1);
+        assert_eq!(version.release_type, ReleaseType::Final);
+        assert_eq!(version.revision, 1);
+    }
+
+    #[test]
+    fn falls_back_to_first_standalone_version_when_no_hash_versions() {
+        let test_data = generate_test_data_with_versions(
+            None, // No parentheses version
+            None, // No underscore version  
+            None, // No slash version
+            &["2020.1.0f1", "2019.4.2f1", "2024.1.0a1", "2025.1.0b1"],
+            400
+        );
+        
+        let result = Version::from_string_containing(&test_data);
+        assert!(result.is_ok(), "Should extract first standalone version");
+        
+        let version = result.unwrap();
+        // Should find the first standalone version when no hash versions exist
+        assert_eq!(version.base.major, 2020);
+        assert_eq!(version.base.minor, 1);
+        assert_eq!(version.base.patch, 0);
+        assert_eq!(version.release_type, ReleaseType::Final);
+        assert_eq!(version.revision, 1);
+    }
+
+    #[test]
+    fn handles_multiple_versions_with_same_priority_returns_first_found() {
+        let test_data = generate_test_data_with_versions(
+            Some("2023.1.5f1 (abc123def456)"),
+            None,
+            None,
+            &["2020.1.0f1"],
+            200
+        );
+        
+        // Add another parentheses version earlier in the data
+        let mut modified_data = String::new();
+        modified_data.push_str("Early data\n");
+        modified_data.push_str("2024.2.1f1 (first123hash)\n");
+        modified_data.push_str("More early data\n");
+        modified_data.push_str(&test_data);
+        
+        let result = Version::from_string_containing(&modified_data);
+        assert!(result.is_ok(), "Should extract first parentheses version");
+        
+        let version = result.unwrap();
+        // Should find the first parentheses version encountered
+        assert_eq!(version.base.major, 2024);
+        assert_eq!(version.base.minor, 2);
+        assert_eq!(version.base.patch, 1);
+        assert_eq!(version.release_type, ReleaseType::Final);
+        assert_eq!(version.revision, 1);
+    }
+
+
+    #[test]  
+    fn handles_extremely_large_dataset_with_performance() {
+        // Generate a very large dataset to test performance
+        let test_data = generate_test_data_with_versions(
+            Some("2023.3.10f1 (abc123def456)"),
+            Some("2022.1.1f1_def456ghi789"),
+            None,
+            &[
+                "2021.1.0f1", "2020.3.15f1", "2019.4.28f1", "2018.4.36f1",
+                "2017.4.40f1", "2016.4.39f1", "2015.4.39f1", "5.6.7f1",
+                "5.5.6f1", "5.4.6f1", "5.3.8f2", "5.2.5f1"
+            ],
+            5000  // Very large bogus dataset
+        );
+        
+        let start = std::time::Instant::now();
+        let result = Version::from_string_containing(&test_data);
+        let duration = start.elapsed();
+        
+        assert!(result.is_ok(), "Should handle large dataset");
+        assert!(duration.as_millis() < 100, "Should parse large dataset quickly (took {:?})", duration);
+        
+        let version = result.unwrap();
+        // Should still prioritize correctly even in large dataset
+        assert_eq!(version.base.major, 2023);
+        assert_eq!(version.base.minor, 3);
+        assert_eq!(version.base.patch, 10);
+        assert_eq!(version.release_type, ReleaseType::Final);
+        assert_eq!(version.revision, 1);
+    }
+
+    #[test]
+    fn prioritizes_versions_with_hashes() {
+        // Test content with multiple versions, including ones with hashes
+        let test_content = r#"
+/lib64/ld-linux-x86-64.so.2
+__libc_start_main
+2020.2.0b2
+2018.1.0b7
+6000.2.0f1 (eed1c594c913)
+6000.2.0f1_eed1c594c913
+2022.2.0a1
+2018.3.0a1
+6000.2/respin/6000.2.0f1-517f89d850d1
+5.0.0a1
+6000.2.0f1.2588.6057
+2017.2.0b1
+6000.2.0f1
+"#;
+
+        let result = Version::from_string_containing(test_content);
+        assert!(result.is_ok(), "Should successfully extract a version");
+
+        let version = result.unwrap();
+        // Should prioritize the version with parentheses hash: 6000.2.0f1 (eed1c594c913)
+        assert_eq!(version.base.major, 6000);
+        assert_eq!(version.base.minor, 2);
+        assert_eq!(version.base.patch, 0);
+        assert_eq!(version.release_type, ReleaseType::Final);
+        assert_eq!(version.revision, 1);
+    }
+
+    #[test]
+    fn handles_fallback_to_versions_without_hashes() {
+        // Test content with only versions without hashes
+        let test_content = r#"
+Some random text
+2020.2.0b2
+More text
+2018.1.0b7
+Even more text
+"#;
+
+        let result = Version::from_string_containing(test_content);
+        assert!(result.is_ok(), "Should successfully extract a version");
+
+        let version = result.unwrap();
+        // Should find the first valid version when no hashed versions exist
+        assert_eq!(version.base.major, 2020);
+        assert_eq!(version.base.minor, 2);
+        assert_eq!(version.base.patch, 0);
+        assert_eq!(version.release_type, ReleaseType::Beta);
+        assert_eq!(version.revision, 2);
     }
 
     proptest! {
