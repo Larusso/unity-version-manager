@@ -2839,7 +2839,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_detect"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "regex",
  "tempfile",
