@@ -21,7 +21,7 @@ fixedbitset = "0.5.7"
 itertools = { workspace = true }
 #uvm_core = { path = "../uvm_core", version = "0.13.3" }
 uvm_live_platform = { path = "../uvm_live_platform", version = "0.4.3" }
-unity-version = {path = "../unity-version", version = "0.3.0" }
+unity-version = {path = "../unity-version", version = "0.3.1" }
 [dev-dependencies]
 cfg-if = { workspace = true }
 stringreader = "0.1.1"

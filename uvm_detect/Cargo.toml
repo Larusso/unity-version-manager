@@ -10,7 +10,7 @@ keywords = ["unity", "gamedev", "project-detection", "version"]
 categories = ["game-development", "filesystem"]
 
 [dependencies]
-unity-version = { version = "0.3.0", path = "../unity-version" }
+unity-version = { version = "0.3.1", path = "../unity-version" }
 regex = "1.11.0"
 [dev-dependencies]
 tempfile = "3.0"
