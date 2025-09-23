@@ -1,7 +1,28 @@
 use serde::{Deserialize, Serialize};
 
+use crate::api::middleware::MiddlewareChain;
 use crate::error::ListVersionsError;
 use crate::{UnityReleaseDownloadArchitecture, UnityReleaseDownloadPlatform, UnityReleaseEntitlement, UnityReleaseStream};
+#[cfg(feature = "cache")]
+use crate::api::cache::{CacheMiddleware, CacheConfig};
+
+#[cfg(feature = "cache")]
+// Internal type alias for cache middleware - not exposed publicly
+type ListVersionsPageCacheMiddleware = CacheMiddleware<ListVersionsOptions, ListVersionsPageResult>;
+// Internal type alias for middleware chain - used multiple times in this module
+type ListVersionsMiddlewareChain<'a> = MiddlewareChain<'a, ListVersionsOptions, ListVersionsPageResult, ListVersionsError>;
+
+#[cfg(feature = "cache")]
+impl ListVersionsPageCacheMiddleware {
+    pub fn from_env() -> Self {
+        // ListVersions data changes more frequently - cache for 2 hours by default
+        let config = CacheConfig::from_env_with_prefix_and_default(
+            Some("LIST_VERSIONS"), 
+            Some(2 * 60 * 60) // 2 hours
+        );
+        Self::new(config)
+    }
+}
 
 #[derive(Debug)]
 pub struct ListVersions(std::vec::IntoIter<String>);
@@ -15,13 +36,13 @@ impl Iterator for ListVersions {
 }
 
 impl ListVersions {
-    pub fn builder() -> ListVersionsBuilder {
+    pub fn builder() -> ListVersionsBuilder<'static> {
         ListVersionsBuilder::new()
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ListVersionsBuilder {
+#[derive(Debug)]
+pub struct ListVersionsBuilder<'a> {
     architecture: Vec<UnityReleaseDownloadArchitecture>,
     platform: Vec<UnityReleaseDownloadPlatform>,
     skip: usize,
@@ -31,9 +52,10 @@ pub struct ListVersionsBuilder {
     include_revision: bool,
     autopage: bool,
     version: Option<String>,
+    middleware: ListVersionsMiddlewareChain<'a>,
 }
 
-impl ListVersionsBuilder {
+impl<'a> ListVersionsBuilder<'a> {
     fn new() -> Self {
         Self {
             architecture: Default::default(),
@@ -45,59 +67,107 @@ impl ListVersionsBuilder {
             include_revision: false,
             autopage: false,
             version: None,
+            middleware: {
+                #[cfg(feature = "cache")]
+                {
+                    ListVersionsMiddlewareChain::new().add(ListVersionsPageCacheMiddleware::from_env())
+                }
+                #[cfg(not(feature = "cache"))]
+                {
+                    ListVersionsMiddlewareChain::new()
+                }
+            },
         }
+    }
+
+    pub fn without_cache(mut self, no_cache: bool) -> Self {
+        if no_cache {
+            self.middleware = ListVersionsMiddlewareChain::new();
+        }
+        self
+    }
+    
+    #[cfg(feature = "cache")]
+    /// Enable refresh mode - always fetch fresh data but still cache it
+    /// Useful for --refresh flags
+    pub fn with_refresh(mut self, refresh: bool) -> Self {
+        if refresh {
+            self.middleware = ListVersionsMiddlewareChain::new().add(ListVersionsPageCacheMiddleware::refresh_mode());
+        }
+        self
     }
 
     pub fn list(self) -> Result<ListVersions, ListVersionsError> {
         let mut result = vec![];
         let autopage = self.autopage;
-        let mut p = self.send()?;
+        let mut page = self.send()?;  // Use send() which includes middleware/caching!
+        
         loop {
-            result.append(&mut p.content);
-            if autopage && p.has_next_page() {
-                p = p.next_page().expect("next page")?;
+            result.append(&mut page.content);
+            if autopage && page.has_next_page() {
+                page = page.next_page().expect("next page")?;  // This also uses middleware!
             } else {
                 break;
             }
         }
-    
+        
         Ok(ListVersions(result.into_iter())) 
     } 
 
-    fn send(self) -> Result<ListVersionsPageResult, ListVersionsError> {
-        let url = "https://live-platform-api.prd.ld.unity3d.com/graphql";
-        let version_builder_next_page = self.clone();
+    pub fn send(self) -> Result<ListVersionsPageResult, ListVersionsError> {
+        // Extract values we need before moving self
         let include_revision = self.include_revision;
-        let request_body = ListVersionsRequestBody::new(self.into());
-        let client = reqwest::blocking::Client::new();
-        let res: ListVersionsResultBody = client
-            .post(url)
-            .json(&request_body)
-            .send()
-            .map_err(ListVersionsError::NetworkError)?
-            .json()
-            .map_err(ListVersionsError::JsonError)?;
-        let page_info = res.data.get_unity_releases.page_info;
-        let versions = res.data.get_unity_releases.edges.iter().map(|e| {
-            if include_revision {
-                format!("{} ({})", e.node.version, e.node.short_revision)
-            } else {
-                e.node.version.to_string()
-            }
-        });
 
-        let next_page_call = if page_info.has_next_page {
-            let mut b = version_builder_next_page.clone();
-            let skip = b.skip;
-            let limit = b.limit;
-            b = b.skip(skip.checked_add(limit).unwrap_or(usize::MAX));
-            Some(b)
-        } else {
-            None
+        let list_options = ListVersionsOptions {
+            architecture: self.architecture.clone(),
+            platform: self.platform.clone(),
+            skip: self.skip,
+            limit: self.limit,
+            stream: self.stream.clone(),
+            entitlements: self.entitlements.clone(),
+            version: self.version.clone(),
         };
 
-        let r = ListVersionsPageResult::new(versions, next_page_call);
-        Ok(r)
+        // Define the core fetch logic that will be called by middlewares
+        let core_fetch = move |options: &ListVersionsOptions| -> Result<ListVersionsPageResult, ListVersionsError> {
+            let url = "https://live-platform-api.prd.ld.unity3d.com/graphql";
+            let request_body = ListVersionsRequestBody::new(options.clone());
+            let client = reqwest::blocking::Client::new();
+            let res: ListVersionsResultBody = client
+                .post(url)
+                .json(&request_body)
+                .send()
+                .map_err(ListVersionsError::NetworkError)?
+                .json()
+                .map_err(ListVersionsError::JsonError)?;
+            
+            let page_info = res.data.get_unity_releases.page_info;
+            let versions = res.data.get_unity_releases.edges.iter().map(|e| {
+                if include_revision {
+                    format!("{} ({})", e.node.version, e.node.short_revision)
+                } else {
+                    e.node.version.to_string()
+                }
+            });
+            
+            let result = ListVersionsPageResult::new(
+                versions,
+                page_info.has_next_page,
+                options.skip,        // Use options instead of captured variables
+                options.limit,       // Use options instead of captured variables
+                options.architecture.clone(),
+                options.platform.clone(),
+                options.stream.clone(),
+                options.entitlements.clone(),
+                options.version.clone(),
+                include_revision,
+            );
+            Ok(result)
+        };
+
+        // Execute the middleware chain with the core fetch logic
+        let middleware = self.middleware;
+        middleware.execute(&list_options, core_fetch)
     }
 
     pub fn skip(mut self, skip: usize) -> Self {
@@ -191,7 +261,7 @@ impl ListVersionsBuilder {
 
 const LIST_VERSIONS_QUERY: &str = include_str!("list_versions_query.graphql");
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ListVersionsOptions {
     architecture: Vec<UnityReleaseDownloadArchitecture>,
@@ -282,30 +352,77 @@ struct PageInfo {
 
 
 
-#[derive(Debug)]
-struct ListVersionsPageResult {
-    next_page_options: Option<ListVersionsBuilder>,
-    content: Vec<String>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListVersionsPageResult {
+    pub content: Vec<String>,
+    // Store pagination state that can be serialized
+    has_next_page: bool,
+    current_skip: usize,
+    current_limit: usize,
+    // Store the original request parameters to reconstruct next page
+    architecture: Vec<UnityReleaseDownloadArchitecture>,
+    platform: Vec<UnityReleaseDownloadPlatform>,
+    stream: Vec<UnityReleaseStream>,
+    entitlements: Vec<UnityReleaseEntitlement>,
+    version: Option<String>,
+    include_revision: bool,
 }
 
 impl ListVersionsPageResult {
     pub fn new(
         content: impl IntoIterator<Item = String>,
-        next_page_options: Option<ListVersionsBuilder>,
+        has_next_page: bool,
+        current_skip: usize,
+        current_limit: usize,
+        architecture: Vec<UnityReleaseDownloadArchitecture>,
+        platform: Vec<UnityReleaseDownloadPlatform>,
+        stream: Vec<UnityReleaseStream>,
+        entitlements: Vec<UnityReleaseEntitlement>,
+        version: Option<String>,
+        include_revision: bool,
     ) -> Self {
         Self {
-            next_page_options,
             content: content.into_iter().collect(),
+            has_next_page,
+            current_skip,
+            current_limit,
+            architecture,
+            platform,
+            stream,
+            entitlements,
+            version,
+            include_revision,
         }
     }
 
     pub fn has_next_page(&self) -> bool {
-        self.next_page_options.is_some()
+        self.has_next_page
     }
 
     pub fn next_page(self) -> Option<Result<Self, ListVersionsError>> {
-        let b = self.next_page_options?;
-        Some(b.send())
+        if !self.has_next_page {
+            return None;
+        }
+
+        // Reconstruct the builder for the next page
+        let next_skip = self.current_skip.checked_add(self.current_limit)?;
+        
+        let builder = ListVersionsBuilder::new()
+            .skip(next_skip)
+            .limit(self.current_limit)
+            .with_architectures(self.architecture)
+            .with_platforms(self.platform)
+            .with_streams(self.stream)
+            .with_entitlements(self.entitlements)
+            .include_revision(self.include_revision);
+            
+        let builder = if let Some(version) = self.version {
+            builder.with_version(version)
+        } else {
+            builder
+        };
+
+        Some(builder.send())
     }
 }
 
@@ -318,7 +435,7 @@ impl IntoIterator for ListVersionsPageResult {
     }
 }
 
-impl From<ListVersionsBuilder> for ListVersionsOptions {
+impl<'a> From<ListVersionsBuilder<'a>> for ListVersionsOptions {
     fn from(value: ListVersionsBuilder) -> Self {
         Self {
             architecture: value.architecture,

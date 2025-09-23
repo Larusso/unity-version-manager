@@ -55,6 +55,14 @@ struct VersionFilter {
 
     #[arg(long = "platform", value_enum)]
     platforms: Vec<UnityReleaseDownloadPlatform>,
+
+    #[arg(long)]
+    /// Refresh the cache
+    refresh: bool,
+
+    #[arg(long)]
+    /// Disable the cache
+    no_cache: bool,
 }
 
 impl VersionCommand {
@@ -88,6 +96,8 @@ impl VersionCommand {
                     .autopage(false)
                     .with_streams(filter.streams)
                     .with_entitlements(filter.entitlements)
+                    .with_refresh(filter.refresh)
+                    .without_cache(filter.no_cache)
                     .limit(1);
                 let versions = versions_builder
                     .list()

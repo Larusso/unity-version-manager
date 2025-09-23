@@ -9,7 +9,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use ssri::Integrity;
 use std::str::FromStr;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Release {
     pub version: String,
@@ -100,7 +100,7 @@ pub struct Eula {
     pub message: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UnityThirdPartyNotice {
     #[serde(flatten)]

@@ -47,6 +47,28 @@ pub enum FetchReleaseError {
 
     #[error("Network error: {0}")]
     NetworkError(#[source] reqwest::Error),
+
+    #[error("Cache error: {0}")]
+    CacheError(String),
+
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("JSON serialization error: {0}")]
+    JsonSerializationError(#[from] serde_json::Error),
+}
+
+impl From<String> for FetchReleaseError {
+    fn from(s: String) -> Self {
+        Self::CacheError(s)
+    }
+}
+
+#[cfg(feature = "cache")]
+impl From<crate::api::cache::CacheError> for FetchReleaseError {
+    fn from(cache_error: crate::api::cache::CacheError) -> Self {
+        Self::CacheError(cache_error.to_string())
+    }
 }
 
 #[derive(Error, Debug)]
@@ -59,4 +81,14 @@ pub enum ListVersionsError {
 
     #[error("Network error: {0}")]
     NetworkError(#[source] reqwest::Error),
+    
+    #[error("Cache error: {0}")]
+    CacheError(String),
+}
+
+#[cfg(feature = "cache")]
+impl From<crate::api::cache::CacheError> for ListVersionsError {
+    fn from(cache_error: crate::api::cache::CacheError) -> Self {
+        Self::CacheError(cache_error.to_string())
+    }
 }

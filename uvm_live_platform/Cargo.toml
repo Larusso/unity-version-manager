@@ -14,6 +14,7 @@ edition = "2021"
 [features]
 default = []
 clap = ["dep:clap"]
+cache = ["dep:dirs-2", "dep:humantime"]
 
 [dependencies]
 clap = { version = "4.5.38", features = ["derive"], optional = true }
@@ -27,4 +28,6 @@ typed-builder = "0.22.0"
 ordered-float = "5.0.0"
 unity-version = { path = "../unity-version", version = "0.3.1" }
 ssri = { workspace = true }
+dirs-2 = { workspace = true, optional = true }
 derive-getters = { version = "0.5.0", features = ["auto_copy_getters"] }
+humantime = { version = "2.3.0", optional = true }
