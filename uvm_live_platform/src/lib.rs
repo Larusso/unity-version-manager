@@ -2,7 +2,6 @@ pub mod error;
 mod model;
 pub use model::*;
 mod api;
-
 use crate::error::ErrorRepr;
 pub use api::fetch_release::FetchRelease;
 pub use api::list_versions::ListVersions;

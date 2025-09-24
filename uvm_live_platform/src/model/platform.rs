@@ -2,7 +2,7 @@ use std::fmt;
 use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Hash, Ord, PartialOrd, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UnityReleaseDownloadArchitecture {
@@ -33,7 +33,7 @@ impl Display for UnityReleaseDownloadArchitecture {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Hash, Ord, PartialOrd, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UnityReleaseDownloadPlatform {
@@ -68,7 +68,7 @@ impl Display for UnityReleaseDownloadPlatform {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Hash, Ord, PartialOrd, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UnityReleaseStream {
@@ -99,7 +99,7 @@ impl Display for UnityReleaseStream {
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Hash, Ord, PartialOrd, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UnityReleaseEntitlement {
