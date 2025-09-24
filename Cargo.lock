@@ -2737,7 +2737,7 @@ checksum = "323402cff2dd658f39ca17c789b502021b3f18707c91cdf22e3838e1b4023817"
 
 [[package]]
 name = "unity-hub"
-version = "0.4.6"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "dirs-2",
@@ -2785,7 +2785,7 @@ dependencies = [
 
 [[package]]
 name = "unity-version-manager"
-version = "3.2.4"
+version = "3.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -2854,7 +2854,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_install"
-version = "0.13.7"
+version = "0.14.0"
 dependencies = [
  "cfg-if",
  "cluFlock",
@@ -2897,7 +2897,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_live_platform"
-version = "0.4.4"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "clap",
