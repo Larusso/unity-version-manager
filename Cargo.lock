@@ -2854,7 +2854,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_install"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "cfg-if",
  "cluFlock",
@@ -2884,7 +2884,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_install_graph"
-version = "0.12.2"
+version = "0.13.0"
 dependencies = [
  "cfg-if",
  "daggy",
