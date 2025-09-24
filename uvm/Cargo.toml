@@ -25,7 +25,7 @@ log = { workspace = true }
 semver = { workspace = true }
 uvm_live_platform = { version = "0.6.0", path = "../uvm_live_platform", features = ["clap", "cache"] }
 unity-hub = { version = "0.5.0", path = "../unity-hub", features = ["mutate"] }
-uvm_install = { version = "0.16.0", path = "../uvm_install" }
+uvm_install = { version = "0.17.0", path = "../uvm_install" }
 itertools = { workspace = true }
 [dev-dependencies]
 tempfile = "3.19.1"

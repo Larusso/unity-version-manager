@@ -115,7 +115,6 @@ where
     let unity_release = fetch_release(version.to_owned())?;
     eprintln!("{:#?}", unity_release);
     let mut graph = InstallGraph::from(&unity_release);
-
     //
 
     let mut editor_installation: Option<EditorInstallation> = None;
