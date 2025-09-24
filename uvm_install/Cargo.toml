@@ -1,6 +1,6 @@
 [package]
 name = "uvm_install"
-version = "0.17.0"
+version = "0.18.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Install specified unity version."
 repository = "https://github.com/Larusso/unity-version-manager"
