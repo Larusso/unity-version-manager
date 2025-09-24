@@ -2854,7 +2854,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_install"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "cfg-if",
  "cluFlock",
@@ -2897,7 +2897,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_live_platform"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "clap",

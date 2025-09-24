@@ -1,6 +1,6 @@
 [package]
 name = "uvm_install"
-version = "0.14.0"
+version = "0.15.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Install specified unity version."
 repository = "https://github.com/Larusso/unity-version-manager"
@@ -22,7 +22,7 @@ zip = "5.1.1"
 reqwest = { workspace = true }
 thiserror = { workspace = true }
 unity-version = { path = "../unity-version", version = "0.3.1" }
-uvm_live_platform = { path = "../uvm_live_platform", version = "0.5.0" }
+uvm_live_platform = { path = "../uvm_live_platform", version = "0.6.0" }
 uvm_install_graph = { path = "../uvm_install_graph", version = "0.12.2" }
 unity-hub = {path = "../unity-hub", version = "0.5.0", features = ["mutate"] }
 lazy_static = "1.4.0"
