@@ -297,8 +297,7 @@ where
 }
 
 fn fetch_modules_from_release(modules: &mut Vec<Module>, module: &uvm_live_platform::Module) {
-    let hub_module: Module = module.clone().into();
-    modules.push(hub_module);
+    modules.push(module.clone().into());
     for sub_module in module.sub_modules() {
         fetch_modules_from_release(modules, sub_module);
     }

@@ -44,6 +44,7 @@ pub fn fetch_release<V: Into<Version>>(version: V) -> Result<Release> {
     Ok(r)
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::*;
