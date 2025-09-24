@@ -2737,7 +2737,7 @@ checksum = "323402cff2dd658f39ca17c789b502021b3f18707c91cdf22e3838e1b4023817"
 
 [[package]]
 name = "unity-hub"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "anyhow",
  "dirs-2",

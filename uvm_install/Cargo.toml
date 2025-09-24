@@ -24,7 +24,7 @@ thiserror = { workspace = true }
 unity-version = { path = "../unity-version", version = "0.3.1" }
 uvm_live_platform = { path = "../uvm_live_platform", version = "0.6.0" }
 uvm_install_graph = { path = "../uvm_install_graph", version = "0.13.0" }
-unity-hub = {path = "../unity-hub", version = "0.5.0", features = ["mutate"] }
+unity-hub = {path = "../unity-hub", version = "0.5.1", features = ["mutate"] }
 lazy_static = "1.4.0"
 cfg-if = { workspace = true }
 url = "2.5.4"
