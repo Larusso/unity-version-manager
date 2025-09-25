@@ -2885,7 +2885,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_install_graph"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "cfg-if",
  "daggy",

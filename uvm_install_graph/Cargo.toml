@@ -1,6 +1,6 @@
 [package]
 name = "uvm_install_graph"
-version = "0.13.0"
+version = "0.13.1"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "A graph view of a unity version manifest"
 repository = "https://github.com/Larusso/unity-version-manager"
