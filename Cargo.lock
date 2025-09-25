@@ -2857,6 +2857,7 @@ name = "uvm_install"
 version = "0.18.0"
 dependencies = [
  "cfg-if",
+ "clap",
  "cluFlock",
  "console",
  "dirs-2",

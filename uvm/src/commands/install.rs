@@ -3,6 +3,7 @@ use std::io;
 use clap::Args;
 use console::style;
 use unity_version::Version;
+use uvm_install::{InstallArchitecture, InstallOptions};
 
 #[derive(Args, Debug)]
 pub struct InstallArgs {
@@ -19,6 +20,10 @@ pub struct InstallArgs {
     /// e.g. Android SDK for the android module.
     #[arg(long = "with-sync")]
     pub sync: bool,
+
+    /// The architecture to install
+    #[arg(long, value_enum, default_value_t = InstallArchitecture::default())]
+    pub architecture: InstallArchitecture,
 
     /// The Unity version to install in the form of `2018.1.0f3`
     pub editor_version: Version,
@@ -39,12 +44,19 @@ impl InstallArgs {
             version, modules, destination
         );
 
-        match uvm_install::install(
-            version,
-            self.modules.clone(),
-            install_sync,
-            destination.as_ref()
-        ) {
+        let mut options = InstallOptions::new(version.to_owned())
+            .with_install_sync(install_sync)
+            .with_architecture(self.architecture);
+
+        if let Some(modules) = modules {
+            options = options.with_requested_modules(modules);
+        }
+
+        if let Some(destination) = destination {
+            options = options.with_destination(destination);
+        }
+
+        match options.install() {
             Ok(installation) => {
                 eprintln!(
                     "{}: Unity {} installed at {}",

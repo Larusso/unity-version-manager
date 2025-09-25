@@ -12,12 +12,12 @@ pub enum UnityReleaseDownloadArchitecture {
 
 impl Default for UnityReleaseDownloadArchitecture {
     fn default() -> Self {
-        if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
+        if cfg!(target_arch = "x86_64") {
             Self::X86_64
-        } else if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
+        } else if cfg!(target_arch = "aarch64") {
             Self::Arm64
         } else {
-            Self::X86_64
+            panic!("Not supported on current architecture")
         }
     }
 }

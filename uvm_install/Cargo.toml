@@ -9,10 +9,14 @@ categories = ["development-tools"]
 license = "Apache-2.0"
 edition = "2021"
 
+[features]
+clap = ["dep:clap"]
+
 [lib]
 name = "uvm_install"
 
 [dependencies]
+clap = { version = "4.5.38", features = ["derive"], optional = true }
 ssri = { workspace = true }
 uvm_move_dir = {path = "../uvm_move_dir", version = "0.2.2" }
 console = { workspace = true }
