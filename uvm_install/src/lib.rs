@@ -9,24 +9,23 @@ use lazy_static::lazy_static;
 use log::{debug, info, trace};
 use ssri::Integrity;
 use std::collections::HashSet;
+use std::fmt;
+use std::fmt::Display;
 use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 use sys::create_installer;
-pub use unity_hub::error::UnityError;
-pub use unity_hub::error::UnityHubError;
-pub use unity_hub::unity;
 use unity_hub::unity::hub;
 use unity_hub::unity::hub::editors::EditorInstallation;
 use unity_hub::unity::hub::module::Module;
 use unity_hub::unity::hub::paths;
 use unity_hub::unity::hub::paths::locks_dir;
 use unity_hub::unity::{Installation, UnityInstallation};
-pub use unity_version::error::VersionError;
-pub use unity_version::Version;
+use unity_version::Version;
 use uvm_install_graph::{InstallGraph, InstallStatus, UnityComponent, Walker};
-pub use uvm_live_platform::error::LivePlatformError;
-pub use uvm_live_platform::fetch_release;
+use uvm_live_platform::error::ErrorRepr;
+use uvm_live_platform::error::LivePlatformError;
+use uvm_live_platform::{FetchRelease, UnityReleaseDownloadArchitecture};
 
 lazy_static! {
     static ref UNITY_BASE_PATTERN: &'static Path = Path::new("{UNITY_PATH}");
@@ -87,118 +86,199 @@ pub fn ensure_installation_architecture_is_correct<I: Installation>(
     Ok(true)
 }
 
-pub fn install<V, P, I>(
-    version: V,
-    requested_modules: Option<I>,
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+pub enum InstallArchitecture {
+    X86_64,
+    Arm64,
+}
+
+impl From<UnityReleaseDownloadArchitecture> for InstallArchitecture {
+    fn from(architecture: UnityReleaseDownloadArchitecture) -> Self {
+        match architecture {
+            UnityReleaseDownloadArchitecture::X86_64 => Self::X86_64,
+            UnityReleaseDownloadArchitecture::Arm64 => Self::Arm64,
+        }
+    }
+}
+
+impl Default for InstallArchitecture {
+    fn default() -> Self {
+        UnityReleaseDownloadArchitecture::default().into()
+    }
+}
+
+impl Into<UnityReleaseDownloadArchitecture> for InstallArchitecture {
+    fn into(self) -> UnityReleaseDownloadArchitecture {
+        match self {
+            InstallArchitecture::X86_64 => UnityReleaseDownloadArchitecture::X86_64,
+            InstallArchitecture::Arm64 => UnityReleaseDownloadArchitecture::Arm64,
+        }
+    }
+}
+
+impl Display for InstallArchitecture {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let arch: UnityReleaseDownloadArchitecture = (*self).into();
+        write!(f, "{}", arch)
+    }
+}
+
+pub struct InstallOptions {
+    version: Version,
+    requested_modules: HashSet<String>,
     install_sync: bool,
-    destination: Option<P>,
-) -> Result<UnityInstallation>
-where
-    V: AsRef<Version>,
-    P: AsRef<Path>,
-    I: IntoIterator,
-    I::Item: Into<String>,
-{
-    let version = version.as_ref();
-    let version_string = version.to_string();
+    destination: Option<PathBuf>,
+    architecture: Option<InstallArchitecture>,
+}
 
-    let locks_dir = locks_dir().ok_or_else(|| {
-        InstallError::LockProcessFailure(io::Error::new(
-            io::ErrorKind::NotFound,
-            "Unable to locate locks directory.",
-        ))
-    })?;
-
-    fs::DirBuilder::new().recursive(true).create(&locks_dir)?;
-    lock_process!(locks_dir.join(format!("{}.lock", version_string)));
-
-    let unity_release = fetch_release(version.to_owned())?;
-    eprintln!("{:#?}", unity_release);
-    let mut graph = InstallGraph::from(&unity_release);
-    //
-
-    let mut editor_installation: Option<EditorInstallation> = None;
-    let base_dir = if let Some(destination) = destination {
-        let destination = destination.as_ref();
-        if destination.exists() && !destination.is_dir() {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Requested destination is not a directory.",
-            )
-            .into());
+impl InstallOptions {
+    pub fn new<V: Into<Version>>(version: V) -> Self {
+        Self {
+            version: version.into(),
+            requested_modules: HashSet::new(),
+            install_sync: false,
+            destination: None,
+            architecture: None,
         }
-
-        editor_installation = Some(EditorInstallation::new(
-            version.to_owned(),
-            destination.to_path_buf(),
-        ));
-        destination.to_path_buf()
-    } else {
-        hub::paths::install_path()
-            .map(|path| path.join(format!("{}", version)))
-            .or_else(|| {
-                {
-                    #[cfg(any(target_os = "windows", target_os = "macos"))]
-                    let application_path = dirs_2::application_dir();
-                    #[cfg(target_os = "linux")]
-                    let application_path = dirs_2::executable_dir();
-                    application_path
-                }
-                .map(|path| path.join(format!("Unity-{}", version)))
-            })
-            .expect("default installation directory")
-    };
-    let mut additional_modules = vec![];
-    let installation = UnityInstallation::new(&base_dir);
-    if let Ok(ref installation) = installation {
-        info!("Installation found at {}", installation.path().display());
-        if ensure_installation_architecture_is_correct(installation)? {
-            let modules = installation.installed_modules()?;
-            let mut module_ids: HashSet<String> =
-                modules.into_iter().map(|m| m.id().to_string()).collect();
-            module_ids.insert("Unity".to_string());
-            graph.mark_installed(&module_ids);
-        } else {
-            info!("Architecture mismatch, reinstalling");
-            info!("Fetch installed modules:");
-            additional_modules = installation
-                .installed_modules()?
-                .into_iter()
-                .map(|m| m.id().to_string())
-                .collect();
-            // info!("{}", additional_modules.iter().join("\n"));
-            fs::remove_dir_all(installation.path())?;
-            let version_string =
-                format!("{}-{}", unity_release.version, unity_release.short_revision);
-            let installer_dir = paths::cache_dir()
-                .map(|c| c.join(&format!("installer/{}", version_string)))
-                .ok_or_else(|| {
-                    io::Error::new(
-                        io::ErrorKind::Other,
-                        "Unable to fetch cache installer directory",
-                    )
-                })?;
-            if installer_dir.exists() {
-                info!("Delete installer cache: {}", installer_dir.display());
-                fs::remove_dir_all(installer_dir)?;
-            }
-            info!("Cleanup done");
-            graph.mark_all_missing();
-        }
-    } else {
-        info!("\nFresh install");
-        graph.mark_all_missing();
     }
 
-    // info!("All available modules for Unity {}", version);
-    // print_graph(&graph);
-    let additional_modules_iterator = additional_modules.into_iter();
-    let base_iterator = ["Unity".to_string()].into_iter();
-    let all_components: HashSet<String> = match requested_modules {
-        Some(modules) => modules
-            .into_iter()
+    pub fn with_requested_modules<S: Into<String>, I: IntoIterator<Item = S>>(
+        mut self,
+        requested_modules: I,
+    ) -> Self {
+        self.requested_modules = requested_modules.into_iter().map(|s| s.into()).collect();
+        self
+    }
+
+    pub fn with_install_sync(mut self, install_sync: bool) -> Self {
+        self.install_sync = install_sync;
+        self
+    }
+
+    pub fn with_destination<P: AsRef<Path>>(mut self, destination: P) -> Self {
+        self.destination = Some(destination.as_ref().to_path_buf());
+        self
+    }
+
+    pub fn with_architecture(mut self, architecture: InstallArchitecture) -> Self {
+        self.architecture = Some(architecture);
+        self
+    }
+
+    pub fn install(&self) -> Result<UnityInstallation> {
+        let version = &self.version;
+        let version_string = version.to_string();
+
+        let locks_dir = locks_dir().ok_or_else(|| {
+            InstallError::LockProcessFailure(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Unable to locate locks directory.",
+            ))
+        })?;
+
+        fs::DirBuilder::new().recursive(true).create(&locks_dir)?;
+        lock_process!(locks_dir.join(format!("{}.lock", version_string)));
+        let architecture: UnityReleaseDownloadArchitecture = self
+            .architecture.clone()
+            .unwrap_or(InstallArchitecture::X86_64)
+            .into();
+        let unity_release = FetchRelease::builder(version.to_owned())
+            .with_current_platform()
+            .with_extended_lts()
+            .with_u7_alpha()
+            .with_architecture(architecture)
+            .fetch()
+            .map_err(|e| {
+                let e = ErrorRepr::FetchReleaseError(e);
+                LivePlatformError::new("Failed to fetch release", e)
+            })?;
+
+        //let unity_release = fetch_release(version.to_owned())?;
+        eprintln!("{:#?}", unity_release);
+        let mut graph = InstallGraph::from(&unity_release);
+        //
+
+        let mut editor_installation: Option<EditorInstallation> = None;
+        let base_dir = if let Some(destination) = &self.destination {
+            if destination.exists() && !destination.is_dir() {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Requested destination is not a directory.",
+                )
+                .into());
+            }
+
+            editor_installation = Some(EditorInstallation::new(
+                version.to_owned(),
+                destination.to_path_buf(),
+            ));
+            destination.to_path_buf()
+        } else {
+            hub::paths::install_path()
+                .map(|path| path.join(format!("{}", version)))
+                .or_else(|| {
+                    {
+                        #[cfg(any(target_os = "windows", target_os = "macos"))]
+                        let application_path = dirs_2::application_dir();
+                        #[cfg(target_os = "linux")]
+                        let application_path = dirs_2::executable_dir();
+                        application_path
+                    }
+                    .map(|path| path.join(format!("Unity-{}", version)))
+                })
+                .expect("default installation directory")
+        };
+        let mut additional_modules = vec![];
+        let installation = UnityInstallation::new(&base_dir);
+        if let Ok(ref installation) = installation {
+            info!("Installation found at {}", installation.path().display());
+            if ensure_installation_architecture_is_correct(installation)? {
+                let modules = installation.installed_modules()?;
+                let mut module_ids: HashSet<String> =
+                    modules.into_iter().map(|m| m.id().to_string()).collect();
+                module_ids.insert("Unity".to_string());
+                graph.mark_installed(&module_ids);
+            } else {
+                info!("Architecture mismatch, reinstalling");
+                info!("Fetch installed modules:");
+                additional_modules = installation
+                    .installed_modules()?
+                    .into_iter()
+                    .map(|m| m.id().to_string())
+                    .collect();
+                // info!("{}", additional_modules.iter().join("\n"));
+                fs::remove_dir_all(installation.path())?;
+                let version_string =
+                    format!("{}-{}", unity_release.version, unity_release.short_revision);
+                let installer_dir = paths::cache_dir()
+                    .map(|c| c.join(&format!("installer/{}", version_string)))
+                    .ok_or_else(|| {
+                        io::Error::new(
+                            io::ErrorKind::Other,
+                            "Unable to fetch cache installer directory",
+                        )
+                    })?;
+                if installer_dir.exists() {
+                    info!("Delete installer cache: {}", installer_dir.display());
+                    fs::remove_dir_all(installer_dir)?;
+                }
+                info!("Cleanup done");
+                graph.mark_all_missing();
+            }
+        } else {
+            info!("\nFresh install");
+            graph.mark_all_missing();
+        }
+
+        // info!("All available modules for Unity {}", version);
+        // print_graph(&graph);
+        let additional_modules_iterator = additional_modules.into_iter();
+        let base_iterator = ["Unity".to_string()].into_iter();
+        let all_components: HashSet<String> = self
+            .requested_modules
+            .iter()
             .flat_map(|module| {
-                let module = module.into();
                 let node = graph.get_node_id(&module).ok_or_else(|| {
                     debug!(
                         "Unsupported module '{}' for selected api version {}",
@@ -222,7 +302,7 @@ where
                                 })
                                 .collect(),
                         );
-                        if install_sync {
+                        if self.install_sync {
                             out.append(
                                 &mut graph
                                     .get_sub_modules(node)
@@ -243,57 +323,56 @@ where
             })
             .chain(base_iterator.map(|c| Ok(c)))
             .chain(additional_modules_iterator.map(|c| Ok(c)))
-            .collect::<Result<HashSet<_>>>(),
-        None => base_iterator.map(|c| Ok(c)).collect::<Result<HashSet<_>>>(),
-    }?;
+            .collect::<Result<HashSet<_>>>()?;
 
-    debug!("\nAll requested components");
-    for c in all_components.iter() {
-        debug!("- {}", c);
-    }
-
-    graph.keep(&all_components);
-
-    info!("\nInstall Graph");
-    print_graph(&graph);
-
-    install_module_and_dependencies(&graph, &base_dir)?;
-    let installation = installation.or_else(|_| UnityInstallation::new(&base_dir))?;
-    let mut modules = match installation.get_modules() {
-        Err(_) => unity_release
-            .downloads
-            .first()
-            .cloned()
-            .map(|d| {
-                let mut modules = vec![];
-                for module in &d.modules {
-                    fetch_modules_from_release(&mut modules, module);
-                }
-                modules
-            })
-            .unwrap(),
-        Ok(m) => m,
-    };
-
-    for module in modules.iter_mut() {
-        if module.is_installed == false {
-            module.is_installed = all_components.contains(module.id());
-            trace!("module {} is installed", module.id());
+        debug!("\nAll requested components");
+        for c in all_components.iter() {
+            debug!("- {}", c);
         }
+
+        graph.keep(&all_components);
+
+        info!("\nInstall Graph");
+        print_graph(&graph);
+
+        install_module_and_dependencies(&graph, &base_dir)?;
+        let installation = installation.or_else(|_| UnityInstallation::new(&base_dir))?;
+        let mut modules = match installation.get_modules() {
+            Err(_) => unity_release
+                .downloads
+                .first()
+                .cloned()
+                .map(|d| {
+                    let mut modules = vec![];
+                    for module in &d.modules {
+                        fetch_modules_from_release(&mut modules, module);
+                    }
+                    modules
+                })
+                .unwrap(),
+            Ok(m) => m,
+        };
+
+        for module in modules.iter_mut() {
+            if module.is_installed == false {
+                module.is_installed = all_components.contains(module.id());
+                trace!("module {} is installed", module.id());
+            }
+        }
+
+        installation.write_modules(modules)?;
+
+        //write new api hub editor installation
+        if let Some(installation) = editor_installation {
+            let mut _editors = unity_hub::Editors::load().and_then(|mut editors| {
+                editors.add(&installation);
+                editors.flush()?;
+                Ok(())
+            });
+        }
+
+        Ok(installation)
     }
-
-    installation.write_modules(modules)?;
-
-    //write new api hub editor installation
-    if let Some(installation) = editor_installation {
-        let mut _editors = unity_hub::Editors::load().and_then(|mut editors| {
-            editors.add(&installation);
-            editors.flush()?;
-            Ok(())
-        });
-    }
-
-    Ok(installation)
 }
 
 fn fetch_modules_from_release(modules: &mut Vec<Module>, module: &uvm_live_platform::Module) {
@@ -302,7 +381,6 @@ fn fetch_modules_from_release(modules: &mut Vec<Module>, module: &uvm_live_platf
         fetch_modules_from_release(modules, sub_module);
     }
 }
-
 
 struct UnityComponent2<'a>(UnityComponent<'a>);
 
@@ -527,7 +605,7 @@ mod tests {
         } else {
             true
         };
-        
+
         // Suppress unused variable warnings
         let _ = test_arch;
         let _ = test_version;
