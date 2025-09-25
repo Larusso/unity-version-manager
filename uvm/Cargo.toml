@@ -24,7 +24,7 @@ flexi_logger = "0.31.2"
 log = { workspace = true }
 semver = { workspace = true }
 uvm_live_platform = { version = "0.7.0", path = "../uvm_live_platform", features = ["clap", "cache"] }
-unity-hub = { version = "0.5.1", path = "../unity-hub", features = ["mutate"] }
+unity-hub = { version = "0.5.2", path = "../unity-hub", features = ["mutate"] }
 uvm_install = { version = "0.18.0", path = "../uvm_install", features = ["clap"]}
 itertools = { workspace = true }
 [dev-dependencies]
