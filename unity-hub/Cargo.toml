@@ -15,7 +15,7 @@ mutate = []
 [dependencies]
 unity-version = {path = "../unity-version", version = "0.3.1" }
 unity-types = {path = "../unity-types", version = "0.1.2" }
-uvm_live_platform = { path = "../uvm_live_platform",  version = "0.6.0" }
+uvm_live_platform = { path = "../uvm_live_platform",  version = "0.7.0" }
 log = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
