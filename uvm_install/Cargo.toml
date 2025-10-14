@@ -16,7 +16,7 @@ clap = ["dep:clap"]
 name = "uvm_install"
 
 [dependencies]
-clap = { version = "4.5.38", features = ["derive"], optional = true }
+clap = { version = "4.5.49", features = ["derive"], optional = true }
 ssri = { workspace = true }
 uvm_move_dir = {path = "../uvm_move_dir", version = "0.2.2" }
 console = { workspace = true }

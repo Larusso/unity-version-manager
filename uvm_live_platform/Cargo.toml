@@ -17,7 +17,7 @@ clap = ["dep:clap"]
 cache = ["dep:dirs-2", "dep:humantime"]
 
 [dependencies]
-clap = { version = "4.5.38", features = ["derive"], optional = true }
+clap = { version = "4.5.49", features = ["derive"], optional = true }
 anyhow = { workspace = true }
 indoc = "2.0.3"
 reqwest = { workspace = true }
