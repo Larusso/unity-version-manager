@@ -2791,6 +2791,7 @@ dependencies = [
  "clap",
  "console",
  "flexi_logger",
+ "humantime",
  "indicatif",
  "itertools",
  "log",
@@ -2799,8 +2800,10 @@ dependencies = [
  "unity-hub",
  "unity-version",
  "uvm_detect",
+ "uvm_gc",
  "uvm_install",
  "uvm_live_platform",
+ "walkdir",
 ]
 
 [[package]]
@@ -2850,6 +2853,16 @@ dependencies = [
  "regex",
  "tempfile",
  "unity-version",
+]
+
+[[package]]
+name = "uvm_gc"
+version = "0.1.0"
+dependencies = [
+ "humantime",
+ "log",
+ "tempfile",
+ "walkdir",
 ]
 
 [[package]]

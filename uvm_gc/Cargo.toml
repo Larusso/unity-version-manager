@@ -1,0 +1,17 @@
+[package]
+name = "uvm_gc"
+version = "0.1.0"
+authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
+description = "Garbage collector for Unity Version Manager"
+repository = "https://github.com/Larusso/unity-version-manager"
+keywords = ["unity","version-manager"]
+categories = ["development-tools"]
+license = "Apache-2.0"
+edition = "2024"
+
+[dependencies]
+humantime = "2.3.0"
+walkdir = "2.4.0"
+log = { workspace = true }
+[dev-dependencies]
+tempfile = "3.19.1"

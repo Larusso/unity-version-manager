@@ -2,6 +2,7 @@ mod commands;
 
 use crate::commands::detect::DetectCommand;
 use crate::commands::external::{exec_command, sub_command_path};
+use crate::commands::gc::GcCommand;
 use crate::commands::list::ListCommand;
 use crate::commands::install::InstallArgs;
 use crate::commands::uninstall::UninstallArgs;
@@ -12,6 +13,8 @@ use clap::{ArgAction, Args, ColorChoice, Parser, Subcommand};
 use console::{style, Style};
 use flexi_logger::{DeferredNow, Level, LevelFilter, LogSpecification, Logger, Record};
 use log::{debug, Log};
+use unity_hub::unity::hub::paths;
+use uvm_gc::GarbageCollector;
 use std::io;
 use std::process;
 
@@ -50,13 +53,14 @@ pub enum Commands {
     Install(InstallArgs),
     Uninstall(UninstallArgs),
     Version(VersionCommand),
+    GC(GcCommand),
     #[command(external_subcommand)]
     External(Vec<String>),
 }
 
 impl Commands {
     fn exec(self) -> io::Result<i32> {
-        match self {
+        let r = match self {
             Commands::Detect(detect) => detect.execute(),
             Commands::List(list) => list.execute(),
             Commands::Launch(launch) => launch.execute(),
@@ -64,12 +68,20 @@ impl Commands {
             Commands::Install(install) => install.execute(),
             Commands::Uninstall(uninstall) => uninstall.execute(),
             Commands::Version(version) => version.execute(),
+            Commands::GC(gc) => gc.execute(),
             Commands::External(mut args) => {
                 let rest = args.split_off(1);
                 let command = sub_command_path(&args[0])?;
                 exec_command(command, rest)
             }
-        }
+        }?;
+        //run garbage collection
+        GarbageCollector::new(paths::cache_dir().unwrap())
+            .with_dry_run(false)
+            .collect().unwrap_or_else(|e| {
+                eprintln!("Error running garbage collection: {}", e);
+            });
+        Ok(r)
     }
 }
 
