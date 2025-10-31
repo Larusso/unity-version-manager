@@ -3,20 +3,23 @@ mod commands;
 use crate::commands::detect::DetectCommand;
 use crate::commands::external::{exec_command, sub_command_path};
 use crate::commands::gc::GcCommand;
-use crate::commands::list::ListCommand;
 use crate::commands::install::InstallArgs;
+use crate::commands::launch::LaunchCommand;
+use crate::commands::list::ListCommand;
+use crate::commands::modules::ModulesCommand;
 use crate::commands::uninstall::UninstallArgs;
 use crate::commands::version::VersionCommand;
-use crate::commands::launch::LaunchCommand;
-use crate::commands::modules::ModulesCommand;
+use crate::commands::Command;
 use clap::{ArgAction, Args, ColorChoice, Parser, Subcommand};
 use console::{style, Style};
 use flexi_logger::{DeferredNow, Level, LevelFilter, LogSpecification, Logger, Record};
-use log::{debug, Log};
-use unity_hub::unity::hub::paths;
-use uvm_gc::GarbageCollector;
+use log::{debug, info, Log};
 use std::io;
+use std::path::PathBuf;
 use std::process;
+use unity_hub::error;
+use unity_hub::unity::hub::paths;
+use uvm_gc::{gc_enabled, GarbageCollector};
 
 #[derive(Debug, Args)]
 pub struct GlobalOptions {
@@ -60,29 +63,58 @@ pub enum Commands {
 
 impl Commands {
     fn exec(self) -> io::Result<i32> {
-        let r = match self {
+        match self {
             Commands::Detect(detect) => detect.execute(),
             Commands::List(list) => list.execute(),
             Commands::Launch(launch) => launch.execute(),
             Commands::Modules(modules) => modules.execute(),
-            Commands::Install(install) => install.execute(),
-            Commands::Uninstall(uninstall) => uninstall.execute(),
-            Commands::Version(version) => version.execute(),
+            Commands::Install(install) => with_garbage_collection(install),
+            Commands::Uninstall(uninstall) => with_garbage_collection(uninstall),
+            Commands::Version(version) => with_garbage_collection(version),
             Commands::GC(gc) => gc.execute(),
-            Commands::External(mut args) => {
-                let rest = args.split_off(1);
-                let command = sub_command_path(&args[0])?;
-                exec_command(command, rest)
+            Commands::External(args) => {
+                let command = ExternalCommand::from_args(args)?;
+                with_garbage_collection(command)
             }
-        }?;
-        //run garbage collection
+        }
+    }
+}
+
+struct ExternalCommand {
+    command: PathBuf,
+    args: Vec<String>,
+}
+
+impl ExternalCommand {
+    fn from_args(mut args: Vec<String>) -> io::Result<Self> {
+        let rest = args.split_off(1);
+        let command = sub_command_path(&args[0])?;
+        Ok(Self {
+            command,
+            args: rest,
+        })
+    }
+}
+
+impl Command for ExternalCommand {
+    fn execute(&self) -> io::Result<i32> {
+        exec_command(self.command.clone(), self.args.clone())
+    }
+}
+
+fn with_garbage_collection(command: impl Command) -> io::Result<i32> {
+    let r = command.execute()?;
+    if gc_enabled() {
+        eprintln!();
+        info!("Running garbage collection");
         GarbageCollector::new(paths::cache_dir().unwrap())
             .with_dry_run(false)
-            .collect().unwrap_or_else(|e| {
-                eprintln!("Error running garbage collection: {}", e);
+            .collect()
+            .unwrap_or_else(|e| {
+                log::error!("Error running garbage collection: {}", e);
             });
-        Ok(r)
     }
+    Ok(r)
 }
 
 fn set_colors_enabled(color: &ColorChoice) {

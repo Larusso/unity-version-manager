@@ -5,6 +5,8 @@ use console::style;
 use unity_version::Version;
 use uvm_install::{InstallArchitecture, InstallOptions};
 
+use crate::commands::Command;
+
 #[derive(Args, Debug)]
 pub struct InstallArgs {
     /// Module to install
@@ -32,8 +34,8 @@ pub struct InstallArgs {
     pub destination: Option<PathBuf>,
 }
 
-impl InstallArgs {
-    pub fn execute(&self) -> io::Result<i32> {
+impl Command for InstallArgs {
+    fn execute(&self) -> io::Result<i32> {
         let version = &self.editor_version;
         let modules = &self.modules;
         let install_sync = self.sync;

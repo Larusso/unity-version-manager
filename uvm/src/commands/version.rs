@@ -12,7 +12,7 @@ use unity_version::Version;
 use uvm_live_platform::UnityReleaseDownloadArchitecture;
 use uvm_live_platform::UnityReleaseDownloadPlatform;
 use uvm_live_platform::{UnityReleaseEntitlement, UnityReleaseStream};
-
+use crate::commands::Command as CommandTrait;
 #[derive(Args, Debug)]
 pub struct VersionCommand {
     #[clap(subcommand)]
@@ -65,9 +65,9 @@ struct VersionFilter {
     no_cache: bool,
 }
 
-impl VersionCommand {
-    pub fn execute(self) -> io::Result<i32> {
-        let command = self.command;
+impl CommandTrait for VersionCommand {
+    fn execute(&self) -> io::Result<i32> {
+        let command = &self.command;
 
         let pb = ProgressBar::new_spinner();
         pb.enable_steady_tick(Duration::from_millis(120));
@@ -91,11 +91,11 @@ impl VersionCommand {
         match command {
             Command::Latest { filter } => {
                 let versions_builder = uvm_live_platform::ListVersions::builder()
-                    .with_architectures(filter.architectures)
-                    .with_platforms(filter.platforms)
+                    .with_architectures(filter.architectures.clone())
+                    .with_platforms(filter.platforms.clone())
                     .autopage(false)
-                    .with_streams(filter.streams)
-                    .with_entitlements(filter.entitlements)
+                    .with_streams(filter.streams.clone())
+                    .with_entitlements(filter.entitlements.clone())
                     .with_refresh(filter.refresh)
                     .without_cache(filter.no_cache)
                     .limit(1);
@@ -117,11 +117,11 @@ impl VersionCommand {
                 all,
             } => {
                 let versions_builder = uvm_live_platform::ListVersions::builder()
-                    .with_architectures(filter.architectures)
-                    .with_platforms(filter.platforms)
+                    .with_architectures(filter.architectures.clone())
+                    .with_platforms(filter.platforms.clone())
                     .autopage(true)
-                    .with_streams(filter.streams)
-                    .with_entitlements(filter.entitlements);
+                    .with_streams(filter.streams.clone())
+                    .with_entitlements(filter.entitlements.clone());
 
                 let versions = versions_builder
                     .list()
@@ -133,15 +133,15 @@ impl VersionCommand {
 
                 debug!("versions: {:#?}", versions);
 
-                if all {
-                    let versions = Self::fetch_matching_versions(versions, version_req);
+                if *all {
+                    let versions = Self::fetch_matching_versions(versions, version_req.clone());
                     pb.finish_with_message("all matching versions");
                     info!("all matching versions:");
                     for version in versions {
                         println!("{}", style(version).green().bold());
                     }
                 } else {
-                    let version = Self::fetch_matching_version(versions, version_req)?;
+                    let version = Self::fetch_matching_version(versions, version_req.clone())?;
                     pb.finish_with_message("highest matching version");
                     println!("{}", style(version).green().bold());
                 }
@@ -150,7 +150,9 @@ impl VersionCommand {
 
         Ok(0)
     }
+}
 
+impl VersionCommand {
     fn fetch_matching_versions<I: Iterator<Item = Version>>(
         versions: I,
         version_req: VersionReq,

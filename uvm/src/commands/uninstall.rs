@@ -9,6 +9,8 @@ use unity_hub::unity::{find_installation, UnityInstallation, Installation};
 use unity_hub::unity::hub::module::Module;
 use unity_version::Version;
 
+use crate::commands::Command;
+
 #[derive(Args, Debug)]
 pub struct UninstallArgs {
     /// The unity version to uninstall (defaults to removing the entire editor)
@@ -23,8 +25,8 @@ pub struct UninstallArgs {
     pub all: bool,
 }
 
-impl UninstallArgs {
-    pub fn execute(&self) -> io::Result<i32> {
+impl Command for UninstallArgs {
+    fn execute(&self) -> io::Result<i32> {
         info!("Uninstalling Unity version: {}", self.version);
 
         // Find the Unity installation
@@ -188,8 +190,9 @@ impl UninstallArgs {
         }
         Ok(0)
     }
+}
 
-
+impl UninstallArgs {
     fn can_uninstall_module(&self, module: &Module, installation: &UnityInstallation) -> bool {
         // Skip modules without a destination
         let _destination = match module.base.destination() {

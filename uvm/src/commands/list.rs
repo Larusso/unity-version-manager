@@ -1,4 +1,4 @@
-use crate::commands::presentation::{RenderOptions, TextRenderer, as_view_iter};
+use crate::commands::{presentation::{as_view_iter, RenderOptions, TextRenderer}, Command};
 use clap::Args;
 use log::info;
 use std::io;
@@ -32,8 +32,8 @@ pub struct ListCommand {
     pub list_modules: bool,
 }
 
-impl ListCommand {
-    pub fn execute(&self) -> io::Result<i32> {
+impl Command for ListCommand {
+    fn execute(&self) -> io::Result<i32> {
         let list_function = if self.system {
             info!("fetch system default installations");
             list_installations
