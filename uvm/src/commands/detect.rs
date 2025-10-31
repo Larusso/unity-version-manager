@@ -4,6 +4,8 @@ use uvm_detect::DetectOptions;
 use std::path::PathBuf;
 use std::{env, io};
 
+use crate::commands::Command;
+
 #[derive(Args, Debug)]
 pub struct DetectCommand {
     pub project_path: Option<PathBuf>,
@@ -12,8 +14,8 @@ pub struct DetectCommand {
     pub recursive: bool,
 }
 
-impl DetectCommand {
-    pub fn execute(&self) -> io::Result<i32> {
+impl Command for DetectCommand {
+    fn execute(&self) -> io::Result<i32> {
         let project_path = match self.project_path.as_ref() {
             Some(p) => p,
             _ => &env::current_dir()?,

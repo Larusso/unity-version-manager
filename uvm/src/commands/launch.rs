@@ -10,6 +10,8 @@ use unity_hub::unity::{find_installation, list_all_installations, UnityInstallat
 use uvm_detect::detect_project_version;
 use uvm_detect::DetectOptions;
 
+use crate::commands::Command;
+
 #[derive(Debug, Clone, ValueEnum)]
 pub enum UnityPlatform {
     Win32,
@@ -71,8 +73,8 @@ pub struct LaunchCommand {
     project_path: Option<PathBuf>,
 }
 
-impl LaunchCommand {
-    pub fn execute(&self) -> io::Result<i32> {
+impl Command for LaunchCommand {
+    fn execute(&self) -> io::Result<i32> {
         let project_path = self
             .project_path
             .as_ref()
@@ -111,7 +113,9 @@ impl LaunchCommand {
         command.spawn()?;
         Ok(0)
     }
+}
 
+impl LaunchCommand {
     fn get_installation(
         &self,
         project_path: &Path,

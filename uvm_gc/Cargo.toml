@@ -1,6 +1,6 @@
 [package]
 name = "uvm_gc"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Manfred Endres <manfred.endres@tslarusso.de>"]
 description = "Garbage collector for Unity Version Manager"
 repository = "https://github.com/Larusso/unity-version-manager"
