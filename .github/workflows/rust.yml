@@ -25,6 +25,9 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             use-zigbuild: false
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            use-zigbuild: false
           - target: x86_64-apple-darwin
             os: macos-latest
             use-zigbuild: false
@@ -77,11 +80,11 @@ jobs:
       shell: bash
 
     - name: Run tests
-      # Skip tests for cross-compiled targets
-      if: matrix.use-zigbuild == false
+      # Skip tests for cross-compiled targets and Windows ARM64 (cross-compiled)
+      if: matrix.use-zigbuild == false && matrix.target != 'aarch64-pc-windows-msvc'
       run: cargo test --target ${{ matrix.target }} --verbose --release
 
     - name: Run UVM help
-      # Skip help test for cross-compiled targets  
-      if: matrix.use-zigbuild == false
+      # Skip help test for cross-compiled targets and Windows ARM64 (cross-compiled)
+      if: matrix.use-zigbuild == false && matrix.target != 'aarch64-pc-windows-msvc'
       run: cargo run --target ${{ matrix.target }} --bin uvm --release -- --help
