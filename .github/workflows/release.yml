@@ -117,8 +117,11 @@ jobs:
 
             ### Windows
             ```powershell
-            # Download binary directly
+            # x86_64 (Intel/AMD)
             Invoke-WebRequest -Uri "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/uvm-x86_64-pc-windows-msvc.exe" -OutFile "uvm.exe"
+            
+            # ARM64 (Apple Silicon Windows, Surface Pro X, etc.)
+            Invoke-WebRequest -Uri "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/uvm-aarch64-pc-windows-msvc.exe" -OutFile "uvm.exe"
             ```
           draft: true
           prerelease: ${{ steps.extract-version.outputs.is-prerelease == 'true' }}
@@ -141,6 +144,9 @@ jobs:
           
           # Windows targets  
           - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            use-zigbuild: false
+          - target: aarch64-pc-windows-msvc
             os: windows-latest
             use-zigbuild: false
             
