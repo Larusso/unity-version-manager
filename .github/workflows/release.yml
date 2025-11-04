@@ -106,12 +106,20 @@ jobs:
 
             ### Linux
             ```bash
-            # GNU (most distributions)
+            # GNU (most distributions) - x86_64
             curl -L -o uvm https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/uvm-x86_64-unknown-linux-gnu
             chmod +x uvm
             
-            # Musl (Alpine, static binary)
+            # GNU (most distributions) - ARM64
+            curl -L -o uvm https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/uvm-aarch64-unknown-linux-gnu
+            chmod +x uvm
+            
+            # Musl (Alpine, static binary) - x86_64
             curl -L -o uvm https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/uvm-x86_64-unknown-linux-musl
+            chmod +x uvm
+            
+            # Musl (Alpine, static binary) - ARM64
+            curl -L -o uvm https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/uvm-aarch64-unknown-linux-musl
             chmod +x uvm
             ```
 
@@ -150,14 +158,20 @@ jobs:
             os: windows-latest
             use-zigbuild: false
             
-          # Linux GNU target (native)
+          # Linux GNU targets
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             use-zigbuild: false
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+            use-zigbuild: false
             
-          # Linux musl target (cross-compile with zigbuild)
+          # Linux musl targets (cross-compile with zigbuild)
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
+            use-zigbuild: true
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-24.04-arm
             use-zigbuild: true
 
     steps:

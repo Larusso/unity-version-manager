@@ -34,9 +34,17 @@ jobs:
           - target: aarch64-apple-darwin
             os: macos-latest
             use-zigbuild: false
+          # Linux ARM64 glibc (native on ARM runners)
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+            use-zigbuild: false
           # Cross-compile with zigbuild
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
+            use-zigbuild: true
+          # Linux ARM64 musl (native on ARM runners)
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-24.04-arm
             use-zigbuild: true
 
     steps:
@@ -80,11 +88,11 @@ jobs:
       shell: bash
 
     - name: Run tests
-      # Skip tests for cross-compiled targets and Windows ARM64 (cross-compiled)
-      if: matrix.use-zigbuild == false && matrix.target != 'aarch64-pc-windows-msvc'
+      # Skip tests for cross-compiled targets (zigbuild, Windows ARM64, Linux ARM64)
+      if: matrix.use-zigbuild == false && matrix.target != 'aarch64-pc-windows-msvc' && matrix.target != 'aarch64-unknown-linux-gnu'
       run: cargo test --target ${{ matrix.target }} --verbose --release
 
     - name: Run UVM help
-      # Skip help test for cross-compiled targets and Windows ARM64 (cross-compiled)
-      if: matrix.use-zigbuild == false && matrix.target != 'aarch64-pc-windows-msvc'
+      # Skip help test for cross-compiled targets (zigbuild, Windows ARM64, Linux ARM64)
+      if: matrix.use-zigbuild == false && matrix.target != 'aarch64-pc-windows-msvc' && matrix.target != 'aarch64-unknown-linux-gnu'
       run: cargo run --target ${{ matrix.target }} --bin uvm --release -- --help

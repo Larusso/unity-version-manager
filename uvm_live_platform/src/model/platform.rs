@@ -12,7 +12,10 @@ pub enum UnityReleaseDownloadArchitecture {
 
 impl Default for UnityReleaseDownloadArchitecture {
     fn default() -> Self {
-        if cfg!(target_arch = "x86_64") {
+        // On Linux, always use x86_64 regardless of the actual architecture
+        if cfg!(target_os = "linux") {
+            Self::X86_64
+        } else if cfg!(target_arch = "x86_64") {
             Self::X86_64
         } else if cfg!(target_arch = "aarch64") {
             Self::Arm64
