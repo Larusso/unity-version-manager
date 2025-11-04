@@ -37,7 +37,7 @@ cluFlock = "1.2.5"
 [target.'cfg(target_os="macos")'.dependencies]
 dmg = "0.1.1"
 mach_object = "0.1.17"
-sysctl = "0.6.0"
+sysctl = "0.7.1"
 [target.'cfg(target_os="windows")'.dependencies]
 tempfile = "3.19.1"
 [dev-dependencies]
