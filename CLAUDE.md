@@ -52,6 +52,10 @@ Lower-level crates don't depend on higher-level ones.
 - **Installation**: `uvm_install/src/` - core install/uninstall logic
 - **Hub integration**: `unity-hub/src/` - Unity Hub paths and installations
 
+### Deep Dives
+
+- [Installer Architecture](docs/installer-architecture.md) - execution flow, platform-specific logic, external dependencies
+
 ## Code Conventions
 
 - **Rust Editions**: mixed (2018, 2021, 2024); check each crate's `Cargo.toml` for its edition (e.g., `unity-version` is 2021; `uvm_detect`/`uvm_gc` are 2024)
@@ -64,11 +68,18 @@ Lower-level crates don't depend on higher-level ones.
 
 Use imperative mood: "Fix bug" not "Fixed bug" or "Fixes bug"
 
+Do NOT add Co-Authored-By lines.
+
 ```
 Short summary (50 chars or less)
 
-Detailed explanation if needed, wrapped at 72 chars.
-Use markdown formatting. Bullet points are okay.
+## Description
+
+Detailed explanation of the change.
+
+## Changes
+
+- Bullet list of specific changes made
 ```
 
 ## Pull Requests

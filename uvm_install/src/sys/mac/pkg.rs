@@ -2,12 +2,51 @@ use crate::install::error::InstallerErrorInner::{InstallationFailed, InstallerCr
 use crate::install::error::{InstallerError, InstallerResult};
 use crate::install::installer::{BaseInstaller, Installer, InstallerWithDestination, Pkg};
 use crate::install::{InstallHandler, UnityEditor, UnityModule};
+use flate2::read::GzDecoder;
 use log::{debug, info, warn};
-use std::fs::DirBuilder;
+use std::fs::{DirBuilder, File};
+use std::io::Read;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::{fs, io};
 use thiserror_context::Context;
+
+/// Payload archive format inside a PKG file
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PayloadFormat {
+    /// gzipped tar archive
+    Tar,
+    /// gzipped cpio archive (ODC or newc format)
+    Cpio,
+}
+
+/// Detect the format of a gzipped payload by examining magic bytes after decompression.
+///
+/// cpio archives start with:
+/// - `070707` (ODC/old ASCII format)
+/// - `070701` (newc format)
+/// - `070702` (newc with CRC)
+///
+/// If none of these patterns match, we assume tar format.
+fn detect_payload_format<P: AsRef<Path>>(path: P) -> io::Result<PayloadFormat> {
+    let path = path.as_ref();
+    let file = File::open(path)?;
+    let mut decoder = GzDecoder::new(file);
+
+    let mut buffer = [0u8; 6];
+    decoder.read_exact(&mut buffer)?;
+
+    // Check for cpio magic bytes (ASCII: "070707", "070701", "070702")
+    let is_cpio = &buffer == b"070707" || &buffer == b"070701" || &buffer == b"070702";
+
+    if is_cpio {
+        debug!("detected cpio payload format in {}", path.display());
+        Ok(PayloadFormat::Cpio)
+    } else {
+        debug!("detected tar payload format in {}", path.display());
+        Ok(PayloadFormat::Tar)
+    }
+}
 
 pub type EditorPkgInstaller = Installer<UnityEditor, Pkg, InstallerWithDestination>;
 pub type ModulePkgNativeInstaller = Installer<UnityModule, Pkg, BaseInstaller>;
@@ -88,11 +127,82 @@ impl<V, I> Installer<V, Pkg, I> {
     ) -> Result<(), InstallerError> {
         let base_payload_path = base_payload_path.as_ref();
         let payload = self.find_payload(&base_payload_path).context("unable to find payload in package")?;
-        debug!("untar payload at {}", payload.display());
-        self.tar(&payload, destination)
+        debug!("extract payload at {}", payload.display());
+        self.extract_payload(&payload, destination)
     }
 
-    fn tar<P: AsRef<Path>, D: AsRef<Path>>(
+    fn extract_payload<P: AsRef<Path>, D: AsRef<Path>>(
+        &self,
+        source: P,
+        destination: D,
+    ) -> InstallerResult<()> {
+        let source = source.as_ref();
+        let destination = destination.as_ref();
+
+        let format = detect_payload_format(source)?;
+        match format {
+            PayloadFormat::Tar => self.extract_tar(source, destination),
+            PayloadFormat::Cpio => self.extract_cpio(source, destination),
+        }
+    }
+
+    fn extract_cpio<P: AsRef<Path>, D: AsRef<Path>>(
+        &self,
+        source: P,
+        destination: D,
+    ) -> InstallerResult<()> {
+        let source = source.as_ref();
+        let destination = destination.as_ref();
+
+        debug!(
+            "extract cpio payload {} to {}",
+            source.display(),
+            destination.display()
+        );
+
+        // Use gzip to decompress and pipe to cpio for extraction
+        let mut gzip_child = Command::new("gzip")
+            .arg("-dc")
+            .arg(source)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?;
+
+        let gzip_stdout = gzip_child.stdout.take().ok_or_else(|| {
+            io::Error::new(io::ErrorKind::Other, "failed to capture gzip stdout")
+        })?;
+
+        let cpio_child = Command::new("cpio")
+            .arg("-id")
+            .arg("--quiet")
+            .current_dir(destination)
+            .stdin(gzip_stdout)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?;
+
+        let cpio_output = cpio_child.wait_with_output()?;
+        let gzip_status = gzip_child.wait()?;
+
+        if !gzip_status.success() {
+            return Err(InstallerCreateFailed(
+                "failed to decompress payload with gzip".to_string(),
+            )
+            .into());
+        }
+
+        if !cpio_output.status.success() {
+            return Err(InstallerCreateFailed(format!(
+                "failed to extract cpio payload:\n{}",
+                String::from_utf8_lossy(&cpio_output.stderr)
+            ))
+            .into());
+        }
+
+        Ok(())
+    }
+
+    fn extract_tar<P: AsRef<Path>, D: AsRef<Path>>(
         &self,
         source: P,
         destination: D,
