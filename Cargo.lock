@@ -2875,6 +2875,7 @@ dependencies = [
  "console",
  "dirs-2",
  "dmg",
+ "flate2",
  "lazy_static",
  "log",
  "mach_object",
