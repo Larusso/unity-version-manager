@@ -10,3 +10,4 @@ target/
 **/*.rs.bk
 .qodo
 result
+.direnv/
