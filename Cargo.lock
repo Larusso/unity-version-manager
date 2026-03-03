@@ -2881,6 +2881,7 @@ dependencies = [
  "mach_object",
  "reqwest",
  "rstest",
+ "serde_json",
  "serial_test",
  "ssri",
  "sysctl",

@@ -166,6 +166,21 @@ impl InstallOptions {
         self
     }
 
+    fn modules_from_release(unity_release: &uvm_live_platform::Release) -> Vec<Module> {
+        unity_release
+            .downloads
+            .first()
+            .cloned()
+            .map(|d| {
+                let mut modules = vec![];
+                for module in &d.modules {
+                    fetch_modules_from_release(&mut modules, module);
+                }
+                modules
+            })
+            .unwrap_or_default()
+    }
+
     pub fn install(&self) -> Result<UnityInstallation> {
         let version = &self.version;
         let version_string = version.to_string();
@@ -335,32 +350,41 @@ impl InstallOptions {
         info!("\nInstall Graph");
         print_graph(&graph);
 
-        install_module_and_dependencies(&graph, &base_dir)?;
-        let installation = installation.or_else(|_| UnityInstallation::new(&base_dir))?;
-        let mut modules = match installation.get_modules() {
-            Err(_) => unity_release
-                .downloads
-                .first()
-                .cloned()
-                .map(|d| {
-                    let mut modules = vec![];
-                    for module in &d.modules {
-                        fetch_modules_from_release(&mut modules, module);
-                    }
-                    modules
-                })
-                .unwrap(),
-            Ok(m) => m,
+        // Ensure base directory exists before installation
+        fs::DirBuilder::new().recursive(true).create(&base_dir)?;
+
+        // Initialize modules list before installation loop
+        let mut modules: Vec<Module> = match &installation {
+            Ok(inst) => inst.get_modules().unwrap_or_else(|_| {
+                Self::modules_from_release(&unity_release)
+            }),
+            Err(_) => Self::modules_from_release(&unity_release),
         };
 
+        // Install modules and update state incrementally
+        let errors = install_module_and_dependencies(&graph, &base_dir, &mut modules);
+
+        // Get or create installation handle for final operations
+        let installation = installation.or_else(|_| UnityInstallation::new(&base_dir))?;
+
+        // Update is_installed flags for any modules that were already installed
         for module in modules.iter_mut() {
-            if module.is_installed == false {
+            if !module.is_installed {
                 module.is_installed = all_components.contains(module.id());
                 trace!("module {} is installed", module.id());
             }
         }
 
+        // Write final state
         installation.write_modules(modules)?;
+
+        // Report any errors that occurred during installation
+        if !errors.is_empty() {
+            for err in &errors {
+                log::error!("Module installation failed: {}", err);
+            }
+            return Err(InstallError::MultipleInstallFailures(errors));
+        }
 
         //write new api hub editor installation
         if let Some(installation) = editor_installation {
@@ -471,38 +495,104 @@ fn strip_unity_base_url<P: AsRef<Path>, Q: AsRef<Path>>(path: P, base_dir: Q) ->
         .join(&path.strip_prefix(&UNITY_BASE_PATTERN).unwrap_or(path))
 }
 
+/// Trait for installing individual modules, allowing for mocking in tests
+trait ModuleInstaller {
+    fn install_module(&self, module_id: &str, base_dir: &Path) -> Result<()>;
+}
+
+/// Default implementation that uses the real download and install process
+struct RealModuleInstaller<'a> {
+    graph: &'a InstallGraph<'a>,
+}
+
+impl<'a> ModuleInstaller for RealModuleInstaller<'a> {
+    fn install_module(&self, module_id: &str, base_dir: &Path) -> Result<()> {
+        let node = self.graph.get_node_id(module_id)
+            .ok_or_else(|| InstallError::UnsupportedModule(module_id.to_string(), "unknown".to_string()))?;
+
+        let component = self.graph.component(node).unwrap();
+        let unity_module = UnityComponent2(component);
+        let version = &self.graph.release().version;
+        let hash = &self.graph.release().short_revision;
+
+        info!("download installer for {}", module_id);
+        let loader = Loader::new(version, hash, &unity_module);
+        let installer_path = loader
+            .download()
+            .map_err(|installer_err| LoadingInstallerFailed(installer_err))?;
+
+        info!("create installer for {}", component);
+        let installer = create_installer(base_dir, installer_path, &unity_module)
+            .map_err(|installer_err| InstallerCreatedFailed(installer_err))?;
+
+        info!("install {}", component);
+        installer
+            .install()
+            .map_err(|installer_err| InstallFailed(module_id.to_string(), installer_err))?;
+
+        Ok(())
+    }
+}
+
 fn install_module_and_dependencies<'a, P: AsRef<Path>>(
     graph: &'a InstallGraph<'a>,
     base_dir: P,
-) -> Result<()> {
+    modules: &mut Vec<Module>,
+) -> Vec<InstallError> {
+    let installer = RealModuleInstaller { graph };
+    install_modules_with_installer(graph, base_dir, modules, &installer)
+}
+
+fn install_modules_with_installer<'a, P: AsRef<Path>, I: ModuleInstaller>(
+    graph: &'a InstallGraph<'a>,
+    base_dir: P,
+    modules: &mut Vec<Module>,
+    installer: &I,
+) -> Vec<InstallError> {
     let base_dir = base_dir.as_ref();
+    let mut errors = Vec::new();
+
     for node in graph.topo().iter(graph.context()) {
         if let Some(InstallStatus::Missing) = graph.install_status(node) {
             let component = graph.component(node).unwrap();
-            let module = UnityComponent2(component);
-            let version = &graph.release().version;
-            let hash = &graph.release().short_revision;
+            let module_id = match component {
+                UnityComponent::Editor(_) => "Unity".to_string(),
+                UnityComponent::Module(m) => m.id().to_string(),
+            };
 
-            info!("install {}", module.id());
-            info!("download installer for {}", module.id());
+            info!("install {}", module_id);
 
-            let loader = Loader::new(version, hash, &module);
-            let installer = loader
-                .download()
-                .map_err(|installer_err| LoadingInstallerFailed(installer_err))?;
+            let install_result = installer.install_module(&module_id, base_dir);
 
-            info!("create installer for {}", component);
-            let installer = create_installer(base_dir, installer, &module)
-                .map_err(|installer_err| InstallerCreatedFailed(installer_err))?;
+            match install_result {
+                Ok(()) => {
+                    // Mark module as installed in modules list
+                    if let Some(m) = modules.iter_mut().find(|m| m.id() == module_id) {
+                        m.is_installed = true;
+                        trace!("module {} installed successfully", module_id);
+                    }
+                }
+                Err(err) => {
+                    log::warn!("Failed to install module {}: {}", module_id, err);
+                    errors.push(err);
+                }
+            }
 
-            info!("install {}", component);
-            installer
-                .install()
-                .map_err(|installer_err| InstallFailed(module.id().to_string(), installer_err))?;
+            // Write modules.json after each module (success or failure)
+            write_modules_json(base_dir, modules);
         }
     }
 
-    Ok(())
+    errors
+}
+
+fn write_modules_json(base_dir: &Path, modules: &[Module]) {
+    let modules_json_path = base_dir.join("modules.json");
+    if let Ok(json_content) = serde_json::to_string_pretty(&modules) {
+        if let Err(e) = std::fs::write(&modules_json_path, json_content) {
+            log::warn!("Failed to write modules.json: {}", e);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -647,5 +737,449 @@ mod tests {
             ensure_installation_architecture_is_correct(&installation).unwrap(),
             expected_result
         );
+    }
+
+    mod incremental_sync_tests {
+        use super::*;
+
+        /// Create a test Module (unity-hub Module) by deserializing from JSON
+        fn create_test_module(id: &str, is_installed: bool) -> Module {
+            let json = format!(
+                r#"{{
+                    "id": "{}",
+                    "name": "Test {}",
+                    "description": "Test module",
+                    "category": "test",
+                    "downloadSize": 1000,
+                    "installedSize": 2000,
+                    "required": false,
+                    "hidden": false,
+                    "url": "https://example.com/{}.pkg",
+                    "isInstalled": {}
+                }}"#,
+                id, id, id, is_installed
+            );
+            serde_json::from_str(&json).expect("Failed to parse test module JSON")
+        }
+
+        #[test]
+        fn test_write_modules_json_creates_file() {
+            let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+            let base_dir = temp_dir.path();
+
+            let modules = vec![
+                create_test_module("android", false),
+                create_test_module("ios", true),
+            ];
+
+            // Call the actual function under test
+            write_modules_json(base_dir, &modules);
+
+            // Verify file was created and contains correct data
+            let modules_json_path = base_dir.join("modules.json");
+            assert!(modules_json_path.exists(), "modules.json should be created");
+
+            let content = std::fs::read_to_string(&modules_json_path).expect("Failed to read");
+            let parsed: Vec<Module> = serde_json::from_str(&content).expect("Failed to parse");
+
+            assert_eq!(parsed.len(), 2);
+            assert_eq!(parsed[0].id(), "android");
+            assert_eq!(parsed[0].is_installed, false);
+            assert_eq!(parsed[1].id(), "ios");
+            assert_eq!(parsed[1].is_installed, true);
+        }
+
+        #[test]
+        fn test_write_modules_json_updates_installed_state() {
+            let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+            let base_dir = temp_dir.path();
+
+            // Start with no modules installed
+            let mut modules = vec![
+                create_test_module("android", false),
+                create_test_module("ios", false),
+                create_test_module("webgl", false),
+            ];
+
+            write_modules_json(base_dir, &modules);
+
+            // Simulate android installation completing
+            modules[0].is_installed = true;
+            write_modules_json(base_dir, &modules);
+
+            // Read back and verify only android is installed
+            let content = std::fs::read_to_string(base_dir.join("modules.json")).unwrap();
+            let parsed: Vec<Module> = serde_json::from_str(&content).unwrap();
+
+            assert_eq!(parsed[0].id(), "android");
+            assert!(parsed[0].is_installed, "android should be installed");
+            assert!(!parsed[1].is_installed, "ios should not be installed");
+            assert!(!parsed[2].is_installed, "webgl should not be installed");
+        }
+    }
+
+    /// Test infrastructure for testing install_modules_with_installer
+    mod install_integration_tests {
+        use super::*;
+        use std::sync::{Arc, Mutex};
+        use uvm_live_platform::Release;
+        use uvm_install_graph::InstallGraph;
+
+        // ============================================================
+        // Test Fixtures - Create Release/Module from JSON
+        // ============================================================
+
+        /// Create a minimal Release JSON with the given module IDs
+        fn create_test_release_json(module_ids: &[&str]) -> String {
+            let modules_json: Vec<String> = module_ids
+                .iter()
+                .map(|id| create_platform_module_json(id))
+                .collect();
+
+            format!(
+                r#"{{
+                    "version": "2022.3.0f1",
+                    "productName": "Unity",
+                    "releaseDate": "2023-01-01",
+                    "releaseNotes": {{ "url": "https://example.com/notes" }},
+                    "stream": "LTS",
+                    "skuFamily": "CLASSIC",
+                    "recommended": true,
+                    "unityHubDeepLink": "unityhub://2022.3.0f1",
+                    "shortRevision": "abc123",
+                    "downloads": [{{
+                        "url": "https://example.com/unity.pkg",
+                        "platform": "MAC_OS",
+                        "architecture": "X86_64",
+                        "downloadSize": 1000000,
+                        "installedSize": 2000000,
+                        "modules": [{}]
+                    }}]
+                }}"#,
+                modules_json.join(",")
+            )
+        }
+
+        /// Create a platform module JSON (uvm_live_platform::Module)
+        fn create_platform_module_json(id: &str) -> String {
+            format!(
+                r#"{{
+                    "id": "{}",
+                    "name": "Test {}",
+                    "description": "Test module {}",
+                    "category": "Platforms",
+                    "url": "https://example.com/{}.pkg",
+                    "downloadSize": 500000,
+                    "installedSize": 1000000,
+                    "required": false,
+                    "hidden": false,
+                    "preSelected": false
+                }}"#,
+                id, id, id, id
+            )
+        }
+
+        /// Create a Release from module IDs
+        fn create_test_release(module_ids: &[&str]) -> Release {
+            let json = create_test_release_json(module_ids);
+            serde_json::from_str(&json).expect("Failed to parse test Release JSON")
+        }
+
+        /// Create a unity-hub Module for the modules list
+        fn create_hub_module(id: &str, is_installed: bool) -> Module {
+            let json = format!(
+                r#"{{
+                    "id": "{}",
+                    "name": "Test {}",
+                    "description": "Test module",
+                    "category": "test",
+                    "downloadSize": 1000,
+                    "installedSize": 2000,
+                    "required": false,
+                    "hidden": false,
+                    "url": "https://example.com/{}.pkg",
+                    "isInstalled": {}
+                }}"#,
+                id, id, id, is_installed
+            );
+            serde_json::from_str(&json).expect("Failed to parse hub module JSON")
+        }
+
+        // ============================================================
+        // MockModuleInstaller - Controls success/failure per module
+        // ============================================================
+
+        /// Mock installer that tracks install attempts and can simulate failures
+        struct MockModuleInstaller {
+            /// Module IDs that should fail installation
+            fail_modules: HashSet<String>,
+            /// Tracks the order of install attempts
+            install_order: Arc<Mutex<Vec<String>>>,
+        }
+
+        impl MockModuleInstaller {
+            fn new(fail_modules: HashSet<String>) -> Self {
+                Self {
+                    fail_modules,
+                    install_order: Arc::new(Mutex::new(Vec::new())),
+                }
+            }
+
+            fn with_no_failures() -> Self {
+                Self::new(HashSet::new())
+            }
+
+            fn with_failures<I: IntoIterator<Item = S>, S: Into<String>>(modules: I) -> Self {
+                Self::new(modules.into_iter().map(|s| s.into()).collect())
+            }
+
+            fn get_install_order(&self) -> Vec<String> {
+                self.install_order.lock().unwrap().clone()
+            }
+        }
+
+        impl ModuleInstaller for MockModuleInstaller {
+            fn install_module(&self, module_id: &str, _base_dir: &Path) -> Result<()> {
+                // Record this install attempt
+                self.install_order.lock().unwrap().push(module_id.to_string());
+
+                if self.fail_modules.contains(module_id) {
+                    Err(InstallError::InstallFailed(
+                        module_id.to_string(),
+                        crate::install::error::InstallerError::from(
+                            io::Error::new(io::ErrorKind::Other, format!("Mock failure for {}", module_id))
+                        ),
+                    ))
+                } else {
+                    Ok(())
+                }
+            }
+        }
+
+        // ============================================================
+        // Tests
+        // ============================================================
+
+        #[test]
+        fn test_release_fixture_deserializes() {
+            let release = create_test_release(&["android", "ios", "webgl"]);
+            assert_eq!(release.version, "2022.3.0f1");
+            assert_eq!(release.downloads.len(), 1);
+            assert_eq!(release.downloads[0].modules.len(), 3);
+            assert_eq!(release.downloads[0].modules[0].id(), "android");
+            assert_eq!(release.downloads[0].modules[1].id(), "ios");
+            assert_eq!(release.downloads[0].modules[2].id(), "webgl");
+        }
+
+        #[test]
+        fn test_install_graph_from_release() {
+            let release = create_test_release(&["android", "ios"]);
+            let mut graph = InstallGraph::from(&release);
+
+            // Mark all as missing (simulating fresh install)
+            graph.mark_all_missing();
+
+            // Keep only the modules we want
+            let mut keep_set = HashSet::new();
+            keep_set.insert("Unity".to_string());
+            keep_set.insert("android".to_string());
+            keep_set.insert("ios".to_string());
+            graph.keep(&keep_set);
+
+            // Verify we can iterate
+            let mut count = 0;
+            for _node in graph.topo().iter(graph.context()) {
+                count += 1;
+            }
+            // Should have Editor + 2 modules = 3 nodes
+            assert!(count >= 2, "Graph should have at least 2 nodes, got {}", count);
+        }
+
+        #[test]
+        fn test_mock_installer_success() {
+            let installer = MockModuleInstaller::with_no_failures();
+            let temp_dir = tempfile::tempdir().unwrap();
+
+            assert!(installer.install_module("android", temp_dir.path()).is_ok());
+            assert!(installer.install_module("ios", temp_dir.path()).is_ok());
+
+            let order = installer.get_install_order();
+            assert_eq!(order, vec!["android", "ios"]);
+        }
+
+        #[test]
+        fn test_mock_installer_failure() {
+            let installer = MockModuleInstaller::with_failures(["ios"]);
+            let temp_dir = tempfile::tempdir().unwrap();
+
+            assert!(installer.install_module("android", temp_dir.path()).is_ok());
+            assert!(installer.install_module("ios", temp_dir.path()).is_err());
+            assert!(installer.install_module("webgl", temp_dir.path()).is_ok());
+
+            let order = installer.get_install_order();
+            assert_eq!(order, vec!["android", "ios", "webgl"]);
+        }
+
+        #[test]
+        fn test_install_modules_all_succeed() {
+            let temp_dir = tempfile::tempdir().unwrap();
+            let base_dir = temp_dir.path();
+
+            let release = create_test_release(&["android", "ios"]);
+            let mut graph = InstallGraph::from(&release);
+            graph.mark_all_missing();
+
+            let mut keep_set = HashSet::new();
+            keep_set.insert("android".to_string());
+            keep_set.insert("ios".to_string());
+            graph.keep(&keep_set);
+
+            let mut modules = vec![
+                create_hub_module("android", false),
+                create_hub_module("ios", false),
+            ];
+
+            let installer = MockModuleInstaller::with_no_failures();
+            let errors = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
+
+            assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
+            assert!(modules[0].is_installed, "android should be installed");
+            assert!(modules[1].is_installed, "ios should be installed");
+        }
+
+        #[test]
+        fn test_install_modules_single_failure() {
+            let temp_dir = tempfile::tempdir().unwrap();
+            let base_dir = temp_dir.path();
+
+            let release = create_test_release(&["android", "ios", "webgl"]);
+            let mut graph = InstallGraph::from(&release);
+            graph.mark_all_missing();
+
+            let mut keep_set = HashSet::new();
+            keep_set.insert("android".to_string());
+            keep_set.insert("ios".to_string());
+            keep_set.insert("webgl".to_string());
+            graph.keep(&keep_set);
+
+            let mut modules = vec![
+                create_hub_module("android", false),
+                create_hub_module("ios", false),
+                create_hub_module("webgl", false),
+            ];
+
+            // ios will fail
+            let installer = MockModuleInstaller::with_failures(["ios"]);
+            let errors = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
+
+            assert_eq!(errors.len(), 1, "Expected 1 error");
+            assert!(modules[0].is_installed, "android should be installed");
+            assert!(!modules[1].is_installed, "ios should NOT be installed");
+            assert!(modules[2].is_installed, "webgl should be installed (continued past failure)");
+        }
+
+        #[test]
+        fn test_install_modules_multiple_failures() {
+            let temp_dir = tempfile::tempdir().unwrap();
+            let base_dir = temp_dir.path();
+
+            let release = create_test_release(&["android", "ios", "webgl"]);
+            let mut graph = InstallGraph::from(&release);
+            graph.mark_all_missing();
+
+            let mut keep_set = HashSet::new();
+            keep_set.insert("android".to_string());
+            keep_set.insert("ios".to_string());
+            keep_set.insert("webgl".to_string());
+            graph.keep(&keep_set);
+
+            let mut modules = vec![
+                create_hub_module("android", false),
+                create_hub_module("ios", false),
+                create_hub_module("webgl", false),
+            ];
+
+            // ios and webgl will fail
+            let installer = MockModuleInstaller::with_failures(["ios", "webgl"]);
+            let errors = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
+
+            assert_eq!(errors.len(), 2, "Expected 2 errors");
+            assert!(modules[0].is_installed, "android should be installed");
+            assert!(!modules[1].is_installed, "ios should NOT be installed");
+            assert!(!modules[2].is_installed, "webgl should NOT be installed");
+        }
+
+        #[test]
+        fn test_modules_json_reflects_correct_state() {
+            let temp_dir = tempfile::tempdir().unwrap();
+            let base_dir = temp_dir.path();
+
+            let release = create_test_release(&["android", "ios", "webgl"]);
+            let mut graph = InstallGraph::from(&release);
+            graph.mark_all_missing();
+
+            let mut keep_set = HashSet::new();
+            keep_set.insert("android".to_string());
+            keep_set.insert("ios".to_string());
+            keep_set.insert("webgl".to_string());
+            graph.keep(&keep_set);
+
+            let mut modules = vec![
+                create_hub_module("android", false),
+                create_hub_module("ios", false),
+                create_hub_module("webgl", false),
+            ];
+
+            // ios fails
+            let installer = MockModuleInstaller::with_failures(["ios"]);
+            let _errors = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
+
+            // Read modules.json and verify state
+            let modules_json_path = base_dir.join("modules.json");
+            assert!(modules_json_path.exists(), "modules.json should exist");
+
+            let content = std::fs::read_to_string(&modules_json_path).unwrap();
+            let parsed: Vec<Module> = serde_json::from_str(&content).unwrap();
+
+            let android = parsed.iter().find(|m| m.id() == "android");
+            let ios = parsed.iter().find(|m| m.id() == "ios");
+            let webgl = parsed.iter().find(|m| m.id() == "webgl");
+
+            assert!(android.map(|m| m.is_installed).unwrap_or(false), "android should be installed in JSON");
+            assert!(!ios.map(|m| m.is_installed).unwrap_or(true), "ios should NOT be installed in JSON");
+            assert!(webgl.map(|m| m.is_installed).unwrap_or(false), "webgl should be installed in JSON");
+        }
+
+        #[test]
+        fn test_install_continues_after_failure() {
+            let temp_dir = tempfile::tempdir().unwrap();
+            let base_dir = temp_dir.path();
+
+            let release = create_test_release(&["android", "ios", "webgl"]);
+            let mut graph = InstallGraph::from(&release);
+            graph.mark_all_missing();
+
+            let mut keep_set = HashSet::new();
+            keep_set.insert("android".to_string());
+            keep_set.insert("ios".to_string());
+            keep_set.insert("webgl".to_string());
+            graph.keep(&keep_set);
+
+            let mut modules = vec![
+                create_hub_module("android", false),
+                create_hub_module("ios", false),
+                create_hub_module("webgl", false),
+            ];
+
+            // ios fails (middle module)
+            let installer = MockModuleInstaller::with_failures(["ios"]);
+            let _errors = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
+
+            // Verify all modules were attempted
+            let install_order = installer.get_install_order();
+            assert!(install_order.contains(&"android".to_string()), "android should have been attempted");
+            assert!(install_order.contains(&"ios".to_string()), "ios should have been attempted");
+            assert!(install_order.contains(&"webgl".to_string()), "webgl should have been attempted (after ios failure)");
+        }
     }
 }
