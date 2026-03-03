@@ -1,0 +1,32 @@
+---
+name: Release
+description: Release changed workspace crates with single-commit multi-tag strategy
+category: Build & Release
+tags: [release, cargo, versioning]
+---
+
+Use the `cargo-release` skill to automate releasing multiple workspace crates.
+
+**Invocation**: `/release` or describe what you want to release
+
+**What it does:**
+1. Detects changed crates since last release (via git tags)
+2. Prompts for version bump level per crate (patch/minor/major)
+3. Updates all Cargo.toml versions
+4. Creates single commit with message "chore: Release"
+5. Creates multiple tags on that commit (e.g., `v3.10.0`, `uvm_install-v0.21.0`)
+6. Optionally publishes to crates.io
+7. Optionally pushes to remote
+
+**Modes:**
+- Normal: Interactive release with user confirmation
+- Dry-run: Show what would happen without making changes
+
+**Example:**
+```
+User: /release
+Assistant: [Analyzes changed crates, prompts for bump levels, executes release]
+
+User: /release --dry-run
+Assistant: [Shows release plan without executing]
+```

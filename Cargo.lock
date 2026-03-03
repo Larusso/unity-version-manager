@@ -2785,7 +2785,7 @@ dependencies = [
 
 [[package]]
 name = "unity-version-manager"
-version = "3.9.0"
+version = "3.9.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -2867,7 +2867,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_install"
-version = "0.20.0"
+version = "0.21.0"
 dependencies = [
  "cfg-if",
  "clap",
