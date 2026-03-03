@@ -54,7 +54,7 @@ Lower-level crates don't depend on higher-level ones.
 
 ## Code Conventions
 
-- **Rust Edition**: 2018
+- **Rust Editions**: mixed (2018, 2021, 2024); check each crate's `Cargo.toml` for its edition (e.g., `unity-version` is 2021; `uvm_detect`/`uvm_gc` are 2024)
 - **Error handling**: `anyhow::Result` for application errors, `thiserror` for library errors
 - **CLI parsing**: `clap` v4 with derive macros
 - **Logging**: `log` crate with `flexi_logger`
