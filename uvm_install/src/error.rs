@@ -30,6 +30,28 @@ pub enum InstallError {
 
     #[error("Hub error: {0}")]
     HubError(#[from]unity_hub::error::UnityHubError),
+
+    #[error("{}", MultipleInstallFailures::format_errors(.0))]
+    MultipleInstallFailures(Vec<InstallError>),
+}
+
+/// Helper struct for formatting multiple errors
+pub struct MultipleInstallFailures;
+
+impl MultipleInstallFailures {
+    fn format_errors(errors: &[InstallError]) -> String {
+        if errors.is_empty() {
+            return "No errors".to_string();
+        }
+        if errors.len() == 1 {
+            return format!("1 module failed to install: {}", errors[0]);
+        }
+        let mut msg = format!("{} modules failed to install:\n", errors.len());
+        for (i, err) in errors.iter().enumerate() {
+            msg.push_str(&format!("  {}. {}\n", i + 1, err));
+        }
+        msg
+    }
 }
 
 // impl_context!(InstallError(InstallError));
