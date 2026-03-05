@@ -33,6 +33,12 @@ pub enum InstallError {
 
     #[error("{}", MultipleInstallFailures::format_errors(.0))]
     MultipleInstallFailures(Vec<InstallError>),
+
+    #[error("Unity Editor installation failed: {0}")]
+    EditorInstallationFailed(Box<InstallError>),
+
+    #[error("{}", ModuleInstallationsFailed::format_errors(.0))]
+    ModuleInstallationsFailed(Vec<InstallError>),
 }
 
 /// Helper struct for formatting multiple errors
@@ -42,6 +48,25 @@ impl MultipleInstallFailures {
     fn format_errors(errors: &[InstallError]) -> String {
         if errors.is_empty() {
             return "No errors".to_string();
+        }
+        if errors.len() == 1 {
+            return format!("1 module failed to install: {}", errors[0]);
+        }
+        let mut msg = format!("{} modules failed to install:\n", errors.len());
+        for (i, err) in errors.iter().enumerate() {
+            msg.push_str(&format!("  {}. {}\n", i + 1, err));
+        }
+        msg
+    }
+}
+
+/// Helper struct for formatting module installation errors
+pub struct ModuleInstallationsFailed;
+
+impl ModuleInstallationsFailed {
+    fn format_errors(errors: &[InstallError]) -> String {
+        if errors.is_empty() {
+            return "No module errors".to_string();
         }
         if errors.len() == 1 {
             return format!("1 module failed to install: {}", errors[0]);

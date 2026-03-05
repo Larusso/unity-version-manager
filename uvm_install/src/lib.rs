@@ -362,7 +362,7 @@ impl InstallOptions {
         };
 
         // Install modules and update state incrementally
-        let errors = install_module_and_dependencies(&graph, &base_dir, &mut modules);
+        install_module_and_dependencies(&graph, &base_dir, &mut modules)?;
 
         // Get or create installation handle for final operations
         let installation = installation.or_else(|_| UnityInstallation::new(&base_dir))?;
@@ -377,14 +377,6 @@ impl InstallOptions {
 
         // Write final state
         installation.write_modules(modules)?;
-
-        // Report any errors that occurred during installation
-        if !errors.is_empty() {
-            for err in &errors {
-                log::error!("Module installation failed: {}", err);
-            }
-            return Err(InstallError::MultipleInstallFailures(errors));
-        }
 
         //write new api hub editor installation
         if let Some(installation) = editor_installation {
@@ -538,7 +530,7 @@ fn install_module_and_dependencies<'a, P: AsRef<Path>>(
     graph: &'a InstallGraph<'a>,
     base_dir: P,
     modules: &mut Vec<Module>,
-) -> Vec<InstallError> {
+) -> Result<()> {
     let installer = RealModuleInstaller { graph };
     install_modules_with_installer(graph, base_dir, modules, &installer)
 }
@@ -548,7 +540,7 @@ fn install_modules_with_installer<'a, P: AsRef<Path>, I: ModuleInstaller>(
     base_dir: P,
     modules: &mut Vec<Module>,
     installer: &I,
-) -> Vec<InstallError> {
+) -> Result<()> {
     let base_dir = base_dir.as_ref();
     let mut errors = Vec::new();
 
@@ -565,6 +557,21 @@ fn install_modules_with_installer<'a, P: AsRef<Path>, I: ModuleInstaller>(
             let install_result = installer.install_module(&module_id, base_dir);
 
             match install_result {
+                Err(err) if module_id == "Unity" => {
+                    // Editor installation failed - cleanup and abort
+                    log::error!("Editor installation failed, cleaning up");
+                    if base_dir.exists() {
+                        if let Err(cleanup_err) = std::fs::remove_dir_all(base_dir) {
+                            log::warn!("Failed to cleanup installation directory: {}", cleanup_err);
+                        }
+                    }
+                    return Err(InstallError::EditorInstallationFailed(Box::new(err)));
+                }
+                Err(err) => {
+                    // Module failure - collect and continue
+                    log::warn!("Failed to install module {}: {}", module_id, err);
+                    errors.push(err);
+                }
                 Ok(()) => {
                     // Mark module as installed in modules list
                     if let Some(m) = modules.iter_mut().find(|m| m.id() == module_id) {
@@ -572,18 +579,20 @@ fn install_modules_with_installer<'a, P: AsRef<Path>, I: ModuleInstaller>(
                         trace!("module {} installed successfully", module_id);
                     }
                 }
-                Err(err) => {
-                    log::warn!("Failed to install module {}: {}", module_id, err);
-                    errors.push(err);
-                }
             }
 
             // Write modules.json after each module (success or failure)
+            // Note: This won't run if we returned early from Editor failure above
             write_modules_json(base_dir, modules);
         }
     }
 
-    errors
+    // Return appropriate result based on collected errors
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(InstallError::ModuleInstallationsFailed(errors))
+    }
 }
 
 fn write_modules_json(base_dir: &Path, modules: &[Module]) {
@@ -1040,9 +1049,9 @@ mod tests {
             ];
 
             let installer = MockModuleInstaller::with_no_failures();
-            let errors = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
+            let result = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
 
-            assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
+            assert!(result.is_ok(), "Expected Ok(()), got {:?}", result);
             assert!(modules[0].is_installed, "android should be installed");
             assert!(modules[1].is_installed, "ios should be installed");
         }
@@ -1070,9 +1079,15 @@ mod tests {
 
             // ios will fail
             let installer = MockModuleInstaller::with_failures(["ios"]);
-            let errors = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
+            let result = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
 
-            assert_eq!(errors.len(), 1, "Expected 1 error");
+            assert!(result.is_err(), "Expected error");
+            match result {
+                Err(InstallError::ModuleInstallationsFailed(errors)) => {
+                    assert_eq!(errors.len(), 1, "Expected 1 error");
+                }
+                _ => panic!("Expected ModuleInstallationsFailed error"),
+            }
             assert!(modules[0].is_installed, "android should be installed");
             assert!(!modules[1].is_installed, "ios should NOT be installed");
             assert!(modules[2].is_installed, "webgl should be installed (continued past failure)");
@@ -1101,9 +1116,15 @@ mod tests {
 
             // ios and webgl will fail
             let installer = MockModuleInstaller::with_failures(["ios", "webgl"]);
-            let errors = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
+            let result = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
 
-            assert_eq!(errors.len(), 2, "Expected 2 errors");
+            assert!(result.is_err(), "Expected error");
+            match result {
+                Err(InstallError::ModuleInstallationsFailed(errors)) => {
+                    assert_eq!(errors.len(), 2, "Expected 2 errors");
+                }
+                _ => panic!("Expected ModuleInstallationsFailed error"),
+            }
             assert!(modules[0].is_installed, "android should be installed");
             assert!(!modules[1].is_installed, "ios should NOT be installed");
             assert!(!modules[2].is_installed, "webgl should NOT be installed");
@@ -1180,6 +1201,127 @@ mod tests {
             assert!(install_order.contains(&"android".to_string()), "android should have been attempted");
             assert!(install_order.contains(&"ios".to_string()), "ios should have been attempted");
             assert!(install_order.contains(&"webgl".to_string()), "webgl should have been attempted (after ios failure)");
+        }
+
+        #[test]
+        fn test_editor_failure_triggers_cleanup() {
+            let temp_dir = tempfile::tempdir().unwrap();
+            let base_dir = temp_dir.path();
+
+            let release = create_test_release(&["android", "ios"]);
+            let mut graph = InstallGraph::from(&release);
+            graph.mark_all_missing();
+
+            let mut keep_set = HashSet::new();
+            keep_set.insert("Unity".to_string());
+            keep_set.insert("android".to_string());
+            keep_set.insert("ios".to_string());
+            graph.keep(&keep_set);
+
+            let mut modules = vec![
+                create_hub_module("android", false),
+                create_hub_module("ios", false),
+            ];
+
+            // Unity (Editor) will fail
+            let installer = MockModuleInstaller::with_failures(["Unity"]);
+            let result = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
+
+            // Verify EditorInstallationFailed error is returned
+            assert!(result.is_err(), "Expected error");
+            match result {
+                Err(InstallError::EditorInstallationFailed(_)) => {
+                    // Expected
+                }
+                _ => panic!("Expected EditorInstallationFailed error, got {:?}", result),
+            }
+
+            // Verify no modules were attempted (Editor is first in topo order)
+            let install_order = installer.get_install_order();
+            assert_eq!(install_order.len(), 1, "Only Unity should have been attempted");
+            assert_eq!(install_order[0], "Unity");
+
+            // Verify installation directory does not exist (cleanup worked)
+            assert!(!base_dir.exists(), "Installation directory should have been cleaned up");
+        }
+
+        #[test]
+        fn test_module_failure_with_existing_editor() {
+            let temp_dir = tempfile::tempdir().unwrap();
+            let base_dir = temp_dir.path();
+
+            let release = create_test_release(&["android", "ios", "webgl"]);
+            let mut graph = InstallGraph::from(&release);
+            graph.mark_all_missing();
+
+            // Simulate Editor already installed - only modules in graph
+            let mut keep_set = HashSet::new();
+            keep_set.insert("android".to_string());
+            keep_set.insert("ios".to_string());
+            keep_set.insert("webgl".to_string());
+            // Note: "Unity" NOT in the keep_set, simulating existing Editor
+            graph.keep(&keep_set);
+
+            let mut modules = vec![
+                create_hub_module("android", false),
+                create_hub_module("ios", false),
+                create_hub_module("webgl", false),
+            ];
+
+            // ios will fail
+            let installer = MockModuleInstaller::with_failures(["ios"]);
+            let result = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
+
+            // Verify ModuleInstallationsFailed error is returned
+            assert!(result.is_err(), "Expected error");
+            match result {
+                Err(InstallError::ModuleInstallationsFailed(errors)) => {
+                    assert_eq!(errors.len(), 1, "Expected 1 module error");
+                }
+                _ => panic!("Expected ModuleInstallationsFailed error"),
+            }
+
+            // Verify installation directory still exists
+            assert!(base_dir.exists(), "Installation directory should still exist");
+
+            // Verify other modules were installed
+            assert!(modules[0].is_installed, "android should be installed");
+            assert!(!modules[1].is_installed, "ios should NOT be installed");
+            assert!(modules[2].is_installed, "webgl should be installed");
+        }
+
+        #[test]
+        fn test_successful_installation_returns_ok() {
+            let temp_dir = tempfile::tempdir().unwrap();
+            let base_dir = temp_dir.path();
+
+            let release = create_test_release(&["android", "ios"]);
+            let mut graph = InstallGraph::from(&release);
+            graph.mark_all_missing();
+
+            let mut keep_set = HashSet::new();
+            keep_set.insert("android".to_string());
+            keep_set.insert("ios".to_string());
+            graph.keep(&keep_set);
+
+            let mut modules = vec![
+                create_hub_module("android", false),
+                create_hub_module("ios", false),
+            ];
+
+            let installer = MockModuleInstaller::with_no_failures();
+            let result = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
+
+            // Verify Ok(()) is returned
+            assert!(result.is_ok(), "Expected Ok(()), got {:?}", result);
+
+            // Verify all modules marked as installed
+            assert!(modules[0].is_installed, "android should be installed");
+            assert!(modules[1].is_installed, "ios should be installed");
+
+            // Verify modules.json was written
+            let modules_json_path = base_dir.join("modules.json");
+            assert!(modules_json_path.exists(), "modules.json should exist");
         }
     }
 }
