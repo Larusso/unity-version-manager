@@ -79,8 +79,13 @@ Detailed explanation of the change.
 
 ## Changes
 
-- Bullet list of specific changes made
+* ![ADD] new capability or file
+* ![FIX] bug or broken behaviour
+* ![UPDATE] changed existing behaviour
+* ![REMOVE] deleted capability or file
 ```
+
+Use `![ADD]`, `![FIX]`, `![UPDATE]`, or `![REMOVE]` icon tags for each change entry.
 
 ## Pull Requests
 
