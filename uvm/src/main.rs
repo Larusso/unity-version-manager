@@ -3,6 +3,8 @@ mod commands;
 use crate::commands::detect::DetectCommand;
 use crate::commands::external::{exec_command, sub_command_path};
 use crate::commands::gc::GcCommand;
+#[cfg(feature = "dev-commands")]
+use crate::commands::download_modules_json::DownloadModulesJsonCommand;
 use crate::commands::install::InstallArgs;
 use crate::commands::launch::LaunchCommand;
 use crate::commands::list::ListCommand;
@@ -57,6 +59,8 @@ pub enum Commands {
     Uninstall(UninstallArgs),
     Version(VersionCommand),
     GC(GcCommand),
+    #[cfg(feature = "dev-commands")]
+    DownloadModulesJson(DownloadModulesJsonCommand),
     #[command(external_subcommand)]
     External(Vec<String>),
 }
@@ -72,6 +76,8 @@ impl Commands {
             Commands::Uninstall(uninstall) => with_garbage_collection(uninstall),
             Commands::Version(version) => with_garbage_collection(version),
             Commands::GC(gc) => gc.execute(),
+            #[cfg(feature = "dev-commands")]
+            Commands::DownloadModulesJson(cmd) => cmd.execute(),
             Commands::External(args) => {
                 let command = ExternalCommand::from_args(args)?;
                 with_garbage_collection(command)

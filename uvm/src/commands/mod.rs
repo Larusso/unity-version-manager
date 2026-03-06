@@ -10,6 +10,8 @@ pub mod presentation;
 pub mod launch;
 pub mod modules;
 pub mod gc;
+#[cfg(feature = "dev-commands")]
+pub mod download_modules_json;
 
 pub trait Command {
     fn execute(&self) -> io::Result<i32>;
