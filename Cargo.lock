@@ -2785,7 +2785,7 @@ dependencies = [
 
 [[package]]
 name = "unity-version-manager"
-version = "3.10.0"
+version = "3.11.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -2914,7 +2914,7 @@ dependencies = [
 
 [[package]]
 name = "uvm_live_platform"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "clap",
