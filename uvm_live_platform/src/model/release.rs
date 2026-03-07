@@ -127,6 +127,7 @@ where
     let sri_str: Option<String> = Option::deserialize(deserializer)?;
 
     match sri_str {
+        Some(s) if s.is_empty() => Ok(None),
         Some(s) => match Integrity::from_str(&s) {
             Ok(integrity) => Ok(Some(integrity)),
             Err(_) => Ok(None), // If parsing fails (e.g., MD5 hash), ignore it
@@ -163,5 +164,41 @@ impl<'a> Iterator for ModuleIterator<'a> {
         let next = self.stack.pop()?;
         self.stack.extend(next.sub_modules().iter().rev());
         Some(next)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn deserialize_integrity(json: &str) -> Option<Integrity> {
+        let file: UnityReleaseFile = serde_json::from_str(json).unwrap();
+        file.integrity
+    }
+
+    #[test]
+    fn empty_string_integrity_deserializes_to_none() {
+        let result = deserialize_integrity(r#"{"integrity": ""}"#);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn null_integrity_deserializes_to_none() {
+        let result = deserialize_integrity(r#"{"integrity": null}"#);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn missing_integrity_field_deserializes_to_none() {
+        let result = deserialize_integrity(r#"{}"#);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn valid_integrity_deserializes_to_some() {
+        let result = deserialize_integrity(
+            r#"{"integrity": "sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="}"#,
+        );
+        assert!(result.is_some());
     }
 }
