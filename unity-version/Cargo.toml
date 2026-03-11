@@ -32,7 +32,7 @@ plist = "1.7.0"
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["winver","memoryapi"] }
 widestring = "1.2.0"
-libc = "0.2.80"
+libc = "0.2.177"
 
 [dev-dependencies]
 proptest = "1.4.0"
