@@ -35,5 +35,5 @@ widestring = "1.2.0"
 libc = "0.2.80"
 
 [dev-dependencies]
-proptest = "1.4.0"
+proptest = "1.9.0"
 quickcheck = "1.0.3"
