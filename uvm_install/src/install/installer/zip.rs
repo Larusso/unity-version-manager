@@ -27,8 +27,24 @@ impl<V, I> Installer<V, Zip, I> {
         let file = File::open(installer).context("failed to open zip file")?;
         let mut archive = zip::ZipArchive::new(file)?;
 
+        // Calculate total uncompressed size from the central directory (no decompression needed)
+        let total_bytes: u64 = {
+            let mut total = 0u64;
+            for i in 0..archive.len() {
+                if let Ok(entry) = archive.by_index(i) {
+                    total += entry.size();
+                }
+            }
+            total
+        };
+
+        if let Some(ref p) = self.progress {
+            p.begin_extraction_progress(total_bytes);
+        }
+
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).expect("expect file entry at index 0");
+            let file_size = file.size();
             let output_path = rename_handler(&destination.join(file.mangled_name()));
             {
                 let comment = file.comment();
@@ -55,7 +71,7 @@ impl<V, I> Installer<V, Zip, I> {
                     "File {} extracted to \"{}\" ({} bytes)",
                     i,
                     output_path.as_path().display(),
-                    file.size()
+                    file_size
                 );
                 if let Some(p) = output_path.parent() {
                     if !p.exists() {
@@ -88,6 +104,10 @@ impl<V, I> Installer<V, Zip, I> {
                         ),
                     )?;
                 }
+            }
+
+            if let Some(ref p) = self.progress {
+                p.inc(file_size);
             }
         }
 

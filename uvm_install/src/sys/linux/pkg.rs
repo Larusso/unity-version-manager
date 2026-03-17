@@ -119,7 +119,15 @@ impl InstallHandler for ModulePkgInstaller {
 
         let tmp_destination = destination.join("tmp");
         DirBuilder::new().recursive(true).create(&tmp_destination)?;
+
+        if let Some(ref p) = self.progress {
+            p.set_message("Unpacking...");
+        }
         self.xar(installer, &tmp_destination)?;
+
+        if let Some(ref p) = self.progress {
+            p.set_message("Extracting...");
+        }
         self.untar(&tmp_destination, destination)?;
         self.cleanup(&tmp_destination)?;
         Ok(())

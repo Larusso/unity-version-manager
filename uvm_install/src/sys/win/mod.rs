@@ -4,6 +4,7 @@ use crate::install::error::{InstallerErrorInner, InstallerResult};
 use crate::install::error::InstallerErrorInner::Other;
 use crate::install::installer::{Installer, ModulePoInstaller, ModuleZipInstaller};
 use crate::install::InstallHandler;
+use crate::ProgressHandler;
 use self::exe::*;
 use self::msi::ModuleMsiInstaller;
 mod exe;
@@ -13,6 +14,7 @@ pub fn create_installer<P, I, M>(
     base_install_path: P,
     installer: I,
     module: &M,
+    _progress: Option<Box<dyn ProgressHandler>>,
 ) -> InstallerResult<Box<dyn InstallHandler>>
 where
     P: AsRef<Path>,

@@ -1,0 +1,18 @@
+windows:
+  - name: Workspace
+    layout: main-vertical
+    panes:
+      - name: Terminal
+      - split: vertical
+        name: Agent
+        size: 30%
+        cmd: claude
+      - split: horizontal
+        name: Logs
+        size: 30%
+        cmd: tail -f $HOME/Library/Caches/net.wooga.uvm/logs/uvm_jni.log
+  - name: Code
+    layout: main-vertical
+    panes:
+      - name: Neovim
+        cmd: nvim .

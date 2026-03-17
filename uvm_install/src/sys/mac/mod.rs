@@ -3,7 +3,7 @@ use self::pkg::{EditorPkgInstaller, ModulePkgInstaller, ModulePkgNativeInstaller
 use crate::install::error::{InstallerErrorInner, InstallerResult};
 use crate::install::installer::{ModulePoInstaller, ModuleZipInstaller};
 use crate::install::InstallHandler;
-use crate::InstallManifest;
+use crate::{InstallManifest, ProgressHandler};
 use std::path::Path;
 
 mod dmg;
@@ -15,6 +15,7 @@ pub fn create_installer<P, I, M>(
     base_install_path: P,
     installer: I,
     module: &M,
+    progress: Option<Box<dyn ProgressHandler>>,
 ) -> InstallerResult<Box<dyn InstallHandler>>
 where
     P: AsRef<Path>,
@@ -25,10 +26,10 @@ where
     let rename = module.install_rename_from_to(&base_install_path);
 
     if module.is_editor() {
-        parse_editor_installer(installer, &base_install_path, rename)
+        parse_editor_installer(installer, &base_install_path, rename, progress)
     } else {
         let destination = module.install_destination(&base_install_path);
-        parse_module_installer(installer, destination, rename)
+        parse_module_installer(installer, destination, rename, progress)
     }
 }
 
@@ -36,6 +37,7 @@ fn parse_editor_installer<P, D, R>(
     installer: P,
     destination: D,
     rename: Option<(R, R)>,
+    progress: Option<Box<dyn ProgressHandler>>,
 ) -> InstallerResult<Box<dyn InstallHandler>>
 where
     P: AsRef<Path>,
@@ -44,11 +46,13 @@ where
 {
     let installer = installer.as_ref();
     match installer.extension() {
-        Some(ext) if ext == "pkg" => Ok(Box::new(EditorPkgInstaller::new(
-            installer,
-            destination,
-            rename,
-        ))),
+        Some(ext) if ext == "pkg" => {
+            let mut i = EditorPkgInstaller::new(installer, destination, rename);
+            if let Some(p) = progress {
+                i = i.with_progress(p);
+            }
+            Ok(Box::new(i))
+        }
         _ => Err(InstallerErrorInner::UnknownInstaller(
             installer.display().to_string(),
             ".pkg".to_string(),
@@ -61,6 +65,7 @@ fn parse_module_installer<P, D, R>(
     installer: P,
     destination: Option<D>,
     rename: Option<(R, R)>,
+    progress: Option<Box<dyn ProgressHandler>>,
 ) -> InstallerResult<Box<dyn InstallHandler>>
 where
     P: AsRef<Path>,
@@ -72,11 +77,15 @@ where
     match installer.extension() {
         Some(ext) if ext == "pkg" => {
             if let Some(destination) = destination {
-                Ok(Box::new(ModulePkgInstaller::new(
+                let mut i = ModulePkgInstaller::new(
                     installer.to_path_buf(),
                     destination.as_ref().to_path_buf(),
                     rename,
-                )))
+                );
+                if let Some(p) = progress {
+                    i = i.with_progress(p);
+                }
+                Ok(Box::new(i))
             } else {
                 let i = ModulePkgNativeInstaller::new(installer, rename);
                 Ok(Box::new(i))
@@ -85,11 +94,15 @@ where
 
         Some(ext) if ext == "zip" => {
             if let Some(destination) = destination {
-                Ok(Box::new(ModuleZipInstaller::new(
+                let mut i = ModuleZipInstaller::new(
                     installer.to_path_buf(),
                     destination.as_ref().to_path_buf(),
                     rename,
-                )))
+                );
+                if let Some(p) = progress {
+                    i = i.with_progress(p);
+                }
+                Ok(Box::new(i))
             } else {
                 Err(InstallerErrorInner::MissingDestination("zip".to_string()).into())
             }

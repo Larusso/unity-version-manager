@@ -3,7 +3,7 @@ pub mod installer;
 mod loader;
 pub mod utils;
 
-pub use self::loader::{InstallManifest, Loader};
+pub use self::loader::{InstallManifest, Loader, ProgressHandler};
 use error::InstallerError;
 use log::error;
 use std::path::Path;

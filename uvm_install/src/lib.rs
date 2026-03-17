@@ -4,6 +4,7 @@ mod sys;
 use crate::error::InstallError::{InstallFailed, InstallerCreatedFailed, LoadingInstallerFailed};
 pub use error::*;
 use install::utils;
+pub use install::ProgressHandler;
 use install::{InstallManifest, Loader};
 use lazy_static::lazy_static;
 use log::{debug, info, trace};
@@ -34,6 +35,77 @@ lazy_static! {
 impl AsRef<Path> for UNITY_BASE_PATTERN {
     fn as_ref(&self) -> &Path {
         self.deref()
+    }
+}
+
+fn print_release_info(release: &uvm_live_platform::Release) {
+    use console::style;
+
+    eprintln!(
+        "\n{} {}",
+        style("Unity Release:").cyan().bold(),
+        style(&release.version).white().bold()
+    );
+
+    if !release.product_name.is_empty() {
+        eprintln!("  {} {}", style("Product:").dim(), release.product_name);
+    }
+
+    eprintln!(
+        "  {} {}",
+        style("Stream:").dim(),
+        format!("{:?}", release.stream)
+    );
+
+    if let Some(download) = release.downloads.first() {
+        eprintln!(
+            "  {} {:?} / {:?}",
+            style("Platform:").dim(),
+            download.platform,
+            download.architecture
+        );
+
+        if !download.modules.is_empty() {
+            eprintln!("\n{}", style("Available Modules:").cyan().bold());
+            print_modules(&download.modules, 1);
+        }
+    }
+
+    eprintln!();
+}
+
+fn print_modules(modules: &[uvm_live_platform::Module], depth: usize) {
+    print_modules_with_prefix(modules, depth, String::new());
+}
+
+fn print_modules_with_prefix(modules: &[uvm_live_platform::Module], depth: usize, prefix: String) {
+    for (i, module) in modules.iter().enumerate() {
+        let is_last = i == modules.len() - 1;
+
+        let size_mb = module.download_size.to_bytes() / 1_048_576.0;
+        let size_str = if size_mb >= 1024.0 {
+            format!("{:.1} GB", size_mb / 1024.0)
+        } else {
+            format!("{:.0} MB", size_mb)
+        };
+
+        // Use └─ for last item, ├─ for others
+        let branch = if is_last { "└─" } else { "├─" };
+        let module_line = format!("{}{} {} ({})", prefix, branch, module.id(), size_str);
+
+        // All modules shown in dim style
+        eprintln!("{}", console::style(module_line).dim());
+
+        // Recursively print sub-modules with updated prefix
+        if !module.sub_modules().is_empty() {
+            // Add "│  " if not last, "   " if last
+            let new_prefix = if is_last {
+                format!("{}   ", prefix)
+            } else {
+                format!("{}│  ", prefix)
+            };
+            print_modules_with_prefix(module.sub_modules(), depth + 1, new_prefix);
+        }
     }
 }
 
@@ -130,6 +202,7 @@ pub struct InstallOptions {
     install_sync: bool,
     destination: Option<PathBuf>,
     architecture: Option<InstallArchitecture>,
+    progress_handler: Option<Box<dyn install::ProgressHandler>>,
 }
 
 impl InstallOptions {
@@ -140,6 +213,7 @@ impl InstallOptions {
             install_sync: false,
             destination: None,
             architecture: None,
+            progress_handler: None,
         }
     }
 
@@ -163,6 +237,14 @@ impl InstallOptions {
 
     pub fn with_architecture(mut self, architecture: InstallArchitecture) -> Self {
         self.architecture = Some(architecture);
+        self
+    }
+
+    pub fn with_progress_handler<P: install::ProgressHandler + 'static>(
+        mut self,
+        handler: P,
+    ) -> Self {
+        self.progress_handler = Some(Box::new(handler));
         self
     }
 
@@ -195,9 +277,16 @@ impl InstallOptions {
         fs::DirBuilder::new().recursive(true).create(&locks_dir)?;
         lock_process!(locks_dir.join(format!("{}.lock", version_string)));
         let architecture: UnityReleaseDownloadArchitecture = self
-            .architecture.clone()
+            .architecture
+            .clone()
             .unwrap_or(InstallArchitecture::X86_64)
             .into();
+
+        // Show spinner for metadata fetch if progress handler is available
+        if let Some(ref handler) = self.progress_handler {
+            handler.set_message("Fetching Unity version metadata...");
+        }
+
         let unity_release = FetchRelease::builder(version.to_owned())
             .with_current_platform()
             .with_extended_lts()
@@ -210,7 +299,13 @@ impl InstallOptions {
             })?;
 
         //let unity_release = fetch_release(version.to_owned())?;
-        eprintln!("{:#?}", unity_release);
+        print_release_info(&unity_release);
+
+        // Show spinner for dependency resolution
+        if let Some(ref handler) = self.progress_handler {
+            handler.set_message("Resolving component dependencies...");
+        }
+
         let mut graph = InstallGraph::from(&unity_release);
         //
 
@@ -350,19 +445,59 @@ impl InstallOptions {
         info!("\nInstall Graph");
         print_graph(&graph);
 
+        // Collect all components with their status for progress tracking (deduplicate during collection)
+        let mut all_graph_components: Vec<(String, String, InstallStatus)> = Vec::new();
+        let mut seen_ids = HashSet::new();
+
+        for node in graph.topo().iter(graph.context()) {
+            if let (Some(component), Some(status)) =
+                (graph.component(node), graph.install_status(node))
+            {
+                let (id, component_type) = match component {
+                    UnityComponent::Editor(_) => ("Unity".to_string(), "Editor".to_string()),
+                    UnityComponent::Module(m) => (m.id().to_string(), "Module".to_string()),
+                };
+
+                if seen_ids.insert(id.clone()) {
+                    debug!("Collected component: {} ({:?})", id, status);
+                    all_graph_components.push((id, component_type, *status));
+                } else {
+                    debug!("Skipping duplicate component: {}", id);
+                }
+            }
+        }
+
+        debug!("Total unique components: {}", all_graph_components.len());
+
+        // Initialize progress handler with all components (including already installed)
+        if let Some(ref handler) = self.progress_handler {
+            let component_list: Vec<(String, String)> = all_graph_components
+                .iter()
+                .map(|(id, comp_type, _)| (id.clone(), comp_type.clone()))
+                .collect();
+
+            debug!(
+                "Initializing progress for {} components",
+                component_list.len()
+            );
+
+            handler.initialize_components(&component_list);
+        }
+
         // Ensure base directory exists before installation
         fs::DirBuilder::new().recursive(true).create(&base_dir)?;
 
         // Initialize modules list before installation loop
         let mut modules: Vec<Module> = match &installation {
-            Ok(inst) => inst.get_modules().unwrap_or_else(|_| {
-                Self::modules_from_release(&unity_release)
-            }),
+            Ok(inst) => inst
+                .get_modules()
+                .unwrap_or_else(|_| Self::modules_from_release(&unity_release)),
             Err(_) => Self::modules_from_release(&unity_release),
         };
 
         // Install modules and update state incrementally
-        install_module_and_dependencies(&graph, &base_dir, &mut modules)?;
+        let progress_handler_ref = self.progress_handler.as_ref().map(|h| h.as_ref());
+        install_module_and_dependencies(&graph, &base_dir, &mut modules, progress_handler_ref)?;
 
         // Get or create installation handle for final operations
         let installation = installation.or_else(|_| UnityInstallation::new(&base_dir))?;
@@ -490,31 +625,75 @@ fn strip_unity_base_url<P: AsRef<Path>, Q: AsRef<Path>>(path: P, base_dir: Q) ->
 /// Trait for installing individual modules, allowing for mocking in tests
 trait ModuleInstaller {
     fn install_module(&self, module_id: &str, base_dir: &Path) -> Result<()>;
+    fn progress_handler(&self) -> Option<&dyn install::ProgressHandler>;
 }
 
 /// Default implementation that uses the real download and install process
 struct RealModuleInstaller<'a> {
     graph: &'a InstallGraph<'a>,
+    progress_handler: Option<&'a dyn install::ProgressHandler>,
 }
 
 impl<'a> ModuleInstaller for RealModuleInstaller<'a> {
     fn install_module(&self, module_id: &str, base_dir: &Path) -> Result<()> {
-        let node = self.graph.get_node_id(module_id)
-            .ok_or_else(|| InstallError::UnsupportedModule(module_id.to_string(), "unknown".to_string()))?;
+        let node = self.graph.get_node_id(module_id).ok_or_else(|| {
+            InstallError::UnsupportedModule(module_id.to_string(), "unknown".to_string())
+        })?;
 
         let component = self.graph.component(node).unwrap();
         let unity_module = UnityComponent2(component);
         let version = &self.graph.release().version;
         let hash = &self.graph.release().short_revision;
 
+        // Determine component type for progress display
+        let component_type = if unity_module.is_editor() {
+            "Editor"
+        } else {
+            "Module"
+        };
+
+        // Get the pre-created progress handler for this component
+        let component_handler = self.progress_handler.and_then(|parent| {
+            let handler = parent.get_component_handler(module_id);
+            if handler.is_none() {
+                debug!(
+                    "Component handler not found for '{}', creating fallback",
+                    module_id
+                );
+                // Fallback: create a new handler if not pre-created
+                parent.create_child_handler(module_id, component_type)
+            } else {
+                handler
+            }
+        });
+
+        // Set initial downloading state
+        if let Some(ref handler) = component_handler {
+            handler.set_message("Downloading...");
+        }
+
         info!("download installer for {}", module_id);
-        let loader = Loader::new(version, hash, &unity_module);
+        let mut loader = Loader::new(version, hash, &unity_module);
+        if let Some(ref handler) = component_handler {
+            loader.set_progress_handle(&**handler);
+        }
         let installer_path = loader
             .download()
             .map_err(|installer_err| LoadingInstallerFailed(installer_err))?;
 
+        // Update to installing state (fallback for installers without sub-phases)
+        if let Some(ref handler) = component_handler {
+            handler.set_message("Installing...");
+        }
+
+        // Get a second handler for installer sub-phase progress (Unpacking/Extracting/Installing).
+        // Both handlers share the same underlying progress bar via Arc.
+        let installer_progress = self.progress_handler.and_then(|parent| {
+            parent.get_component_handler(module_id)
+        });
+
         info!("create installer for {}", component);
-        let installer = create_installer(base_dir, installer_path, &unity_module)
+        let installer = create_installer(base_dir, installer_path, &unity_module, installer_progress)
             .map_err(|installer_err| InstallerCreatedFailed(installer_err))?;
 
         info!("install {}", component);
@@ -522,7 +701,22 @@ impl<'a> ModuleInstaller for RealModuleInstaller<'a> {
             .install()
             .map_err(|installer_err| InstallFailed(module_id.to_string(), installer_err))?;
 
+        // Mark as complete
+        if let Some(ref handler) = component_handler {
+            handler.set_message("✓ Complete");
+            handler.finish();
+        }
+
+        // Mark component as complete in overall progress
+        if let Some(handler) = self.progress_handler {
+            handler.mark_component_complete();
+        }
+
         Ok(())
+    }
+
+    fn progress_handler(&self) -> Option<&dyn install::ProgressHandler> {
+        self.progress_handler
     }
 }
 
@@ -530,8 +724,12 @@ fn install_module_and_dependencies<'a, P: AsRef<Path>>(
     graph: &'a InstallGraph<'a>,
     base_dir: P,
     modules: &mut Vec<Module>,
+    progress_handler: Option<&'a dyn install::ProgressHandler>,
 ) -> Result<()> {
-    let installer = RealModuleInstaller { graph };
+    let installer = RealModuleInstaller {
+        graph,
+        progress_handler,
+    };
     install_modules_with_installer(graph, base_dir, modules, &installer)
 }
 
@@ -545,46 +743,63 @@ fn install_modules_with_installer<'a, P: AsRef<Path>, I: ModuleInstaller>(
     let mut errors = Vec::new();
 
     for node in graph.topo().iter(graph.context()) {
-        if let Some(InstallStatus::Missing) = graph.install_status(node) {
-            let component = graph.component(node).unwrap();
-            let module_id = match component {
-                UnityComponent::Editor(_) => "Unity".to_string(),
-                UnityComponent::Module(m) => m.id().to_string(),
-            };
+        let status = graph.install_status(node);
+        let component = graph.component(node).unwrap();
+        let module_id = match component {
+            UnityComponent::Editor(_) => "Unity".to_string(),
+            UnityComponent::Module(m) => m.id().to_string(),
+        };
 
-            info!("install {}", module_id);
-
-            let install_result = installer.install_module(&module_id, base_dir);
-
-            match install_result {
-                Err(err) if module_id == "Unity" => {
-                    // Editor installation failed - cleanup and abort
-                    log::error!("Editor installation failed, cleaning up");
-                    if base_dir.exists() {
-                        if let Err(cleanup_err) = std::fs::remove_dir_all(base_dir) {
-                            log::warn!("Failed to cleanup installation directory: {}", cleanup_err);
-                        }
+        match status {
+            Some(InstallStatus::Installed) => {
+                // Mark already installed components
+                if let Some(handler) = installer.progress_handler() {
+                    if let Some(comp_handler) = handler.get_component_handler(&module_id) {
+                        comp_handler.set_message("✓ Already installed");
+                        comp_handler.finish();
                     }
-                    return Err(InstallError::EditorInstallationFailed(Box::new(err)));
+                    handler.mark_component_complete();
                 }
-                Err(err) => {
-                    // Module failure - collect and continue
-                    log::warn!("Failed to install module {}: {}", module_id, err);
-                    errors.push(err);
-                }
-                Ok(()) => {
-                    // Mark module as installed in modules list
-                    if let Some(m) = modules.iter_mut().find(|m| m.id() == module_id) {
-                        m.is_installed = true;
-                        trace!("module {} installed successfully", module_id);
+                continue;
+            }
+            Some(InstallStatus::Missing) => {
+                // Install missing components
+            }
+            _ => continue,
+        }
+
+        info!("install {}", module_id);
+
+        let install_result = installer.install_module(&module_id, base_dir);
+
+        match install_result {
+            Err(err) if module_id == "Unity" => {
+                // Editor installation failed - cleanup and abort
+                log::error!("Editor installation failed, cleaning up");
+                if base_dir.exists() {
+                    if let Err(cleanup_err) = std::fs::remove_dir_all(base_dir) {
+                        log::warn!("Failed to cleanup installation directory: {}", cleanup_err);
                     }
+                }
+                return Err(InstallError::EditorInstallationFailed(Box::new(err)));
+            }
+            Err(err) => {
+                // Module failure - collect and continue
+                log::warn!("Failed to install module {}: {}", module_id, err);
+                errors.push(err);
+            }
+            Ok(()) => {
+                // Mark module as installed in modules list
+                if let Some(m) = modules.iter_mut().find(|m| m.id() == module_id) {
+                    m.is_installed = true;
+                    trace!("module {} installed successfully", module_id);
                 }
             }
-
-            // Write modules.json after each module (success or failure)
-            // Note: This won't run if we returned early from Editor failure above
-            write_modules_json(base_dir, modules);
         }
+
+        // Write modules.json after each module (success or failure)
+        // Note: This won't run if we returned early from Editor failure above
+        write_modules_json(base_dir, modules);
     }
 
     // Return appropriate result based on collected errors
@@ -831,8 +1046,8 @@ mod tests {
     mod install_integration_tests {
         use super::*;
         use std::sync::{Arc, Mutex};
-        use uvm_live_platform::Release;
         use uvm_install_graph::InstallGraph;
+        use uvm_live_platform::Release;
 
         // ============================================================
         // Test Fixtures - Create Release/Module from JSON
@@ -948,16 +1163,24 @@ mod tests {
         }
 
         impl ModuleInstaller for MockModuleInstaller {
+            fn progress_handler(&self) -> Option<&dyn install::ProgressHandler> {
+                None
+            }
+
             fn install_module(&self, module_id: &str, _base_dir: &Path) -> Result<()> {
                 // Record this install attempt
-                self.install_order.lock().unwrap().push(module_id.to_string());
+                self.install_order
+                    .lock()
+                    .unwrap()
+                    .push(module_id.to_string());
 
                 if self.fail_modules.contains(module_id) {
                     Err(InstallError::InstallFailed(
                         module_id.to_string(),
-                        crate::install::error::InstallerError::from(
-                            io::Error::new(io::ErrorKind::Other, format!("Mock failure for {}", module_id))
-                        ),
+                        crate::install::error::InstallerError::from(io::Error::new(
+                            io::ErrorKind::Other,
+                            format!("Mock failure for {}", module_id),
+                        )),
                     ))
                 } else {
                     Ok(())
@@ -1001,7 +1224,11 @@ mod tests {
                 count += 1;
             }
             // Should have Editor + 2 modules = 3 nodes
-            assert!(count >= 2, "Graph should have at least 2 nodes, got {}", count);
+            assert!(
+                count >= 2,
+                "Graph should have at least 2 nodes, got {}",
+                count
+            );
         }
 
         #[test]
@@ -1090,7 +1317,10 @@ mod tests {
             }
             assert!(modules[0].is_installed, "android should be installed");
             assert!(!modules[1].is_installed, "ios should NOT be installed");
-            assert!(modules[2].is_installed, "webgl should be installed (continued past failure)");
+            assert!(
+                modules[2].is_installed,
+                "webgl should be installed (continued past failure)"
+            );
         }
 
         #[test]
@@ -1153,7 +1383,8 @@ mod tests {
 
             // ios fails
             let installer = MockModuleInstaller::with_failures(["ios"]);
-            let _errors = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
+            let _errors =
+                install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
 
             // Read modules.json and verify state
             let modules_json_path = base_dir.join("modules.json");
@@ -1166,9 +1397,18 @@ mod tests {
             let ios = parsed.iter().find(|m| m.id() == "ios");
             let webgl = parsed.iter().find(|m| m.id() == "webgl");
 
-            assert!(android.map(|m| m.is_installed).unwrap_or(false), "android should be installed in JSON");
-            assert!(!ios.map(|m| m.is_installed).unwrap_or(true), "ios should NOT be installed in JSON");
-            assert!(webgl.map(|m| m.is_installed).unwrap_or(false), "webgl should be installed in JSON");
+            assert!(
+                android.map(|m| m.is_installed).unwrap_or(false),
+                "android should be installed in JSON"
+            );
+            assert!(
+                !ios.map(|m| m.is_installed).unwrap_or(true),
+                "ios should NOT be installed in JSON"
+            );
+            assert!(
+                webgl.map(|m| m.is_installed).unwrap_or(false),
+                "webgl should be installed in JSON"
+            );
         }
 
         #[test]
@@ -1194,13 +1434,23 @@ mod tests {
 
             // ios fails (middle module)
             let installer = MockModuleInstaller::with_failures(["ios"]);
-            let _errors = install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
+            let _errors =
+                install_modules_with_installer(&graph, base_dir, &mut modules, &installer);
 
             // Verify all modules were attempted
             let install_order = installer.get_install_order();
-            assert!(install_order.contains(&"android".to_string()), "android should have been attempted");
-            assert!(install_order.contains(&"ios".to_string()), "ios should have been attempted");
-            assert!(install_order.contains(&"webgl".to_string()), "webgl should have been attempted (after ios failure)");
+            assert!(
+                install_order.contains(&"android".to_string()),
+                "android should have been attempted"
+            );
+            assert!(
+                install_order.contains(&"ios".to_string()),
+                "ios should have been attempted"
+            );
+            assert!(
+                install_order.contains(&"webgl".to_string()),
+                "webgl should have been attempted (after ios failure)"
+            );
         }
 
         #[test]
@@ -1238,11 +1488,18 @@ mod tests {
 
             // Verify no modules were attempted (Editor is first in topo order)
             let install_order = installer.get_install_order();
-            assert_eq!(install_order.len(), 1, "Only Unity should have been attempted");
+            assert_eq!(
+                install_order.len(),
+                1,
+                "Only Unity should have been attempted"
+            );
             assert_eq!(install_order[0], "Unity");
 
             // Verify installation directory does not exist (cleanup worked)
-            assert!(!base_dir.exists(), "Installation directory should have been cleaned up");
+            assert!(
+                !base_dir.exists(),
+                "Installation directory should have been cleaned up"
+            );
         }
 
         #[test]
@@ -1282,7 +1539,10 @@ mod tests {
             }
 
             // Verify installation directory still exists
-            assert!(base_dir.exists(), "Installation directory should still exist");
+            assert!(
+                base_dir.exists(),
+                "Installation directory should still exist"
+            );
 
             // Verify other modules were installed
             assert!(modules[0].is_installed, "android should be installed");

@@ -1,10 +1,10 @@
 mod commands;
 
 use crate::commands::detect::DetectCommand;
-use crate::commands::external::{exec_command, sub_command_path};
-use crate::commands::gc::GcCommand;
 #[cfg(feature = "dev-commands")]
 use crate::commands::download_modules_json::DownloadModulesJsonCommand;
+use crate::commands::external::{exec_command, sub_command_path};
+use crate::commands::gc::GcCommand;
 use crate::commands::install::InstallArgs;
 use crate::commands::launch::LaunchCommand;
 use crate::commands::list::ListCommand;
@@ -15,6 +15,7 @@ use crate::commands::Command;
 use clap::{ArgAction, Args, ColorChoice, Parser, Subcommand};
 use console::{style, Style};
 use flexi_logger::{DeferredNow, Level, LevelFilter, LogSpecification, Logger, Record};
+use indicatif_log_bridge::LogWrapper;
 use log::{debug, info, Log};
 use std::io;
 use std::path::PathBuf;
@@ -37,6 +38,14 @@ pub struct GlobalOptions {
     #[arg(short, long, value_enum, env = "COLOR_OPTION", default_missing_value("always"), num_args(0..=1), default_value_t = ColorChoice::default()
     )]
     pub color: ColorChoice,
+
+    /// Enable progress bars and spinners (default in interactive mode)
+    #[arg(long, conflicts_with = "no_progress", env = "UVM_PROGRESS")]
+    pub progress: bool,
+
+    /// Disable progress bars and spinners
+    #[arg(long, conflicts_with = "progress", env = "UVM_NO_PROGRESS")]
+    pub no_progress: bool,
 }
 
 #[derive(Parser, Debug)]
@@ -143,7 +152,15 @@ fn set_loglevel(
         _ => LevelFilter::max(),
     };
 
-    log_spec_builder.default(level);
+    // Set level for uvm crates, but keep dependencies at warn to avoid noise
+    log_spec_builder.default(LevelFilter::Warn);
+    log_spec_builder.module("uvm", level);
+    log_spec_builder.module("uvm_install", level);
+    log_spec_builder.module("uvm_detect", level);
+    log_spec_builder.module("uvm_gc", level);
+    log_spec_builder.module("unity_hub", level);
+    log_spec_builder.module("unity_version", level);
+
     let log_spec = log_spec_builder.build();
     Logger::with(log_spec).format(format_logs).build()
 }
@@ -161,9 +178,7 @@ fn format_logs(
         Level::Error => Style::new().red(),
     };
 
-    write
-        .write(&format!("{}", style.apply_to(record.args())).into_bytes())
-        .map(|_| ())
+    write!(write, "{}", style.apply_to(record.args()))
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -171,13 +186,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     debug!("CLI arguments: {:?}", cli);
 
     set_colors_enabled(&cli.global.color);
-    let (logger, _log_handle) = set_loglevel(
-        cli.global
-            .debug
-            .then(|| 2)
-            .unwrap_or(i32::from(cli.global.verbose)),
-    )?;
-    log::set_boxed_logger(logger)?;
+
+    // Set global progress mode based on flags
+    commands::progress::set_progress_mode(cli.global.progress, cli.global.no_progress);
+
+    let verbose_level = cli
+        .global
+        .debug
+        .then(|| 2)
+        .unwrap_or(i32::from(cli.global.verbose));
+
+    let max_level = match verbose_level {
+        0 => log::LevelFilter::Warn,
+        1 => log::LevelFilter::Info,
+        2 => log::LevelFilter::Debug,
+        _ => log::LevelFilter::Trace,
+    };
+
+    let (logger, _log_handle) = set_loglevel(verbose_level)?;
+    let multi = commands::progress::global_multi_progress();
+    LogWrapper::new((*multi).clone(), logger)
+        .try_init()
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+    log::set_max_level(max_level);
 
     debug!("{:?}", cli);
     let code = cli.command.exec().unwrap_or_else(|err| {
