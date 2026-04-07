@@ -283,8 +283,20 @@ impl InstallHandler for EditorPkgInstaller {
 
         let tmp_destination = destination.join("tmp");
         DirBuilder::new().recursive(true).create(&tmp_destination)?;
+
+        if let Some(ref p) = self.progress {
+            p.set_message("Unpacking...");
+        }
         self.xar(installer, &tmp_destination)?;
+
+        if let Some(ref p) = self.progress {
+            p.set_message("Extracting...");
+        }
         self.untar(&tmp_destination, destination)?;
+
+        if let Some(ref p) = self.progress {
+            p.set_message("Installing...");
+        }
         self.cleanup_editor(destination)?;
         self.cleanup(&tmp_destination)?;
 
@@ -326,8 +338,20 @@ impl InstallHandler for ModulePkgInstaller {
 
         let tmp_destination = destination.join("tmp");
         DirBuilder::new().recursive(true).create(&tmp_destination).context("failed to create temp install directory")?;
+
+        if let Some(ref p) = self.progress {
+            p.set_message("Unpacking...");
+        }
         self.xar(installer, &tmp_destination)?;
+
+        if let Some(ref p) = self.progress {
+            p.set_message("Extracting...");
+        }
         self.untar(&tmp_destination, destination).context("failed to unpack the payload")?;
+
+        if let Some(ref p) = self.progress {
+            p.set_message("Installing...");
+        }
         self.cleanup_ios_support(destination).context("failed to cleanup ios support destination")?;
         self.cleanup(&tmp_destination).context("failed to cleanup temp files")?;
         Ok(())

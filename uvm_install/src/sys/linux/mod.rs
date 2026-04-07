@@ -7,6 +7,7 @@ use std::path::Path;
 use crate::install::error::{InstallerErrorInner, InstallerResult};
 use crate::install::installer::{Installer, ModulePoInstaller, ModuleZipInstaller};
 use crate::install::InstallHandler;
+use crate::ProgressHandler;
 
 mod pkg;
 mod xz;
@@ -16,6 +17,7 @@ pub fn create_installer<P, I, M>(
     base_install_path: P,
     installer: I,
     module: &M,
+    progress: Option<Box<dyn ProgressHandler>>,
 ) -> InstallerResult<Box<dyn InstallHandler>>
 where
     P: AsRef<Path>,
@@ -26,10 +28,10 @@ where
     let rename = module.install_rename_from_to(base_install_path);
 
     if module.is_editor() {
-        parse_editor_installer(installer, &base_install_path, rename)
+        parse_editor_installer(installer, &base_install_path, rename, progress)
     } else {
         let destination = module.install_destination(&base_install_path);
-        parse_module_installer(installer, destination, rename)
+        parse_module_installer(installer, destination, rename, progress)
     }
 }
 
@@ -37,6 +39,7 @@ fn parse_editor_installer<P, D, R>(
     installer: P,
     destination: D,
     rename: Option<(R, R)>,
+    _progress: Option<Box<dyn ProgressHandler>>,
 ) -> InstallerResult<Box<dyn InstallHandler>>
 where
     P: AsRef<Path>,
@@ -67,6 +70,7 @@ fn parse_module_installer<P, D, R>(
     installer: P,
     destination: Option<D>,
     rename: Option<(R, R)>,
+    progress: Option<Box<dyn ProgressHandler>>,
 ) -> InstallerResult<Box<dyn InstallHandler>>
 where
     P: AsRef<Path>,
@@ -90,11 +94,15 @@ where
 
         Some(ext) if ext == "zip" => {
             if let Some(destination) = destination {
-                Ok(Box::new(ModuleZipInstaller::new(
+                let mut i = ModuleZipInstaller::new(
                     installer.to_path_buf(),
                     destination.as_ref().to_path_buf(),
                     rename,
-                )))
+                );
+                if let Some(p) = progress {
+                    i = i.with_progress(p);
+                }
+                Ok(Box::new(i))
             } else {
                 Err(InstallerErrorInner::MissingDestination("zip".to_string()).into())
             }
@@ -114,11 +122,15 @@ where
 
         Some(ext) if ext == "pkg" => {
             if let Some(destination) = destination {
-                Ok(Box::new(ModulePkgInstaller::new(
+                let mut i = ModulePkgInstaller::new(
                     installer.to_path_buf(),
                     destination.as_ref().to_path_buf(),
                     rename,
-                )))
+                );
+                if let Some(p) = progress {
+                    i = i.with_progress(p);
+                }
+                Ok(Box::new(i))
             } else {
                 Err(InstallerErrorInner::MissingDestination("po".to_string()).into())
             }

@@ -2,6 +2,7 @@ use log::{debug, error};
 use std::fs;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
+use super::ProgressHandler;
 pub type InstallerPath = PathBuf;
 pub type InstallDestination = PathBuf;
 pub type Rename = Option<(PathBuf, PathBuf)>;
@@ -36,6 +37,7 @@ pub struct Installer<V, T, I> {
     _variant: PhantomData<V>,
     _installer_type: PhantomData<T>,
     inner: I,
+    pub(crate) progress: Option<Box<dyn ProgressHandler>>,
 }
 
 impl<V, T, X, Y> Installer<V, T, (InstallerPath, X, Y, Rename)> {
@@ -86,6 +88,7 @@ impl<V, T> Installer<V, T, InstallerWithDestination> {
             _variant: PhantomData,
             _installer_type: PhantomData,
             inner: (installer, destination, (), rename),
+            progress: None,
         }
     }
 }
@@ -112,6 +115,7 @@ impl<V, T> Installer<V, T, InstallerWithDestinationAndOptionalCommand> {
             _variant: PhantomData,
             _installer_type: PhantomData,
             inner: (installer, destination, cmd, rename),
+            progress: None,
         }
     }
 }
@@ -131,6 +135,7 @@ impl<V, T> Installer<V, T, InstallerWithCommand> {
             _variant: PhantomData,
             _installer_type: PhantomData,
             inner: (installer, (), cmd, rename),
+            progress: None,
         }
     }
 }
@@ -150,6 +155,7 @@ impl<V, T> Installer<V, T, InstallerWithOptionalCommand> {
             _variant: PhantomData,
             _installer_type: PhantomData,
             inner: (installer, (), cmd, rename),
+            progress: None,
         }
     }
 }
@@ -168,11 +174,17 @@ impl<V, T> Installer<V, T, BaseInstaller> {
             _variant: PhantomData,
             _installer_type: PhantomData,
             inner: (installer, (), (), rename),
+            progress: None,
         }
     }
 }
 
 impl<V, T, I> Installer<V, T, I> {
+    pub fn with_progress(mut self, handler: Box<dyn ProgressHandler>) -> Self {
+        self.progress = Some(handler);
+        self
+    }
+
     pub fn cleanup_file_failable<P: AsRef<Path>>(&self, file: P) {
         let file = file.as_ref();
         if file.exists() && file.is_file() {

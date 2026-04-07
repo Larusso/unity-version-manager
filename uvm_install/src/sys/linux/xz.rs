@@ -76,6 +76,10 @@ impl InstallHandler for ModuleXzInstaller {
             self.destination().display()
         );
 
+        if let Some(ref p) = self.progress {
+            p.set_message("Extracting...");
+        }
+
         let destination = self.destination();
         let installer = self.installer();
         let destination = if destination.ends_with("Editor/Data/PlaybackEngines/iOSSupport") {
