@@ -20,7 +20,7 @@ log = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
 proptest = "1.4.0"
-tempfile = "3.17.1"
+tempfile = "3.23.0"
 plist = "1.7.0"
 anyhow = { workspace = true }
 thiserror = { workspace = true }
